@@ -3451,6 +3451,8 @@ namespace HeatBalanceManager {
 
 		int TotSourceConstructs; // Number of constructions with embedded sources or sinks
 		int TotWindow5Constructs; // Number of constructions from Window5 data file
+		int TotWinASHRAE1588Constructs; // Number of window constructions based on ASHRAE 1588RP
+
 		bool ConstructionFound; // True if input window construction name is found in the
 		//  Window5 data file
 		bool EOFonW5File; // True if EOF encountered reading Window5 data file
@@ -3470,11 +3472,12 @@ namespace HeatBalanceManager {
 		TotComplexFenStates = GetNumObjectsFound( "Construction:ComplexFenestrationState" );
 		TotWindow5Constructs = GetNumObjectsFound( "Construction:WindowDataFile" );
 		TotWinEquivLayerConstructs = GetNumObjectsFound( "Construction:WindowEquivalentLayer" );
+		TotWinASHRAE1588Constructs = GetNumObjectsFound( "Construction:WindowASHRAE1588RP" );
 
 		WConstructNames.allocate( TotWindow5Constructs );
 		WConstructNames = " ";
 
-		TotConstructs = TotRegConstructs + TotFfactorConstructs + TotCfactorConstructs + TotSourceConstructs + TotComplexFenStates + TotWinEquivLayerConstructs;
+		TotConstructs = TotRegConstructs + TotFfactorConstructs + TotCfactorConstructs + TotSourceConstructs + TotComplexFenStates + TotWinEquivLayerConstructs + TotWinASHRAE1588Constructs;
 
 		NominalRforNominalUCalculation.allocate( TotConstructs );
 		NominalRforNominalUCalculation = 0.0;
@@ -3587,6 +3590,15 @@ namespace HeatBalanceManager {
 				ShowSevereError( "Errors found in processing complex fenestration input" );
 			}
 			TotRegConstructs += TotComplexFenStates;
+		}
+
+		// ASHRAE 1588 Construction
+		if ( TotWinASHRAE1588Constructs > 0 ) {
+			CreateASHRAE1588RPConstructions( ConstrNum, ErrorsFound );
+			if ( ErrorsFound ) {
+				ShowSevereError( "Errors found in creating the window constructions for ASHRAE 1588RP inputs." );
+			}
+			TotRegConstructs += TotWinASHRAE1588Constructs;
 		}
 
 		ConstrNum = 0;
@@ -3725,6 +3737,7 @@ namespace HeatBalanceManager {
 		TotWinEquivLayerConstructs = ConstrNum;
 		TotRegConstructs += TotWinEquivLayerConstructs;
 		TotConstructs = TotRegConstructs;
+
 		//-------------------------------------------------------------------------------
 		ConstrNum = 0;
 
@@ -6080,6 +6093,90 @@ Label1000: ;
 
 	}
 
+	// MARKER New ASHRAE 1588 construction routine
+	void
+	CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
+	{
+
+		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
+		int ConstructNumAlpha; // Number of construction alpha names being passed
+		int DummyNumProp; // dummy variable for properties being passed
+		int IOStat; // IO Status when calling get input subroutine
+		FArray1D_Fstring ConstructAlphas( 1, sFstring( MaxNameLength ) ); // Construction Alpha names defined
+		FArray1D< Real64 > DummyProps( 3 ); // Temporary array to transfer construction properties
+		bool ErrorInName;
+		bool IsBlank;
+		int Loop;
+
+		int TotWinASHRAE1588Constructs = GetNumObjectsFound( "Construction:WindowASHRAE1588RP" ); // Number of window constructions based on ASHRAE 1588RP
+
+		CurrentModuleObject = "Construction:WindowASHRAE1588RP";
+		for ( Loop = 1; Loop <= TotWinASHRAE1588Constructs; ++Loop ) { // Loop through all WindowASHRAE1588RP constructions.
+
+			//Get the object names for each construction from the input processor
+			GetObjectItem( CurrentModuleObject, Loop, ConstructAlphas, ConstructNumAlpha, DummyProps, DummyNumProp, IOStat, lNumericFieldBlanks, lAlphaFieldBlanks, cAlphaFieldNames, cNumericFieldNames );
+
+			ErrorInName = false;
+			IsBlank = false;
+			VerifyName( ConstructAlphas( 1 ), Construct.Name(), ConstrNum, ErrorInName, IsBlank, trim( CurrentModuleObject ) + " Name" );
+			if ( IsBlank ) {
+				ErrorsFound = true;
+				continue;
+			}
+
+			++ConstrNum;
+
+			Construct( ConstrNum ).Name = ConstructAlphas( 1 );
+			Construct( ConstrNum ).TypeIsWindow = true;
+
+			int number_of_panes = 1;
+			int number_of_gaps = number_of_panes - 1;
+
+			int previous_number_materials = TotMaterials;
+			int number_of_new_materials = number_of_panes + number_of_gaps;
+
+			TotMaterials += number_of_new_materials;
+
+			// Create New Material objects
+			MaterialSave.allocate( previous_number_materials );
+			NominalRSave.allocate( previous_number_materials );
+			MaterialSave( {1,previous_number_materials} ) = Material( {1,previous_number_materials} );
+			NominalRSave( {1,previous_number_materials} ) = NominalR( {1,previous_number_materials} );
+			Material.deallocate();
+			NominalR.deallocate();
+			Material.allocate( TotMaterials );
+			NominalR.allocate( TotMaterials );
+			Material( {1,TotMaterials - number_of_new_materials} ) = MaterialSave( {1,TotMaterials - number_of_new_materials} );
+			NominalR( {1,TotMaterials - number_of_new_materials} ) = NominalRSave( {1,TotMaterials - number_of_new_materials} );
+			MaterialSave.deallocate();
+			NominalRSave.deallocate();
+
+			// Define material properties (currently this is the same as the simple glazing system properties)
+			Material( TotMaterials ).Group = WindowSimpleGlazing;
+			Material( TotMaterials ).Name = ConstructAlphas( 1 ) + ":Pane1";
+			Material( TotMaterials ).SimpleWindowUfactor = DummyProps( 1 );
+			Material( TotMaterials ).SimpleWindowSHGC = DummyProps( 2 );
+			if ( ! lNumericFieldBlanks( 3 ) ) {
+				Material( TotMaterials ).SimpleWindowVisTran = DummyProps( 3 );
+				Material( TotMaterials ).SimpleWindowVTinputByUser = true;
+			}
+
+
+			SetupSimpleWindowGlazingSystem( TotMaterials );
+
+			Construct( ConstrNum ).TotLayers = 1;
+			Construct( ConstrNum ).LayerPoint( 1 ) = TotMaterials;
+
+			for ( int Layer = 1; Layer <= Construct( ConstrNum ).TotLayers; ++Layer ) {
+				NominalRforNominalUCalculation( ConstrNum ) += NominalR( Construct( ConstrNum ).LayerPoint( Layer ) );
+			}
+			// TODO Create new WindowFrameAndDivider objects (see Window 5 method)
+
+		} // ...end of WindowASHRAE1588RP Constructions DO loop
+
+
+	}
+
 	void
 	SetStormWindowControl()
 	{
@@ -8063,7 +8160,7 @@ Label1000: ;
 
 	//     NOTICE
 
-	//     Copyright © 1996-2014 The Board of Trustees of the University of Illinois
+	//     Copyright ï¿½ 1996-2014 The Board of Trustees of the University of Illinois
 	//     and The Regents of the University of California through Ernest Orlando Lawrence
 	//     Berkeley National Laboratory.  All rights reserved.
 
