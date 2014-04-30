@@ -206,9 +206,6 @@ namespace HeatBalanceManager {
 	);
 
 	void
-	CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound );
-
-	void
 	SetStormWindowControl();
 
 	void

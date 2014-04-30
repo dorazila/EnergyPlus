@@ -494,6 +494,8 @@ SET( SRC
   WindTurbine.hh
   WindowAC.cc
   WindowAC.hh
+  WindowASHRAE1588RP.cc
+  WindowASHRAE1588RP.hh
   WindowComplexManager.cc
   WindowComplexManager.hh
   WindowEquivalentLayer.cc
