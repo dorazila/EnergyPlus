@@ -406,16 +406,22 @@ namespace WindowManager {
 
 		//EndDebug
 
-		// check and read custom solar and/or visible spectrum data if any
-		CheckAndReadCustomSprectrumData();
+		if (! ASHRAE1588RP_Flag) {
 
-		W5InitGlassParameters();
+			// check and read custom solar and/or visible spectrum data if any
+			CheckAndReadCustomSprectrumData();
+		}
 
-		// Calculate optical properties of blind-type layers entered with MATERIAL:WindowBlind
-		if ( TotBlinds > 0 ) CalcWindowBlindProperties();
+			W5InitGlassParameters();
 
-		// Initialize SurfaceScreen structure
-		if ( NumSurfaceScreens > 0 ) CalcWindowScreenProperties();
+		if (! ASHRAE1588RP_Flag) {
+			// Calculate optical properties of blind-type layers entered with MATERIAL:WindowBlind
+			if ( TotBlinds > 0 ) CalcWindowBlindProperties();
+
+			// Initialize SurfaceScreen structure
+			if ( NumSurfaceScreens > 0 ) CalcWindowScreenProperties();
+
+		}
 
 		// Get glazing system optical properties of constructions with glass or glass plus
 		//   shade, screen or blind
@@ -1384,7 +1390,9 @@ namespace WindowManager {
 			}
 		} // End of surface loop
 
-		ReportGlass();
+		if (! ASHRAE1588RP_Flag ) {
+			ReportGlass();
+		}
 
 	}
 
@@ -8846,7 +8854,7 @@ Label99999: ;
 
 	//     NOTICE
 
-	//     Copyright © 1996-2014 The Board of Trustees of the University of Illinois
+	//     Copyright ï¿½ 1996-2014 The Board of Trustees of the University of Illinois
 	//     and The Regents of the University of California through Ernest Orlando Lawrence
 	//     Berkeley National Laboratory.  All rights reserved.
 

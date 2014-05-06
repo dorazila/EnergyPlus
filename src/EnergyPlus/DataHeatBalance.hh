@@ -349,6 +349,8 @@ namespace DataHeatBalance {
 	extern int TotScreensEQL; // Total number of exterior window screen materials for Equivalent Layer window model
 	extern int W5GapMatEQL; // Window5 Equivalent Layer Single-Gas Materials
 
+	extern bool ASHRAE1588RP_Flag;
+
 	extern int TotZoneAirBalance; // Total Zone Air Balance Statements in input
 	extern int TotFrameDivider; // Total number of window frame/divider objects
 	extern int AirFlowFlag;
@@ -5219,7 +5221,7 @@ namespace DataHeatBalance {
 
 	//     NOTICE
 
-	//     Copyright © 1996-2014 The Board of Trustees of the University of Illinois
+	//     Copyright (C) 1996-2014 The Board of Trustees of the University of Illinois
 	//     and The Regents of the University of California through Ernest Orlando Lawrence
 	//     Berkeley National Laboratory.  All rights reserved.
 

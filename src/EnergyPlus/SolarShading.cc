@@ -6961,10 +6961,24 @@ namespace SolarShading {
 			ZoneBmSolFrIntWinsRepEnergy( ZoneNum ) = ZoneBmSolFrIntWinsRep( ZoneNum ) * TimeStepZone * SecInHour; //[J]
 		}
 
-		// RJH - Calculate initial distribution of diffuse solar transmitted by exterior windows into each zone
-		//       to all interior surfaces in the zone
-		//       Includes subsequent transmittance of diffuse solar to adjacent zones through interior windows
-		CalcWinTransDifSolInitialDistribution();
+		if ( ! ASHRAE1588RP_Flag ) {
+			// RJH - Calculate initial distribution of diffuse solar transmitted by exterior windows into each zone
+			//       to all interior surfaces in the zone
+			//       Includes subsequent transmittance of diffuse solar to adjacent zones through interior windows
+			CalcWinTransDifSolInitialDistribution();
+		}
+
+		if ( ASHRAE1588RP_Flag ) {
+			DBZoneIntWin.deallocate();
+			IntBeamAbsByShadFac.deallocate();
+			ExtBeamAbsByShadFac.deallocate();
+			WinTransBmSolar.deallocate();
+			WinTransDifSolar.deallocate();
+			WinTransDifSolarGnd.deallocate();
+			WinTransDifSolarSky.deallocate();
+			MustAlloc = true;
+		}
+
 
 	}
 

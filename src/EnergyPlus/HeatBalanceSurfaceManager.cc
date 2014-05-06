@@ -2053,81 +2053,85 @@ namespace HeatBalanceSurfaceManager {
 				}
 			}
 
-			CalcWindowProfileAngles();
+			if (! ASHRAE1588RP_Flag ) {
 
-			if ( CalcWindowRevealReflection ) CalcBeamSolarOnWinRevealSurface();
+				CalcWindowProfileAngles();
 
-			CalcInteriorSolarDistribution();
+				if ( CalcWindowRevealReflection ) CalcBeamSolarOnWinRevealSurface();
 
-			for ( ZoneNum = 1; ZoneNum <= NumOfZones; ++ZoneNum ) {
+				CalcInteriorSolarDistribution();
 
-				// TH 3/24/2010 - QBV is not used!
-				//unused      QBV(ZoneNum) = (CBZone(ZoneNum) + DBZone(ZoneNum))*BeamSolarRad
-
-				// RJH 08/30/07 - QDV does not seem to ever be used. NOT USED!
-				//QDV(ZoneNum) = DSZone(ZoneNum)*DifSolarRad &
-				//                +DGZone(ZoneNum)*GndSolarRad
-
-				// Original QD calc used only for QSDifSol and daylighting calcs
-				//QDforDaylight(ZoneNum)  = DBZone(ZoneNum)*BeamSolarRad  &
-				//                          +DSZone(ZoneNum)*DifSolarRad  &
-				//                          +DGZone(ZoneNum)*GndSolarRad
-
-				// TH 3/23/2010. CR 7869 and CR 7999. QDforDaylight in W
-				//  Beam from interior windows (DBZoneIntWin) reflected from floor is counted in DayltgInterReflIllFrIntWins,
-				//  DBZone needs to subtract this part since it is already counted in DBZone.
-				//  Use InitialZoneDifSolReflW (Rob's previous work) as it better counts initial distribution of
-				//   diffuse solar rather than using weighted area*absorptance
-				QDforDaylight( ZoneNum ) = ( DBZone( ZoneNum ) - DBZoneIntWin( ZoneNum ) ) * BeamSolarRad + DBZoneSSG( ZoneNum ) + InitialZoneDifSolReflW( ZoneNum );
-
-				// RJH 08/30/07 - Substitute InitialZoneDifSolReflW(ZoneNum) for DSZone and DGZone here
-				// to exclude diffuse solar now absorbed/transmitted in CalcWinTransDifSolInitialDistribution
-				// DBZone(ZoneNum) is Diffuse Solar from beam reflected from interior surfaces
-				// and transmitted through interior windows
-				// DBZone is a factor that when multiplied by BeamSolarRad [W/m2] gives Watts
-				//QD(ZoneNum)  = DBZone(ZoneNum)*BeamSolarRad  &
-				//                +DSZone(ZoneNum)*DifSolarRad  &
-				//                +DGZone(ZoneNum)*GndSolarRad
-				QD( ZoneNum ) = DBZone( ZoneNum ) * BeamSolarRad + DBZoneSSG( ZoneNum ) + InitialZoneDifSolReflW( ZoneNum );
-			}
-
-			// Flux of diffuse solar in each zone
-
-			QSDifSol = 0.0;
-			for ( ZoneNum = 1; ZoneNum <= NumOfZones; ++ZoneNum ) {
-				QSDifSol( ZoneNum ) = QDforDaylight( ZoneNum );
-			}
-
-			if ( InterZoneWindow ) {
 				for ( ZoneNum = 1; ZoneNum <= NumOfZones; ++ZoneNum ) {
-					if ( RecDifShortFromZ( ZoneNum ) ) {
-						for ( OtherZoneNum = 1; OtherZoneNum <= NumOfZones; ++OtherZoneNum ) {
-							if ( ( OtherZoneNum != ZoneNum ) && ( RecDifShortFromZ( OtherZoneNum ) ) ) {
-								QSDifSol( ZoneNum ) += FractDifShortZtoZ( OtherZoneNum, ZoneNum ) * QDforDaylight( OtherZoneNum );
+
+					// TH 3/24/2010 - QBV is not used!
+					//unused      QBV(ZoneNum) = (CBZone(ZoneNum) + DBZone(ZoneNum))*BeamSolarRad
+
+					// RJH 08/30/07 - QDV does not seem to ever be used. NOT USED!
+					//QDV(ZoneNum) = DSZone(ZoneNum)*DifSolarRad &
+					//                +DGZone(ZoneNum)*GndSolarRad
+
+					// Original QD calc used only for QSDifSol and daylighting calcs
+					//QDforDaylight(ZoneNum)  = DBZone(ZoneNum)*BeamSolarRad  &
+					//                          +DSZone(ZoneNum)*DifSolarRad  &
+					//                          +DGZone(ZoneNum)*GndSolarRad
+
+					// TH 3/23/2010. CR 7869 and CR 7999. QDforDaylight in W
+					//  Beam from interior windows (DBZoneIntWin) reflected from floor is counted in DayltgInterReflIllFrIntWins,
+					//  DBZone needs to subtract this part since it is already counted in DBZone.
+					//  Use InitialZoneDifSolReflW (Rob's previous work) as it better counts initial distribution of
+					//   diffuse solar rather than using weighted area*absorptance
+					QDforDaylight( ZoneNum ) = ( DBZone( ZoneNum ) - DBZoneIntWin( ZoneNum ) ) * BeamSolarRad + DBZoneSSG( ZoneNum ) + InitialZoneDifSolReflW( ZoneNum );
+
+					// RJH 08/30/07 - Substitute InitialZoneDifSolReflW(ZoneNum) for DSZone and DGZone here
+					// to exclude diffuse solar now absorbed/transmitted in CalcWinTransDifSolInitialDistribution
+					// DBZone(ZoneNum) is Diffuse Solar from beam reflected from interior surfaces
+					// and transmitted through interior windows
+					// DBZone is a factor that when multiplied by BeamSolarRad [W/m2] gives Watts
+					//QD(ZoneNum)  = DBZone(ZoneNum)*BeamSolarRad  &
+					//                +DSZone(ZoneNum)*DifSolarRad  &
+					//                +DGZone(ZoneNum)*GndSolarRad
+					QD( ZoneNum ) = DBZone( ZoneNum ) * BeamSolarRad + DBZoneSSG( ZoneNum ) + InitialZoneDifSolReflW( ZoneNum );
+				}
+
+				// Flux of diffuse solar in each zone
+
+				QSDifSol = 0.0;
+				for ( ZoneNum = 1; ZoneNum <= NumOfZones; ++ZoneNum ) {
+					QSDifSol( ZoneNum ) = QDforDaylight( ZoneNum );
+				}
+
+				if ( InterZoneWindow ) {
+					for ( ZoneNum = 1; ZoneNum <= NumOfZones; ++ZoneNum ) {
+						if ( RecDifShortFromZ( ZoneNum ) ) {
+							for ( OtherZoneNum = 1; OtherZoneNum <= NumOfZones; ++OtherZoneNum ) {
+								if ( ( OtherZoneNum != ZoneNum ) && ( RecDifShortFromZ( OtherZoneNum ) ) ) {
+									QSDifSol( ZoneNum ) += FractDifShortZtoZ( OtherZoneNum, ZoneNum ) * QDforDaylight( OtherZoneNum );
+								}
 							}
 						}
 					}
 				}
-			}
 
-			for ( ZoneNum = 1; ZoneNum <= NumOfZones; ++ZoneNum ) {
-				QSDifSol( ZoneNum ) *= FractDifShortZtoZ( ZoneNum, ZoneNum ) * VMULT( ZoneNum );
-			}
+				for ( ZoneNum = 1; ZoneNum <= NumOfZones; ++ZoneNum ) {
+					QSDifSol( ZoneNum ) *= FractDifShortZtoZ( ZoneNum, ZoneNum ) * VMULT( ZoneNum );
+				}
 
-			//    RJH - 09-12-07 commented out report varariable calcs here since they refer to old distribution method
-			//    DO SurfNum = 1, TotSurfaces
-			//      IF (.NOT. Surface(SurfNum)%HeatTransSurf) CYCLE
-			//!!! Following may need to be removed or changed when shelves are considered in adjacent reflection calculations
-			//      IF (Surface(SurfNum)%Class == SurfaceClass_Shading) CYCLE
-			//      ZoneNum = Surface(SurfNum)%Zone
-			// Diffuse solar entering zone through exterior windows is assumed to be uniformly
-			// distributed on inside face of surfaces of zone
-			//      DifIncInsSurfIntensRep(SurfNum) = (DSZone(ZoneNum)*DifSolarRad + DGZone(ZoneNum)*GndSolarRad) /  &
-			//        Zone(ZoneNum)%TotalSurfArea
-			//      DifIncInsSurfAmountRep(SurfNum) = (Surface(SurfNum)%Area + SurfaceWindow(SurfNum)%DividerArea) *  &
-			//        DifIncInsSurfIntensRep(SurfNum)
-			//      DifIncInsSurfAmountRepEnergy(SurfNum) = DifIncInsSurfAmountRep(SurfNum) * TimeStepZone * SecInHour
-			//    END DO
+				//    RJH - 09-12-07 commented out report varariable calcs here since they refer to old distribution method
+				//    DO SurfNum = 1, TotSurfaces
+				//      IF (.NOT. Surface(SurfNum)%HeatTransSurf) CYCLE
+				//!!! Following may need to be removed or changed when shelves are considered in adjacent reflection calculations
+				//      IF (Surface(SurfNum)%Class == SurfaceClass_Shading) CYCLE
+				//      ZoneNum = Surface(SurfNum)%Zone
+				// Diffuse solar entering zone through exterior windows is assumed to be uniformly
+				// distributed on inside face of surfaces of zone
+				//      DifIncInsSurfIntensRep(SurfNum) = (DSZone(ZoneNum)*DifSolarRad + DGZone(ZoneNum)*GndSolarRad) /  &
+				//        Zone(ZoneNum)%TotalSurfArea
+				//      DifIncInsSurfAmountRep(SurfNum) = (Surface(SurfNum)%Area + SurfaceWindow(SurfNum)%DividerArea) *  &
+				//        DifIncInsSurfIntensRep(SurfNum)
+				//      DifIncInsSurfAmountRepEnergy(SurfNum) = DifIncInsSurfAmountRep(SurfNum) * TimeStepZone * SecInHour
+				//    END DO
+
+			}
 
 			for ( SurfNum = 1; SurfNum <= TotSurfaces; ++SurfNum ) {
 				if ( Surface( SurfNum ).HeatTransSurf ) {
