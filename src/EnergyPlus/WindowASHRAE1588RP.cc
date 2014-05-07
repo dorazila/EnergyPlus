@@ -136,9 +136,9 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 		TotMaterials += number_of_new_materials;
 
 		// Construction specific allocations
-		AWinSurf.allocate(1, number_of_new_materials);
-		QRadSWwinAbs.allocate(1, number_of_new_materials);
-		QRadSWwinAbsLayer.allocate(1, number_of_new_materials);
+		AWinSurf.allocate(1, number_of_panes);
+		QRadSWwinAbs.allocate(1, number_of_panes);
+		QRadSWwinAbsLayer.allocate(1, number_of_panes);
 
 		// Create New Material objects
 		// TODO We'll probably need to save the materials and just pass the few materials to the global list that we need. --Similar to constructions
@@ -271,7 +271,8 @@ void calc_window_performance(Real64 T_in, Real64 T_out, Real64 v_ws, Real64 I_s)
 	Real64 in_surf_temp = T_in - (1.0/(num_temps-1))*(T_in - T_out);
 	Real64 out_surf_temp = T_out + (1.0/(num_temps-1))*(T_in - T_out);
 
-	Real64 h_exterior = 4 + v_ws*4;
+	Real64 h_exterior_f = 4 + v_ws*4;
+	Real64 h_exterior;
 
 	BeamSolarRad = I_s;
 
@@ -282,11 +283,36 @@ void calc_window_performance(Real64 T_in, Real64 T_out, Real64 v_ws, Real64 I_s)
 	InitSolarHeatGains();
 	CalcInteriorSolarDistribution();
 
-	// Calculate convection coefficients (TODO may need extra iterations)
-	CalcISO15099WindowIntConvCoeff( 1, out_surf_temp, T_out); // This subroutine sets the global HConvIn( 1 ) variable. We will use it to set the exterior natural convection.
-	h_exterior += HConvIn( 1 ); // add natural convection
-	CalcISO15099WindowIntConvCoeff( 1, in_surf_temp, T_in); // This time it's actually being used as intended. HConvIn( 1 ) is referenced from the actual heat balance calculation.
-	CalcWindowHeatBalance( 1, h_exterior, in_surf_temp, out_surf_temp );
+	// Calculate heat balance (iteratively solve for surface temperatures)
+	Real64 out_surf_temp_prev = out_surf_temp;
+	Real64 in_surf_temp_prev = in_surf_temp;
+
+	Real64 out_surf_temp_diff;
+	Real64 in_surf_temp_diff;
+
+	int max_iterations = 20;
+	Real64 tolerance = 0.1; // deg C
+
+	for (int i = 0; i < max_iterations; i++) {
+		CalcISO15099WindowIntConvCoeff( 1, out_surf_temp, T_out); // This subroutine sets the global HConvIn( 1 ) variable. We will use it to set the exterior natural convection.
+		h_exterior = h_exterior_f + HConvIn( 1 ); // add natural convection
+		CalcISO15099WindowIntConvCoeff( 1, in_surf_temp, T_in); // This time it's actually being used as intended. HConvIn( 1 ) is referenced from the actual heat balance calculation.
+		CalcWindowHeatBalance( 1, h_exterior, in_surf_temp, out_surf_temp );
+
+		out_surf_temp_diff = std::fabs(out_surf_temp - out_surf_temp_prev);
+		in_surf_temp_diff = std::fabs(in_surf_temp - in_surf_temp_prev);
+
+		if ( (out_surf_temp_diff < tolerance) && (in_surf_temp_diff < tolerance) ) {
+			break;
+		}
+
+		out_surf_temp_prev = out_surf_temp;
+		in_surf_temp_prev = in_surf_temp;
+
+	}
+
+
+
 
 }
 
