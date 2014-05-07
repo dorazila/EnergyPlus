@@ -1,3 +1,6 @@
+// C++ Headers
+#include <string>
+
 // EnergyPlus Headers
 #include <WindowASHRAE1588RP.hh>
 #include <ConvectionCoefficients.hh>
@@ -71,28 +74,29 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 
 		++ConstrNum;
 
-		// Save Constructions -- The list will be deleted so that the only
-		// construction is the one currently being set for any borrowed subroutines
 		FArray1D< Real64 > NominalRforNominalUCalculationSave;
-
-		ConstructSave.allocate( TotConstructs );
-		ConstructSave = Construct;
-		NominalRforNominalUCalculationSave.allocate( TotConstructs );
-		NominalUSave.allocate( TotConstructs );
-		NominalRforNominalUCalculationSave = NominalRforNominalUCalculation;
-		NominalUSave = NominalU;
-
 		int TotConstructsSave = TotConstructs;
 
-		Construct.deallocate();
-		NominalRforNominalUCalculation.deallocate();
-		NominalU.deallocate();
+		// Save Constructions -- The list will be deleted so that the only
+		// construction is the one currently being set for any borrowed subroutines
+		{
+			ConstructSave.allocate( TotConstructs );
+			ConstructSave = Construct;
+			NominalRforNominalUCalculationSave.allocate( TotConstructs );
+			NominalUSave.allocate( TotConstructs );
+			NominalRforNominalUCalculationSave = NominalRforNominalUCalculation;
+			NominalUSave = NominalU;
 
-		Construct.allocate(1);
-		NominalRforNominalUCalculation.allocate(1);
-		NominalU.allocate(1);
+			Construct.deallocate();
+			NominalRforNominalUCalculation.deallocate();
+			NominalU.deallocate();
 
-		TotConstructs = 1;
+			Construct.allocate(1);
+			NominalRforNominalUCalculation.allocate(1);
+			NominalU.allocate(1);
+
+			TotConstructs = 1;
+		}
 
 		ConstructionData new_construct;
 
@@ -103,14 +107,21 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 		// set initial guesses
 
 		int number_of_panes = 1;
-		int number_of_gaps = number_of_panes - 1;
 
 		// window type variables (initial guess = horizontal slider)
 		Real64 width = 1.5;
 		Real64 height = 1.2;
 		Real64 tilt = Pi/2; // 90 deg
 
-		int previous_number_materials = TotMaterials;
+		int TotMaterialsSave = TotMaterials;
+
+		// Save Materials
+		MaterialSave.allocate( TotMaterials );
+		NominalRSave.allocate( TotMaterials );
+		MaterialSave = Material;
+		NominalRSave = NominalR;
+		Material.deallocate();
+		NominalR.deallocate();
 
 		// Allocate temporary arrays
 		create_dummy_variables();
@@ -130,10 +141,18 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 		ASHRAE1588RP_Flag = true;
 		KickOffSimulation = false;
 
-		// This is where the iterative optimization loop will begin
-		int number_of_new_materials = number_of_panes + number_of_gaps;
+		int number_of_gaps;
+		int number_of_new_materials;
 
-		TotMaterials += number_of_new_materials;
+		FArray1D< MaterialProperties > new_materials;
+		FArray1D< Real64 > new_nominal_R;
+
+
+		// This is where the iterative optimization loop will begin
+
+
+		number_of_gaps = number_of_panes - 1;
+		number_of_new_materials = number_of_panes + number_of_gaps;
 
 		// Construction specific allocations
 		AWinSurf.allocate(1, number_of_panes);
@@ -141,35 +160,35 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 		QRadSWwinAbsLayer.allocate(1, number_of_panes);
 
 		// Create New Material objects
-		// TODO We'll probably need to save the materials and just pass the few materials to the global list that we need. --Similar to constructions
-		MaterialSave.allocate( previous_number_materials );
-		NominalRSave.allocate( previous_number_materials );
-		MaterialSave( {1,previous_number_materials} ) = Material( {1,previous_number_materials} );
-		NominalRSave( {1,previous_number_materials} ) = NominalR( {1,previous_number_materials} );
-		Material.deallocate();
-		NominalR.deallocate();
-		Material.allocate( TotMaterials );
-		NominalR.allocate( TotMaterials );
-		Material( {1,TotMaterials - number_of_new_materials} ) = MaterialSave( {1,TotMaterials - number_of_new_materials} );
-		NominalR( {1,TotMaterials - number_of_new_materials} ) = NominalRSave( {1,TotMaterials - number_of_new_materials} );
-		MaterialSave.deallocate();
-		NominalRSave.deallocate();
-
-		// Define material properties (currently this is the same as the simple glazing system properties)
-		Material( TotMaterials ).Group = WindowSimpleGlazing;
-		Material( TotMaterials ).Name = ConstructAlphas( 1 ) + ":Pane1";
-		Material( TotMaterials ).SimpleWindowUfactor = ConstructNumerics( 1 );
-		Material( TotMaterials ).SimpleWindowSHGC = ConstructNumerics( 2 );
-		if ( ! lNumericFieldBlanks( 3 ) ) {
-			Material( TotMaterials ).SimpleWindowVisTran = ConstructNumerics( 3 );
-			Material( TotMaterials ).SimpleWindowVTinputByUser = true;
+		if ( new_materials.size_ != number_of_new_materials ) {
+			new_materials.allocate( number_of_new_materials );
+			Material.allocate( number_of_new_materials );
+			NominalR.allocate( number_of_new_materials );
+			TotMaterials = number_of_new_materials;
 		}
 
 
-		SetupSimpleWindowGlazingSystem( TotMaterials );
+		for ( int mat_num = 1; mat_num <= number_of_new_materials; mat_num++ )
+		{
+			// Define material properties (currently this is the same as the simple glazing system properties)
+			Material( mat_num ).Group = WindowSimpleGlazing;
+			Material( mat_num ).Name = ConstructAlphas( 1 ) + ":Layer" + std::to_string(mat_num);
+			Material( mat_num ).SimpleWindowUfactor = ConstructNumerics( 1 );
+			Material( mat_num ).SimpleWindowSHGC = ConstructNumerics( 2 );
+			if ( ! lNumericFieldBlanks( 3 ) ) {
+				Material( mat_num ).SimpleWindowVisTran = ConstructNumerics( 3 );
+				Material( mat_num ).SimpleWindowVTinputByUser = true;
+			}
 
-		new_construct.TotLayers = 1;
-		new_construct.LayerPoint( 1 ) = TotMaterials;
+		}
+
+		for ( int mat_num = 1; mat_num <= number_of_new_materials; mat_num++ )
+		{
+			SetupSimpleWindowGlazingSystem( mat_num );
+		}
+
+		new_construct.TotLayers = number_of_new_materials;
+		new_construct.LayerPoint( number_of_new_materials ) = number_of_new_materials;
 		new_construct.TotGlassLayers = number_of_panes;
 
 		Construct( 1 ) = new_construct;
@@ -227,31 +246,63 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 		// deallocate temporary arrays
 		remove_dummy_variables();
 
+		// Restore materials list and copy in new materials
+		{
+			new_materials = Material;
+			new_nominal_R = NominalR;
+
+			Material.deallocate();
+			NominalR.deallocate();
+
+			TotMaterials = TotMaterialsSave;
+
+			Material.allocate( TotMaterials + number_of_new_materials);
+			NominalR.allocate( TotMaterials + number_of_new_materials);
+			Material( {1,TotMaterials} ) = MaterialSave( {1,TotMaterials} );
+			NominalR( {1,TotMaterials} ) = NominalRSave( {1,TotMaterials} );
+			Material( {TotMaterials + 1, TotMaterials + number_of_new_materials} ) = new_materials;
+			NominalR( {TotMaterials + 1, TotMaterials + number_of_new_materials} ) = new_nominal_R;
+
+			MaterialSave.deallocate();
+			NominalRSave.deallocate();
+		}
+
 		// Restore construction list and copy in new construction
-		Real64 newU = NominalU( 1 );
-		Real64 newR = NominalRforNominalUCalculation( 1 );
+		{
+			Real64 newU = NominalU( 1 );
+			Real64 newR = NominalRforNominalUCalculation( 1 );
 
-		Construct.deallocate();
-		NominalRforNominalUCalculation.deallocate();
-		NominalU.deallocate();
+			Construct.deallocate();
+			NominalRforNominalUCalculation.deallocate();
+			NominalU.deallocate();
 
-		TotConstructs = TotConstructsSave;
+			TotConstructs = TotConstructsSave;
 
-		Construct.allocate( TotConstructs );
-		Construct = ConstructSave;
-		NominalRforNominalUCalculation.allocate( TotConstructs );
-		NominalU.allocate( TotConstructs );
-		NominalRforNominalUCalculation = NominalRforNominalUCalculationSave;
-		NominalUSave = NominalU;
+			Construct.allocate( TotConstructs );
+			Construct = ConstructSave;
+			NominalRforNominalUCalculation.allocate( TotConstructs );
+			NominalU.allocate( TotConstructs );
+			NominalRforNominalUCalculation = NominalRforNominalUCalculationSave;
+			NominalU = NominalUSave;
 
-		Construct( ConstrNum ) = new_construct;
-		NominalRforNominalUCalculation( ConstrNum ) = newR;
-		NominalU( ConstrNum ) = newU;
 
-		ConstructSave.deallocate();
-		NominalRforNominalUCalculationSave.deallocate();
-		NominalUSave.deallocate();
+			Construct( ConstrNum ) = new_construct;
+			// Set new layer references corresponding to new material numbers
+			for ( int Layer = 1; Layer <= Construct( ConstrNum ).TotLayers; ++Layer ) {
+				Construct( ConstrNum ).LayerPoint( Layer ) = TotMaterials + Layer;
+			}
 
+			TotMaterials += number_of_new_materials;
+
+			NominalRforNominalUCalculation( ConstrNum ) = newR;
+			NominalU( ConstrNum ) = newU;
+
+			ConstructSave.deallocate();
+			NominalRforNominalUCalculationSave.deallocate();
+			NominalUSave.deallocate();
+		}
+
+		CheckAndSetConstructionProperties( ConstrNum, ErrorsFound );
 
 	} // ...end of WindowASHRAE1588RP Constructions DO loop
 
