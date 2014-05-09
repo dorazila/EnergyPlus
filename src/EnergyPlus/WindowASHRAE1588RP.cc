@@ -104,14 +104,35 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 		new_construct.TypeIsWindow = true;
 
 
-		// set initial guesses
+		// set initial guesses. TODO pass these from IDF. If IDF is blank, override with defaults from ASHRAE 1588 RP Database file
 
-		int number_of_panes = 1;
+		int number_of_panes = 2;
+		std::string gas_type = "AIR";
+		std::string fenestration_type = "HORIZONTAL SLIDER";
 
-		// window type variables (initial guess = horizontal slider)
+		// internal defaults to be varied. TODO read these from ASHRAE 1588 RP Database file, or derive them as appropriate from other inputs.
+
 		Real64 width = 1.5;
 		Real64 height = 1.2;
 		Real64 tilt = Pi/2; // 90 deg
+
+		Real64 glass_thickness = 0.003;
+		Real64 glass_solar_transmissivity = 0.837;
+		Real64 glass_visible_transmissivity = 0.898;
+		Real64 glass_solar_reflectivity = 0.075;
+		Real64 glass_visible_reflectivity = 0.081;
+		Real64 glass_IR_transmissivity = 0.0;
+		Real64 glass_IR_absorptivity = 0.84;
+		Real64 glass_conductivity = 0.9;
+
+		Real64 gap_thickness = 0.0127;
+
+		// internal defaults to be left alone
+		Real64 glass_youngs_modulus = 7.2e10;
+		Real64 glass_poissons_ratio = 0.22;
+
+
+
 
 		int TotMaterialsSave = TotMaterials;
 
@@ -168,34 +189,80 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 		}
 
 
-		for ( int mat_num = 1; mat_num <= number_of_new_materials; mat_num++ )
+		// Define material properties for glazings
+		for ( int MaterNum = 1; MaterNum <= number_of_new_materials; MaterNum += 2 )
 		{
-			// Define material properties (currently this is the same as the simple glazing system properties)
-			Material( mat_num ).Group = WindowSimpleGlazing;
-			Material( mat_num ).Name = ConstructAlphas( 1 ) + ":Layer" + std::to_string(mat_num);
-			Material( mat_num ).SimpleWindowUfactor = ConstructNumerics( 1 );
-			Material( mat_num ).SimpleWindowSHGC = ConstructNumerics( 2 );
-			if ( ! lNumericFieldBlanks( 3 ) ) {
-				Material( mat_num ).SimpleWindowVisTran = ConstructNumerics( 3 );
-				Material( mat_num ).SimpleWindowVTinputByUser = true;
-			}
+			Material( MaterNum ).Group = WindowGlass;
+			Material( MaterNum ).Name = ConstructAlphas( 1 ) + ":GLAZING" + std::to_string(MaterNum);
+			Material( MaterNum ).Roughness = VerySmooth;
+			Material( MaterNum ).ROnly = true;
+			Material( MaterNum ).Thickness = glass_thickness;
+			Material( MaterNum ).Trans = glass_solar_transmissivity;
+		    Material( MaterNum ).ReflectSolBeamFront = glass_solar_reflectivity;
+			Material( MaterNum ).ReflectSolBeamBack = glass_solar_reflectivity;
+			Material( MaterNum ).TransVis = glass_visible_transmissivity;
+			Material( MaterNum ).ReflectVisBeamFront = glass_visible_reflectivity;
+			Material( MaterNum ).ReflectVisBeamBack = glass_visible_reflectivity;
+			Material( MaterNum ).TransThermal = glass_IR_transmissivity;
+			Material( MaterNum ).AbsorpThermalFront = glass_IR_absorptivity;
+			Material( MaterNum ).AbsorpThermalBack = glass_IR_absorptivity;
+			Material( MaterNum ).Conductivity = glass_conductivity;
+			Material( MaterNum ).GlassTransDirtFactor = 1.0;  // TODO Expose?
+			Material( MaterNum ).YoungModulus = glass_youngs_modulus;
+			Material( MaterNum ).PoissonsRatio = glass_poissons_ratio;
+			Material( MaterNum ).AbsorpThermal = Material( MaterNum ).AbsorpThermalBack;
+			Material( MaterNum ).SolarDiffusing = false;  // TODO Expose?
+
+			Material( MaterNum ).GlassSpectralDataPtr = 0;
+
+			NominalR( MaterNum ) = Material( MaterNum ).Thickness / Material( MaterNum ).Conductivity;
+			Material( MaterNum ).Resistance = NominalR( MaterNum );
 
 		}
 
-		for ( int mat_num = 1; mat_num <= number_of_new_materials; mat_num++ )
+		// Define material properties for gaps
+		for ( int MaterNum = 2; MaterNum <= number_of_new_materials; MaterNum += 2 )
 		{
-			SetupSimpleWindowGlazingSystem( mat_num );
+			Material( MaterNum ).Group = WindowGas;
+			Material( MaterNum ).Name = ConstructAlphas( 1 ) + ":GAP" + std::to_string(MaterNum);
+			Material( MaterNum ).Roughness = MediumRough;
+			Material( MaterNum ).ROnly = true;
+			Material( MaterNum ).Thickness = gap_thickness;
+			Material( MaterNum ).NumberOfGasesInMixture = 1;
+			Material( MaterNum ).GasFract( 1 ) = 1.0;
+
+
+			if ( gas_type == "AIR" ) Material( MaterNum ).GasType( 1 ) = 1;
+			if ( gas_type == "ARGON" ) Material( MaterNum ).GasType( 1 ) = 2;
+			if ( gas_type == "KRYPTON" ) Material( MaterNum ).GasType( 1 ) = 3;
+			if ( gas_type == "XENON" ) Material( MaterNum ).GasType( 1 ) = 4;
+
+			Material( MaterNum ).GasWght( 1 ) = GasWght( Material( MaterNum ).GasType( 1 ) );
+			Material( MaterNum ).GasSpecHeatRatio( 1 ) = GasSpecificHeatRatio( Material( MaterNum ).GasType( 1 ) );
+			for ( int ICoeff = 1; ICoeff <= 3; ++ICoeff ) {
+				Material( MaterNum ).GasCon( 1, ICoeff ) = GasCoeffsCon( Material( MaterNum ).GasType( 1 ), ICoeff );
+				Material( MaterNum ).GasVis( 1, ICoeff ) = GasCoeffsVis( Material( MaterNum ).GasType( 1 ), ICoeff );
+				Material( MaterNum ).GasCp( 1, ICoeff ) = GasCoeffsCp( Material( MaterNum ).GasType( 1 ), ICoeff );
+			}
+
+			Real64 DenomRGas = ( Material( MaterNum ).GasCon( 1, 1 ) + Material( MaterNum ).GasCon( 1, 2 ) * 300.0 + Material( MaterNum ).GasCon( 1, 3 ) * 90000.0 );
+			NominalR( MaterNum ) = Material( MaterNum ).Thickness / DenomRGas;
+
 		}
 
 		new_construct.TotLayers = number_of_new_materials;
-		new_construct.LayerPoint( number_of_new_materials ) = number_of_new_materials;
-		new_construct.TotGlassLayers = number_of_panes;
+
+		for ( int Layer = 1; Layer <= number_of_new_materials; ++Layer ) {
+			new_construct.LayerPoint( Layer ) = Layer;
+		}
 
 		Construct( 1 ) = new_construct;
 
 		for ( int Layer = 1; Layer <= Construct( 1 ).TotLayers; ++Layer ) {
 			NominalRforNominalUCalculation( 1 ) += NominalR( Construct( 1 ).LayerPoint( Layer ) );
 		}
+
+		CheckAndSetConstructionProperties( 1, ErrorsFound );
 
 		Surface( 1 ).Construction = 1; // This is the only construction available to the dummy surface. The actual surface will reference the real construction.
 
@@ -302,7 +369,6 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 			NominalUSave.deallocate();
 		}
 
-		CheckAndSetConstructionProperties( ConstrNum, ErrorsFound );
 
 	} // ...end of WindowASHRAE1588RP Constructions DO loop
 
@@ -345,6 +411,8 @@ void calc_window_performance(Real64 T_in, Real64 T_out, Real64 v_ws, Real64 I_s)
 	Real64 tolerance = 0.1; // deg C
 
 	for (int i = 0; i < max_iterations; i++) {
+
+		// TODO: If window is tilted use complement angle for outside natural convection calculation.
 		CalcISO15099WindowIntConvCoeff( 1, out_surf_temp, T_out); // This subroutine sets the global HConvIn( 1 ) variable. We will use it to set the exterior natural convection.
 		h_exterior = h_exterior_f + HConvIn( 1 ); // add natural convection
 		CalcISO15099WindowIntConvCoeff( 1, in_surf_temp, T_in); // This time it's actually being used as intended. HConvIn( 1 ) is referenced from the actual heat balance calculation.
