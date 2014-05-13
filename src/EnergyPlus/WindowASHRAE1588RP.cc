@@ -74,6 +74,23 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 
 		++ConstrNum;
 
+		int TotMaterialsSave = TotMaterials;
+
+		// Save Materials
+		MaterialSave.allocate( TotMaterials );
+		NominalRSave.allocate( TotMaterials );
+		MaterialSave = Material;
+		NominalRSave = NominalR;
+		Material.deallocate();
+		NominalR.deallocate();
+
+		int number_of_gaps;
+		int number_of_new_materials;
+
+		FArray1D< MaterialProperties > new_materials;
+		FArray1D< Real64 > new_nominal_R;
+
+
 		FArray1D< Real64 > NominalRforNominalUCalculationSave;
 		int TotConstructsSave = TotConstructs;
 
@@ -98,10 +115,27 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 			TotConstructs = 1;
 		}
 
+
 		ConstructionData new_construct;
 
 		new_construct.Name = ConstructAlphas( 1 );
 		new_construct.TypeIsWindow = true;
+
+		// Save Frame and Divider objects
+		int TotFrameDividerSave = TotFrameDivider;
+		FArray1D< FrameDividerProperties > FrameDividerSave;
+
+		FrameDividerSave.allocate( TotFrameDivider );
+		FrameDividerSave = FrameDivider;
+
+		FrameDivider.deallocate();
+
+		FrameDivider.allocate(1);
+
+		TotFrameDivider = 1;
+
+		FrameDividerProperties new_frame_divider;
+
 
 		// detect analysis type (stand-alone vs. integrated)
 		bool stand_alone_analysis;
@@ -272,8 +306,6 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 
 
 		// internal defaults to be varied. TODO read these from ASHRAE 1588 RP Database file, or derive them as appropriate from other inputs.
-
-
 		Real64 glass_thickness = 0.003;
 		Real64 glass_solar_transmissivity = 0.837;
 		Real64 glass_visible_transmissivity = 0.898;
@@ -284,27 +316,34 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 
 		Real64 gap_thickness = 0.0127;
 
+		Real64 frame_solar_absorptivity = 0.7;
+		Real64 frame_visible_absorptivity = 0.7;
+		Real64 frame_IR_emissivity = 0.7;
+
+
 		// internal defaults based on other values
-		Real64 width;
-		Real64 height;
+		Real64 frame_conductance = 10.0;
+		Real64 frame_edge_ratio = 1.0;
+
+		Real64 fenestration_width;
+		Real64 fenestration_height;
+		Real64 glazing_width;
+		Real64 glazing_height;
 		Real64 tilt;
+		Real64 fenestration_area;
+		Real64 glazing_area;
 
 		Real64 glass_conductivity;
 
+		bool has_frame;
+		int num_horizontal_dividers;
+		int num_vertical_dividers;
 
 		// internal defaults to be left alone
 		Real64 glass_youngs_modulus = 7.2e10;
 		Real64 glass_poissons_ratio = 0.22;
 
-		int TotMaterialsSave = TotMaterials;
-
-		// Save Materials
-		MaterialSave.allocate( TotMaterials );
-		NominalRSave.allocate( TotMaterials );
-		MaterialSave = Material;
-		NominalRSave = NominalR;
-		Material.deallocate();
-		NominalR.deallocate();
+		Real64 max_divider_spacing = 0.3; // NFRC 100-2014 4.2.2 (B)
 
 		// Allocate temporary arrays
 		create_dummy_variables();
@@ -313,13 +352,6 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 
 		ASHRAE1588RP_Flag = true;
 		KickOffSimulation = false;
-
-		int number_of_gaps;
-		int number_of_new_materials;
-
-		FArray1D< MaterialProperties > new_materials;
-		FArray1D< Real64 > new_nominal_R;
-
 
 		// This is where the iterative optimization loop will begin
 
@@ -332,147 +364,147 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 		// set product sizes and tilts based on NFRC 100-2014 Table 4-3
 		if ( fenestration_type == "CASEMENTDOUBLE" )
 		{
-			width = 1.2;
-			height = 1.5;
+			fenestration_width = 1.2;
+			fenestration_height = 1.5;
 			tilt = Pi/2; // 90 deg
 		}
 		else if ( fenestration_type == "CASEMENTSINGLE" )
 		{
-			width = 0.6;
-			height = 1.5;
+			fenestration_width = 0.6;
+			fenestration_height = 1.5;
 			tilt = Pi/2; // 90 deg
 		}
 		else if ( fenestration_type == "DUALACTION" )
 		{
-			width = 1.2;
-			height = 1.5;
+			fenestration_width = 1.2;
+			fenestration_height = 1.5;
 			tilt = Pi/2; // 90 deg
 		}
 		else if ( fenestration_type == "FIXED" )
 		{
-			width = 1.2;
-			height = 1.5;
+			fenestration_width = 1.2;
+			fenestration_height = 1.5;
 			tilt = Pi/2; // 90 deg
 		}
 		else if ( fenestration_type == "GARAGEORROLLINGDOOR" )
 		{
-			width = 2.134;
-			height = 2.134;
+			fenestration_width = 2.134;
+			fenestration_height = 2.134;
 			tilt = Pi/2; // 90 deg
 		}
 		else if ( fenestration_type == "GREENHOUSEORGARDEN" )
 		{
-			width = 1.5;
-			height = 1.2;
+			fenestration_width = 1.5;
+			fenestration_height = 1.2;
 			tilt = Pi/2; // 90 deg
 		}
 		else if ( fenestration_type == "HINGEDESCAPE" )
 		{
-			width = 1.5;
-			height = 1.2;
+			fenestration_width = 1.5;
+			fenestration_height = 1.2;
 			tilt = Pi/2; // 90 deg
 		}
 		else if ( fenestration_type == "HORIZONTALSLIDER" )
 		{
-			width = 1.5;
-			height = 1.2;
+			fenestration_width = 1.5;
+			fenestration_height = 1.2;
 			tilt = Pi/2; // 90 deg
 		}
 		else if ( fenestration_type == "HYBRIDTUBULARDAYLIGHTINGDEVICE" )
 		{
-			width = 0.4697;
-			height = 0.4697;
+			fenestration_width = 0.4697;
+			fenestration_height = 0.4697;
 			tilt = 0.0; // 0 deg
 		}
 		else if ( fenestration_type == "JALORJALAWNING" )
 		{
-			width = 1.2;
-			height = 1.5;
+			fenestration_width = 1.2;
+			fenestration_height = 1.5;
 			tilt = Pi/2; // 90 deg
 		}
 		else if ( fenestration_type == "PIVOTED" )
 		{
-			width = 1.2;
-			height = 1.5;
+			fenestration_width = 1.2;
+			fenestration_height = 1.5;
 			tilt = Pi/2; // 90 deg
 		}
 		else if ( fenestration_type == "PROJECTINGAWNINGDUAL" )
 		{
-			width = 1.5;
-			height = 1.2;
+			fenestration_width = 1.5;
+			fenestration_height = 1.2;
 			tilt = Pi/2; // 90 deg
 		}
 		else if ( fenestration_type == "PROJECTINGAWNINGSINGLE" )
 		{
-			width = 1.5;
-			height = 0.6;
+			fenestration_width = 1.5;
+			fenestration_height = 0.6;
 			tilt = Pi/2; // 90 deg
 		}
 		else if ( fenestration_type == "DOORSIDELITE" )
 		{
-			width = 0.6;
-			height = 2.0;
+			fenestration_width = 0.6;
+			fenestration_height = 2.0;
 			tilt = Pi/2; // 90 deg
 		}
 		else if ( fenestration_type == "SKYLIGHTORROOFWINDOW" )
 		{
-			width = 1.2;
-			height = 1.2;
+			fenestration_width = 1.2;
+			fenestration_height = 1.2;
 			tilt = Pi/9; // 20 deg
 		}
 		else if ( fenestration_type == "SLIDINGPATIODOORWITHFRAME" )
 		{
-			width = 2.0;
-			height = 2.0;
+			fenestration_width = 2.0;
+			fenestration_height = 2.0;
 			tilt = Pi/2; // 90 deg
 		}
 		else if ( fenestration_type == "CURTAINWALLORWINDOWWALL" )
 		{
-			width = 2.0;
-			height = 2.0;
+			fenestration_width = 2.0;
+			fenestration_height = 2.0;
 			tilt = Pi/2; // 90 deg
 		}
 		else if ( fenestration_type == "SLOPEDGLAZING" )
 		{
-			width = 2.0;
-			height = 2.0;
+			fenestration_width = 2.0;
+			fenestration_height = 2.0;
 			tilt = Pi/9; // 20 deg
 		}
 		else if ( fenestration_type == "SPANDRELPANEL" )
 		{
-			width = 2.0;
-			height = 1.2;
+			fenestration_width = 2.0;
+			fenestration_height = 1.2;
 			tilt = Pi/2; // 90 deg
 		}
 		else if ( fenestration_type == "SWINGINGDOORWITHFRAME" )
 		{
 			// Assume single door (double door width = 1.92 m)
-			width = 0.96;
-			height = 2.09;
+			fenestration_width = 0.96;
+			fenestration_height = 2.09;
 			tilt = Pi/2; // 90 deg
 		}
 		else if ( fenestration_type == "DOORTRANSOM" )
 		{
-			width = 2.0;
-			height = 0.6;
+			fenestration_width = 2.0;
+			fenestration_height = 0.6;
 			tilt = Pi/2; // 90 deg
 		}
 		else if ( fenestration_type == "TROPICALAWNING" )
 		{
-			width = 1.5;
-			height = 1.2;
+			fenestration_width = 1.5;
+			fenestration_height = 1.2;
 			tilt = Pi/2; // 90 deg
 		}
 		else if ( fenestration_type == "TUBULARDAYLIGHTINGDEVICE" )
 		{
-			width = 0.3102;
-			height = 0.3102;
+			fenestration_width = 0.3102;
+			fenestration_height = 0.3102;
 			tilt = 0.0; // 0 deg
 		}
 		else if ( fenestration_type == "VERTICALSLIDER" )
 		{
-			width = 1.2;
-			height = 1.5;
+			fenestration_width = 1.2;
+			fenestration_height = 1.5;
 			tilt = Pi/2; // 90 deg
 		}
 
@@ -485,11 +517,38 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 			glass_conductivity = 0.9;
 		}
 
+		if ( frame_width > 0.0 )
+		{
+			has_frame = true;
+		}
+		else
+		{
+			has_frame = false;
+		}
+
+		fenestration_area = fenestration_width*fenestration_height;
+		glazing_width = fenestration_width - 2.0*frame_width;
+		glazing_height = fenestration_height - 2.0*frame_width;
+		glazing_area = glazing_width*glazing_height;
+
+		if ( has_frame )
+		{
+			num_horizontal_dividers = ceil(glazing_height/max_divider_spacing);
+			num_vertical_dividers = ceil(glazing_width/max_divider_spacing);
+		}
+		else
+		{
+			num_horizontal_dividers = 0;
+			num_vertical_dividers = 0;
+		}
+
+
+		Surface( 1 ).Height = glazing_height;
+		Surface( 1 ).Width = glazing_width;
+		Surface( 1 ).Area = glazing_area;
 		Surface( 1 ).Tilt = tilt*180/Pi;
 		Surface( 1 ).CosTilt = cos(tilt);
 		Surface( 1 ).SinTilt = sin(tilt);
-		Surface( 1 ).Height = height;
-		Surface( 1 ).Area = height*width;
 		Surface( 1 ).ViewFactorSky = 0.5 * ( 1.0 + Surface( 1 ).CosTilt );
 		Surface( 1 ).ViewFactorGround = 0.5 * ( 1.0 - Surface( 1 ).CosTilt );
 		Surface( 1 ).ViewFactorSkyIR = Surface( 1 ).ViewFactorSky;
@@ -582,15 +641,56 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 
 		Construct( 1 ) = new_construct;
 
+		NominalRforNominalUCalculation( 1 ) = 0.0;
 		for ( int Layer = 1; Layer <= Construct( 1 ).TotLayers; ++Layer ) {
 			NominalRforNominalUCalculation( 1 ) += NominalR( Construct( 1 ).LayerPoint( Layer ) );
 		}
 
 		CheckAndSetConstructionProperties( 1, ErrorsFound );
 
+		// Set frame and divider properties
+		if ( has_frame )
+		{
+			new_frame_divider.Name = ConstructAlphas( 1 ) + ":FRAME";
+			new_frame_divider.FrameWidth = frame_width;
+			new_frame_divider.FrameProjectionOut = 0.0;
+			new_frame_divider.FrameProjectionIn = 0.0;
+			new_frame_divider.FrameConductance = frame_conductance;
+			new_frame_divider.FrEdgeToCenterGlCondRatio = frame_edge_ratio;
+			new_frame_divider.FrameSolAbsorp = frame_solar_absorptivity;
+			new_frame_divider.FrameVisAbsorp = frame_visible_absorptivity;
+			new_frame_divider.FrameEmis = frame_IR_emissivity;
+			new_frame_divider.FrameEdgeWidth = 0.06355; // 2.5 in
+			new_frame_divider.DividerType = DividedLite;
+			new_frame_divider.DividerWidth = divider_width;
+			new_frame_divider.HorDividers = num_horizontal_dividers;
+			new_frame_divider.VertDividers = num_vertical_dividers;
+			new_frame_divider.DividerProjectionOut = 0.0;
+			new_frame_divider.DividerProjectionIn = 0.0;
+			new_frame_divider.DividerConductance = frame_conductance;
+			new_frame_divider.DivEdgeToCenterGlCondRatio = frame_edge_ratio;
+			new_frame_divider.DividerSolAbsorp = frame_solar_absorptivity;
+			new_frame_divider.DividerVisAbsorp = frame_visible_absorptivity;
+			new_frame_divider.DividerEmis = frame_IR_emissivity;
+			new_frame_divider.DividerEdgeWidth = 0.06355; // 2.5 in
+
+			SurfaceWindow( 1 ).FrameArea = fenestration_area - glazing_area;
+			SurfaceWindow( 1 ).DividerArea = divider_width*(num_horizontal_dividers*glazing_width + num_vertical_dividers*glazing_height - num_horizontal_dividers*num_vertical_dividers*divider_width);
+			Surface( 1 ).Area -= SurfaceWindow( 1 ).DividerArea;
+			SurfaceWindow( 1 ).GlazedFrac = Surface( 1 ).Area / ( Surface( 1 ).Area + SurfaceWindow( 1 ).DividerArea );
+
+
+			FrameDivider( 1 ) = new_frame_divider;
+
+			Surface( 1 ).FrameDivider = 1;
+		}
+		else
+		{
+			Surface( 1 ).FrameDivider = 0;
+		}
+
 		Surface( 1 ).Construction = 1; // This is the only construction available to the dummy surface. The actual surface will reference the real construction.
 
-		// TODO Create new WindowFrameAndDivider objects (see Window 5 method)
 
 		// Setup functions
 
@@ -604,7 +704,7 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 
 		calc_window_performance(in_air_temp, out_air_temp, wind_speed, solar_inccident);
 
-		Real64 u_factor = -WinHeatGain(1)/(Surface( 1 ).Area*(in_air_temp - out_air_temp));
+		Real64 u_factor = -WinHeatGain(1)/(fenestration_area*(in_air_temp - out_air_temp));
 
 		// Set up SHGC conditions
 		in_air_temp = 24.0;
@@ -617,10 +717,10 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 		Real64 q_total = WinHeatGain(1);
 
 		// NFRC 201-2014 Equation 8-7
-		Real64 q_U = u_factor*Surface( 1 ).Area*(out_air_temp - in_air_temp);
+		Real64 q_U = u_factor*fenestration_area*(out_air_temp - in_air_temp);
 
 		// NFRC 201-2014 Equation 8-2
-		Real64 shgc = (q_total - q_U)/(Surface( 1 ).Area*solar_inccident);
+		Real64 shgc = (q_total - q_U)/(fenestration_area*solar_inccident);
 
 		// if match not obtained adjust inputs
 
@@ -658,6 +758,27 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 			NominalRSave.deallocate();
 		}
 
+		// Restore frame and divider list and copy in new frame and divider
+		FrameDivider.deallocate();
+
+		TotFrameDivider = TotFrameDividerSave;
+
+		if ( has_frame )
+		{
+			FrameDivider.allocate( TotFrameDivider + 1 );
+			FrameDivider( {1,TotFrameDivider} ) = FrameDividerSave;
+			FrameDivider( TotFrameDivider + 1 ) = new_frame_divider;
+			TotFrameDivider += 1;
+		}
+		else
+		{
+			FrameDivider.allocate( TotFrameDivider );
+			FrameDivider = FrameDividerSave;
+		}
+
+		FrameDividerSave.deallocate();
+
+
 		// Restore construction list and copy in new construction
 		{
 			Real64 newU = NominalU( 1 );
@@ -684,6 +805,11 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 			}
 
 			TotMaterials += number_of_new_materials;
+
+			if ( has_frame )
+			{
+				Construct( ConstrNum ).W5FrameDivider = TotFrameDivider;
+			}
 
 			NominalRforNominalUCalculation( ConstrNum ) = newR;
 			NominalU( ConstrNum ) = newU;
@@ -784,6 +910,9 @@ void create_dummy_variables()
 	ZoneBmSolFrIntWinsRep.allocate(1);
 	ZoneBmSolFrIntWinsRepEnergy.allocate(1);
 
+	ZoneAirHumRatAvg(1) = 0.0;
+	ZoneAirHumRat(1) = 0.0;
+
 	// Surface
 	Surface.allocate(1);
 	TotSurfaces = 1;
@@ -861,10 +990,22 @@ void create_dummy_variables()
 	SWOutAbsTotalReport.allocate(1);
 	SWOutAbsTotalReport.allocate(1);
 	WinShadingAbsorbedSolar.allocate(1);
+	WinGainFrameDividerToZoneRep.allocate(1);
+	InsideFrameCondensationFlag.allocate(1);
+	InsideDividerCondensationFlag.allocate(1);
 
+	QHTRadSysSurf(1) = 0.0;
+	QHWBaseboardSurf(1) = 0.0;
+	QSteamBaseboardSurf(1) = 0.0;
+	QElecBaseboardSurf(1) = 0.0;
+	QRadThermInAbs(1) = 0.0;
+	QS(1) = 0.0;
+	ISABSF(1) = 0.0;
 	CosIncAng(1,1,1) = 1.0;
 	SunlitFrac(1,1,1) = 1.0;
 	SunlitFracWithoutReveal(1,1,1) = 1.0;
+	AnisoSkyMult(1) = 0.0;  // This may need to change if NFRC adds a diffuse component for SHGC tests
+
 
 
 }
@@ -952,6 +1093,9 @@ void remove_dummy_variables()
 	SWOutAbsTotalReport.deallocate();
 	SWOutAbsTotalReport.deallocate();
 	WinShadingAbsorbedSolar.deallocate();
+	WinGainFrameDividerToZoneRep.deallocate();
+	InsideFrameCondensationFlag.deallocate();
+	InsideDividerCondensationFlag.deallocate();
 
 	// Environment
 	BeamSolarRad = 0.0;

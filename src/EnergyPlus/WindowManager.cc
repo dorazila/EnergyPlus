@@ -1365,28 +1365,30 @@ namespace WindowManager {
 			//    write(outputfiledebug,*) 'window='//TRIM(surface(SurfNum)%name)
 			//    write(outputfiledebug,*) '  swindow%outnormvec=',surfacewindow(SurfNum)%outnormvec
 			//    write(outputfiledebug,*) '  surface%outnormvec=',surface(SurfNum)%outnormvec
-			// Window center
-			Rectangle = false;
-			Triangle = false;
-			if ( Surface( SurfNum ).Sides == 3 ) Triangle = true;
-			if ( Surface( SurfNum ).Sides == 4 ) Rectangle = true;
-			if ( Rectangle ) {
-				// Vertices of window (numbered counter-clockwise starting at upper left as viewed from inside of room).
-				// Assumes original vertices are numbered counter-clockwise from upper left as viewed from outside.
-				W3 = Surface( SurfNum ).Vertex( 2 );
-				W2 = Surface( SurfNum ).Vertex( 3 );
-				W1 = Surface( SurfNum ).Vertex( 4 );
-			} else if ( Triangle ) {
-				W3 = Surface( SurfNum ).Vertex( 2 );
-				W2 = Surface( SurfNum ).Vertex( 3 );
-				W1 = Surface( SurfNum ).Vertex( 1 );
-			}
-			W21 = W1 - W2;
-			W23 = W3 - W2;
-			if ( Rectangle ) {
-				SurfaceWindow( SurfNum ).WinCenter = W2 + ( W23 + W21 ) / 2.0;
-			} else if ( Triangle ) {
-				SurfaceWindow( SurfNum ).WinCenter = W2 + ( W23 + W21 ) / 3.0;
+			if (! ASHRAE1588RP_Flag ) {
+				// Window center
+				Rectangle = false;
+				Triangle = false;
+				if ( Surface( SurfNum ).Sides == 3 ) Triangle = true;
+				if ( Surface( SurfNum ).Sides == 4 ) Rectangle = true;
+				if ( Rectangle ) {
+					// Vertices of window (numbered counter-clockwise starting at upper left as viewed from inside of room).
+					// Assumes original vertices are numbered counter-clockwise from upper left as viewed from outside.
+					W3 = Surface( SurfNum ).Vertex( 2 );
+					W2 = Surface( SurfNum ).Vertex( 3 );
+					W1 = Surface( SurfNum ).Vertex( 4 );
+				} else if ( Triangle ) {
+					W3 = Surface( SurfNum ).Vertex( 2 );
+					W2 = Surface( SurfNum ).Vertex( 3 );
+					W1 = Surface( SurfNum ).Vertex( 1 );
+				}
+				W21 = W1 - W2;
+				W23 = W3 - W2;
+				if ( Rectangle ) {
+					SurfaceWindow( SurfNum ).WinCenter = W2 + ( W23 + W21 ) / 2.0;
+				} else if ( Triangle ) {
+					SurfaceWindow( SurfNum ).WinCenter = W2 + ( W23 + W21 ) / 3.0;
+				}
 			}
 		} // End of surface loop
 
