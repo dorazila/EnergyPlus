@@ -6423,31 +6423,97 @@ WindowMaterial:Gap:EquivalentLayer,
 
 Construction:WindowASHRAE1588RP,
        \min-fields 3
-       \memo Alternate method of describing windows
-       \memo This window material object is used to define an entire glazing system
-       \memo using simple performance parameters.
+       \memo Based on ASHRAE 1588-RP, this will define a layer-by-layer window
+       \memo representation based on bulk properties (U-factor, SHGC, VT) and 
+       \memo other known quantities. This creates the glazing/gas construction 
+       \memo layers and the frame/divider object
   A1 , \field Name
        \required-field
        \type alpha
        \reference ConstructionNames
-  N1 , \field U-Factor
-       \required-field
-       \note Enter U-Factor including film coefficients
-       \note Note that the effective upper limit for U-factor is 5.8 W/m2-K
+  N1 , \field NFRC U-Factor
+       \note U-factor defined by NFRC 100-2014
        \units W/m2-K
        \minimum> 0
-       \maximum  7
-  N2 , \field Solar Heat Gain Coefficient
-       \required-field
-       \note SHGC at Normal Incidence
+  N2 , \field NFRC Solar Heat Gain Coefficient
+       \note SHGC at normal incidence as defined by NFRC 200-2014
        \minimum> 0
        \maximum< 1
-  N3 ; \field Visible Transmittance
-       \note VT at Normal Incidence
+  N3 , \field NFRC Visible Transmittance
+       \note VT at normal incidence as defined by NFRC 200-2014
        \note optional
        \minimum> 0
        \maximum< 1
-
+  A2 , \field Fenestration Type
+       \note Type of fenestration product as defined by NFRC 100-2014 Table 4-3
+       \type choice
+       \key CasementDouble
+       \key CasementSingle
+       \key DualAction
+       \key Fixed
+       \key GarageOrRollingDoor
+       \key GreenhouseOrGarden
+       \key HingedEscape
+       \key HorizontalSlider
+       \key HybridTubularDaylightingDevice
+       \key JalOrJalAwning
+       \key Pivoted
+       \key ProjectingAwningDual
+       \key ProjectingAwningSingle
+       \key DoorSidelite
+       \key SkylightOrRoofWindow
+       \key SlidingPatioDoorWithFrame
+       \key CurtainWallOrWindowWall
+       \key SlopedGlazing
+       \key SpandrelPanel
+       \key SwingingDoorWithFrame
+       \key DoorTransom
+       \key TropicalAwning
+       \key TubularDaylightingDevice
+       \key VerticalSlider
+  N4 , \field Number of Glazing Panes
+       \minimum 0
+       \maximum 4
+  A3 , \field Glazing Type
+       \type choice
+       \key Clear
+       \key LowIron
+       \key Bronze
+       \key Grey
+       \key Green
+       \key Blue
+       \key PolyesterFilm
+  A4 , \field Glazing Surface Treatment
+       \type choice
+       \key None
+       \key ReflectiveStainlessSteel
+       \key ReflectiveTitanium
+       \key ReflectivePewter
+       \key ReflectiveTinOxide
+       \key LowE
+       \key SpectrallySelective
+       \key Pyrolytic
+  A5 , \field Gas Type
+       \type choice
+       \key Air
+       \key Argon
+       \key Krypton
+       \key Xenon
+  A6 , \field Frame Material
+       \type choice
+       \key Softwood
+       \key Hardwood
+       \key Aluminum
+       \key Steel
+       \key Vinyl
+       \key Fiberglass
+  N5 , \field Frame Width
+       \minimum 0
+  N6 , \field Divider Width
+       \minimum 0
+  A7 ; \field Output File Name
+       \retaincase
+   
 MaterialProperty:MoisturePenetrationDepth:Settings,
     \memo Additional properties for moisture using EMPD procedure
     \memo HeatBalanceAlgorithm choice=MoisturePenetrationDepthConductionTransferFunction only

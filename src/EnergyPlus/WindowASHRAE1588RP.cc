@@ -50,8 +50,8 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 	int ConstructNumAlpha; // Number of construction alpha names being passed
 	int ConstructNumNumeric; // dummy variable for properties being passed
 	int IOStat; // IO Status when calling get input subroutine
-	FArray1D_string ConstructAlphas( 1 ); // Construction Alpha names defined
-	FArray1D< Real64 > ConstructNumerics( 3 ); // Temporary array to transfer construction properties
+	FArray1D_string ConstructAlphas( 7 ); // Construction Alpha names defined
+	FArray1D< Real64 > ConstructNumerics( 6 ); // Temporary array to transfer construction properties
 	bool ErrorInName;
 	bool IsBlank;
 	int Loop;
@@ -103,18 +103,176 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 		new_construct.Name = ConstructAlphas( 1 );
 		new_construct.TypeIsWindow = true;
 
+		// detect analysis type (stand-alone vs. integrated)
+		bool stand_alone_analysis;
 
-		// set initial guesses. TODO pass these from IDF. If IDF is blank, override with defaults from ASHRAE 1588 RP Database file
+		if ( lAlphaFieldBlanks( 7 ) )
+		{
+			stand_alone_analysis = false;
+		}
+		else
+		{
+			stand_alone_analysis = true;
+		}
 
-		int number_of_panes = 2;
-		std::string gas_type = "AIR";
-		std::string fenestration_type = "HORIZONTAL SLIDER";
+
+		// set initial values and set locks as appropriate. If IDF is blank,
+		// override with defaults from ASHRAE 1588 RP Database file (TODO)
+		Real64 target_u_factor;
+		bool u_factor_set;
+
+		if ( lNumericFieldBlanks( 1 ) )
+		{
+			u_factor_set = false;
+		}
+		else
+		{
+			u_factor_set = true;
+			target_u_factor = ConstructNumerics( 1 );
+		}
+
+		Real64 target_shgc;
+		bool shgc_set;
+
+		if ( lNumericFieldBlanks( 2 ) )
+		{
+			shgc_set = false;
+		}
+		else
+		{
+			shgc_set = true;
+			target_shgc = ConstructNumerics( 2 );
+		}
+
+		Real64 target_vt;
+		bool vt_set;
+
+		if ( lNumericFieldBlanks( 3 ) )
+		{
+			vt_set = false;
+		}
+		else
+		{
+			vt_set = true;
+			target_vt = ConstructNumerics( 3 );
+		}
+
+		std::string fenestration_type;
+		bool fenestration_type_lock;
+
+		if ( lAlphaFieldBlanks( 2 ) )
+		{
+			fenestration_type_lock = false;
+			fenestration_type = "HORIZONTALSLIDER";
+		}
+		else
+		{
+			fenestration_type_lock = true;
+			fenestration_type = ConstructAlphas( 2 );
+		}
+
+		int number_of_panes;
+		bool number_of_panes_lock;
+
+		if ( lNumericFieldBlanks( 4 ) )
+		{
+			number_of_panes_lock = false;
+			number_of_panes = 2;
+		}
+		else
+		{
+			number_of_panes_lock = true;
+			number_of_panes = ConstructNumerics( 4 );
+		}
+
+		std::string glazing_type;
+		bool glazing_type_lock;
+
+		if ( lAlphaFieldBlanks( 3 ) )
+		{
+			glazing_type_lock = false;
+			glazing_type = "CLEAR";
+		}
+		else
+		{
+			glazing_type_lock = true;
+			glazing_type = ConstructAlphas( 3 );
+		}
+
+		std::string glazing_surface_treatment;
+		bool glazing_surface_treatment_lock;
+
+		if ( lAlphaFieldBlanks( 4 ) )
+		{
+			glazing_surface_treatment_lock = false;
+			glazing_surface_treatment = "NONE";
+		}
+		else
+		{
+			glazing_surface_treatment_lock = true;
+			glazing_surface_treatment = ConstructAlphas( 4 );
+		}
+
+		std::string gas_type;
+		bool gas_type_lock;
+
+		if ( lAlphaFieldBlanks( 5 ) )
+		{
+			gas_type_lock = false;
+			gas_type = "AIR";
+		}
+		else
+		{
+			gas_type_lock = true;
+			gas_type = ConstructAlphas( 5 );
+		}
+
+		std::string frame_material;
+		bool frame_material_lock;
+
+		if ( lAlphaFieldBlanks( 6 ) )
+		{
+			frame_material_lock = false;
+			frame_material = "VINYL";
+		}
+		else
+		{
+			frame_material_lock = true;
+			frame_material = ConstructAlphas( 6 );
+		}
+
+		Real64 frame_width;
+		bool frame_width_lock;
+
+		if ( lNumericFieldBlanks( 5 ) )
+		{
+			frame_width_lock = false;
+			frame_width = 0.0;
+		}
+		else
+		{
+			frame_width_lock = true;
+			frame_width = ConstructNumerics( 5 );
+		}
+
+		Real64 divider_width;
+		bool divider_width_lock;
+
+		if ( lNumericFieldBlanks( 6 ) )
+		{
+			divider_width_lock = false;
+			divider_width = 0.0;
+		}
+		else
+		{
+			divider_width_lock = true;
+			divider_width = ConstructNumerics( 6 );
+		}
+
+
 
 		// internal defaults to be varied. TODO read these from ASHRAE 1588 RP Database file, or derive them as appropriate from other inputs.
 
-		Real64 width = 1.5;
-		Real64 height = 1.2;
-		Real64 tilt = Pi/2; // 90 deg
 
 		Real64 glass_thickness = 0.003;
 		Real64 glass_solar_transmissivity = 0.837;
@@ -123,16 +281,20 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 		Real64 glass_visible_reflectivity = 0.081;
 		Real64 glass_IR_transmissivity = 0.0;
 		Real64 glass_IR_absorptivity = 0.84;
-		Real64 glass_conductivity = 0.9;
 
 		Real64 gap_thickness = 0.0127;
+
+		// internal defaults based on other values
+		Real64 width;
+		Real64 height;
+		Real64 tilt;
+
+		Real64 glass_conductivity;
+
 
 		// internal defaults to be left alone
 		Real64 glass_youngs_modulus = 7.2e10;
 		Real64 glass_poissons_ratio = 0.22;
-
-
-
 
 		int TotMaterialsSave = TotMaterials;
 
@@ -148,16 +310,6 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 		create_dummy_variables();
 
 		Surface( 1 ).Name = ConstructAlphas( 1 ) + ":Surface";
-		Surface( 1 ).Tilt = tilt*180/Pi;
-		Surface( 1 ).CosTilt = cos(tilt);
-		Surface( 1 ).SinTilt = sin(tilt);
-		Surface( 1 ).Height = height;
-		Surface( 1 ).Area = height*width;
-		Surface( 1 ).ViewFactorSky = 0.5 * ( 1.0 + Surface( 1 ).CosTilt );
-		Surface( 1 ).ViewFactorGround = 0.5 * ( 1.0 - Surface( 1 ).CosTilt );
-		Surface( 1 ).ViewFactorSkyIR = Surface( 1 ).ViewFactorSky;
-		Surface( 1 ).ViewFactorGroundIR = Surface( 1 ).ViewFactorGround;
-		AirSkyRadSplit( 1 ) = std::sqrt( 0.5 * ( 1.0 + Surface( 1 ).CosTilt ) );
 
 		ASHRAE1588RP_Flag = true;
 		KickOffSimulation = false;
@@ -171,6 +323,178 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 
 		// This is where the iterative optimization loop will begin
 
+
+		// set dependent values
+
+
+		// internal defaults based on other values
+
+		// set product sizes and tilts based on NFRC 100-2014 Table 4-3
+		if ( fenestration_type == "CASEMENTDOUBLE" )
+		{
+			width = 1.2;
+			height = 1.5;
+			tilt = Pi/2; // 90 deg
+		}
+		else if ( fenestration_type == "CASEMENTSINGLE" )
+		{
+			width = 0.6;
+			height = 1.5;
+			tilt = Pi/2; // 90 deg
+		}
+		else if ( fenestration_type == "DUALACTION" )
+		{
+			width = 1.2;
+			height = 1.5;
+			tilt = Pi/2; // 90 deg
+		}
+		else if ( fenestration_type == "FIXED" )
+		{
+			width = 1.2;
+			height = 1.5;
+			tilt = Pi/2; // 90 deg
+		}
+		else if ( fenestration_type == "GARAGEORROLLINGDOOR" )
+		{
+			width = 2.134;
+			height = 2.134;
+			tilt = Pi/2; // 90 deg
+		}
+		else if ( fenestration_type == "GREENHOUSEORGARDEN" )
+		{
+			width = 1.5;
+			height = 1.2;
+			tilt = Pi/2; // 90 deg
+		}
+		else if ( fenestration_type == "HINGEDESCAPE" )
+		{
+			width = 1.5;
+			height = 1.2;
+			tilt = Pi/2; // 90 deg
+		}
+		else if ( fenestration_type == "HORIZONTALSLIDER" )
+		{
+			width = 1.5;
+			height = 1.2;
+			tilt = Pi/2; // 90 deg
+		}
+		else if ( fenestration_type == "HYBRIDTUBULARDAYLIGHTINGDEVICE" )
+		{
+			width = 0.4697;
+			height = 0.4697;
+			tilt = 0.0; // 0 deg
+		}
+		else if ( fenestration_type == "JALORJALAWNING" )
+		{
+			width = 1.2;
+			height = 1.5;
+			tilt = Pi/2; // 90 deg
+		}
+		else if ( fenestration_type == "PIVOTED" )
+		{
+			width = 1.2;
+			height = 1.5;
+			tilt = Pi/2; // 90 deg
+		}
+		else if ( fenestration_type == "PROJECTINGAWNINGDUAL" )
+		{
+			width = 1.5;
+			height = 1.2;
+			tilt = Pi/2; // 90 deg
+		}
+		else if ( fenestration_type == "PROJECTINGAWNINGSINGLE" )
+		{
+			width = 1.5;
+			height = 0.6;
+			tilt = Pi/2; // 90 deg
+		}
+		else if ( fenestration_type == "DOORSIDELITE" )
+		{
+			width = 0.6;
+			height = 2.0;
+			tilt = Pi/2; // 90 deg
+		}
+		else if ( fenestration_type == "SKYLIGHTORROOFWINDOW" )
+		{
+			width = 1.2;
+			height = 1.2;
+			tilt = Pi/9; // 20 deg
+		}
+		else if ( fenestration_type == "SLIDINGPATIODOORWITHFRAME" )
+		{
+			width = 2.0;
+			height = 2.0;
+			tilt = Pi/2; // 90 deg
+		}
+		else if ( fenestration_type == "CURTAINWALLORWINDOWWALL" )
+		{
+			width = 2.0;
+			height = 2.0;
+			tilt = Pi/2; // 90 deg
+		}
+		else if ( fenestration_type == "SLOPEDGLAZING" )
+		{
+			width = 2.0;
+			height = 2.0;
+			tilt = Pi/9; // 20 deg
+		}
+		else if ( fenestration_type == "SPANDRELPANEL" )
+		{
+			width = 2.0;
+			height = 1.2;
+			tilt = Pi/2; // 90 deg
+		}
+		else if ( fenestration_type == "SWINGINGDOORWITHFRAME" )
+		{
+			// Assume single door (double door width = 1.92 m)
+			width = 0.96;
+			height = 2.09;
+			tilt = Pi/2; // 90 deg
+		}
+		else if ( fenestration_type == "DOORTRANSOM" )
+		{
+			width = 2.0;
+			height = 0.6;
+			tilt = Pi/2; // 90 deg
+		}
+		else if ( fenestration_type == "TROPICALAWNING" )
+		{
+			width = 1.5;
+			height = 1.2;
+			tilt = Pi/2; // 90 deg
+		}
+		else if ( fenestration_type == "TUBULARDAYLIGHTINGDEVICE" )
+		{
+			width = 0.3102;
+			height = 0.3102;
+			tilt = 0.0; // 0 deg
+		}
+		else if ( fenestration_type == "VERTICALSLIDER" )
+		{
+			width = 1.2;
+			height = 1.5;
+			tilt = Pi/2; // 90 deg
+		}
+
+		if ( glazing_type == "POLYESTERFILM" )
+		{
+			glass_conductivity = 0.14;
+		}
+		else
+		{
+			glass_conductivity = 0.9;
+		}
+
+		Surface( 1 ).Tilt = tilt*180/Pi;
+		Surface( 1 ).CosTilt = cos(tilt);
+		Surface( 1 ).SinTilt = sin(tilt);
+		Surface( 1 ).Height = height;
+		Surface( 1 ).Area = height*width;
+		Surface( 1 ).ViewFactorSky = 0.5 * ( 1.0 + Surface( 1 ).CosTilt );
+		Surface( 1 ).ViewFactorGround = 0.5 * ( 1.0 - Surface( 1 ).CosTilt );
+		Surface( 1 ).ViewFactorSkyIR = Surface( 1 ).ViewFactorSky;
+		Surface( 1 ).ViewFactorGroundIR = Surface( 1 ).ViewFactorGround;
+		AirSkyRadSplit( 1 ) = std::sqrt( 0.5 * ( 1.0 + Surface( 1 ).CosTilt ) );
 
 		number_of_gaps = number_of_panes - 1;
 		number_of_new_materials = number_of_panes + number_of_gaps;
