@@ -860,12 +860,24 @@ void calc_window_performance(Real64 T_in, Real64 T_out, Real64 v_ws, Real64 I_s)
 	int max_iterations = 20;
 	Real64 tolerance = 0.1; // deg C
 
+	// Save tilt information for natural convection calculations
+	Real64 tilt_save = Surface( 1 ).Tilt;
+
 	for (int i = 0; i < max_iterations; i++) {
 
-		// TODO: If window is tilted use complement angle for outside natural convection calculation.
+		// Use complementary angle for exterior natural convection calculations
+		Surface( 1 ).Tilt = 180 - tilt_save;
+		Surface( 1 ).CosTilt = cos(Surface( 1 ).Tilt*Pi/180);
+		Surface( 1 ).SinTilt = sin(Surface( 1 ).Tilt*Pi/180);
 		CalcISO15099WindowIntConvCoeff( 1, out_surf_temp, T_out); // This subroutine sets the global HConvIn( 1 ) variable. We will use it to set the exterior natural convection.
 		h_exterior = h_exterior_f + HConvIn( 1 ); // add natural convection
+
+		// revert tilt for interior natural convection calculations
+		Surface( 1 ).Tilt = tilt_save;
+		Surface( 1 ).CosTilt = cos(tilt_save*Pi/180);
+		Surface( 1 ).SinTilt = sin(tilt_save*Pi/180);
 		CalcISO15099WindowIntConvCoeff( 1, in_surf_temp, T_in); // This time it's actually being used as intended. HConvIn( 1 ) is referenced from the actual heat balance calculation.
+
 		CalcWindowHeatBalance( 1, h_exterior, in_surf_temp, out_surf_temp );
 
 		out_surf_temp_diff = std::fabs(out_surf_temp - out_surf_temp_prev);
