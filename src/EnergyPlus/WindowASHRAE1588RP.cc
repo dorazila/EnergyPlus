@@ -1,6 +1,9 @@
 // C++ Headers
 #include <string>
 
+// ObjexxFCL Headers
+#include <ObjexxFCL/gio.hh>
+
 // EnergyPlus Headers
 #include <WindowASHRAE1588RP.hh>
 #include <ConvectionCoefficients.hh>
@@ -11,11 +14,16 @@
 #include <DataHeatBalSurface.hh>
 #include <DataIPShortCuts.hh>
 #include <DataSurfaces.hh>
+#include <DataSystemVariables.hh>
+#include <DisplayRoutines.hh>
+#include <DataTimings.hh>
+#include <General.hh>
 #include <HeatBalanceManager.hh>
 #include <HeatBalanceSurfaceManager.hh>
 #include <InputProcessor.hh>
 #include <WindowManager.hh>
 #include <SolarShading.hh>
+#include <UtilityRoutines.hh>
 
 namespace EnergyPlus {
 
@@ -28,6 +36,9 @@ using namespace DataHeatBalFanSys;
 using namespace DataHeatBalSurface;
 using namespace DataIPShortCuts;
 using namespace DataSurfaces;
+using namespace DataSystemVariables;
+using namespace DataTimings;
+using namespace General;
 
 using ConvectionCoefficients::SetExtConvectionCoeff;
 using ConvectionCoefficients::CalcISO15099WindowIntConvCoeff;
@@ -139,14 +150,17 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 
 		// detect analysis type (stand-alone vs. integrated)
 		bool stand_alone_analysis;
+		std::string ashrae1588_file_name;
 
 		if ( lAlphaFieldBlanks( 7 ) )
 		{
 			stand_alone_analysis = false;
+			ashrae1588_file_name = "";
 		}
 		else
 		{
 			stand_alone_analysis = true;
+			ashrae1588_file_name = ConstructAlphas(7);
 		}
 
 
@@ -339,6 +353,11 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 		int num_horizontal_dividers;
 		int num_vertical_dividers;
 
+		// matching variables
+		Real64 u_factor;
+		Real64 shgc;
+		Real64 vt;
+
 		// internal defaults to be left alone
 		Real64 glass_youngs_modulus = 7.2e10;
 		Real64 glass_poissons_ratio = 0.22;
@@ -353,386 +372,436 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 		ASHRAE1588RP_Flag = true;
 		KickOffSimulation = false;
 
+		bool target_matched = false;
 		// This is where the iterative optimization loop will begin
+		while (! target_matched)
+		{
 
+			// internal defaults based on other values
 
-		// set dependent values
-
-
-		// internal defaults based on other values
-
-		// set product sizes and tilts based on NFRC 100-2014 Table 4-3
-		if ( fenestration_type == "CASEMENTDOUBLE" )
-		{
-			fenestration_width = 1.2;
-			fenestration_height = 1.5;
-			tilt = Pi/2; // 90 deg
-		}
-		else if ( fenestration_type == "CASEMENTSINGLE" )
-		{
-			fenestration_width = 0.6;
-			fenestration_height = 1.5;
-			tilt = Pi/2; // 90 deg
-		}
-		else if ( fenestration_type == "DUALACTION" )
-		{
-			fenestration_width = 1.2;
-			fenestration_height = 1.5;
-			tilt = Pi/2; // 90 deg
-		}
-		else if ( fenestration_type == "FIXED" )
-		{
-			fenestration_width = 1.2;
-			fenestration_height = 1.5;
-			tilt = Pi/2; // 90 deg
-		}
-		else if ( fenestration_type == "GARAGEORROLLINGDOOR" )
-		{
-			fenestration_width = 2.134;
-			fenestration_height = 2.134;
-			tilt = Pi/2; // 90 deg
-		}
-		else if ( fenestration_type == "GREENHOUSEORGARDEN" )
-		{
-			fenestration_width = 1.5;
-			fenestration_height = 1.2;
-			tilt = Pi/2; // 90 deg
-		}
-		else if ( fenestration_type == "HINGEDESCAPE" )
-		{
-			fenestration_width = 1.5;
-			fenestration_height = 1.2;
-			tilt = Pi/2; // 90 deg
-		}
-		else if ( fenestration_type == "HORIZONTALSLIDER" )
-		{
-			fenestration_width = 1.5;
-			fenestration_height = 1.2;
-			tilt = Pi/2; // 90 deg
-		}
-		else if ( fenestration_type == "HYBRIDTUBULARDAYLIGHTINGDEVICE" )
-		{
-			fenestration_width = 0.4697;
-			fenestration_height = 0.4697;
-			tilt = 0.0; // 0 deg
-		}
-		else if ( fenestration_type == "JALORJALAWNING" )
-		{
-			fenestration_width = 1.2;
-			fenestration_height = 1.5;
-			tilt = Pi/2; // 90 deg
-		}
-		else if ( fenestration_type == "PIVOTED" )
-		{
-			fenestration_width = 1.2;
-			fenestration_height = 1.5;
-			tilt = Pi/2; // 90 deg
-		}
-		else if ( fenestration_type == "PROJECTINGAWNINGDUAL" )
-		{
-			fenestration_width = 1.5;
-			fenestration_height = 1.2;
-			tilt = Pi/2; // 90 deg
-		}
-		else if ( fenestration_type == "PROJECTINGAWNINGSINGLE" )
-		{
-			fenestration_width = 1.5;
-			fenestration_height = 0.6;
-			tilt = Pi/2; // 90 deg
-		}
-		else if ( fenestration_type == "DOORSIDELITE" )
-		{
-			fenestration_width = 0.6;
-			fenestration_height = 2.0;
-			tilt = Pi/2; // 90 deg
-		}
-		else if ( fenestration_type == "SKYLIGHTORROOFWINDOW" )
-		{
-			fenestration_width = 1.2;
-			fenestration_height = 1.2;
-			tilt = Pi/9; // 20 deg
-		}
-		else if ( fenestration_type == "SLIDINGPATIODOORWITHFRAME" )
-		{
-			fenestration_width = 2.0;
-			fenestration_height = 2.0;
-			tilt = Pi/2; // 90 deg
-		}
-		else if ( fenestration_type == "CURTAINWALLORWINDOWWALL" )
-		{
-			fenestration_width = 2.0;
-			fenestration_height = 2.0;
-			tilt = Pi/2; // 90 deg
-		}
-		else if ( fenestration_type == "SLOPEDGLAZING" )
-		{
-			fenestration_width = 2.0;
-			fenestration_height = 2.0;
-			tilt = Pi/9; // 20 deg
-		}
-		else if ( fenestration_type == "SPANDRELPANEL" )
-		{
-			fenestration_width = 2.0;
-			fenestration_height = 1.2;
-			tilt = Pi/2; // 90 deg
-		}
-		else if ( fenestration_type == "SWINGINGDOORWITHFRAME" )
-		{
-			// Assume single door (double door width = 1.92 m)
-			fenestration_width = 0.96;
-			fenestration_height = 2.09;
-			tilt = Pi/2; // 90 deg
-		}
-		else if ( fenestration_type == "DOORTRANSOM" )
-		{
-			fenestration_width = 2.0;
-			fenestration_height = 0.6;
-			tilt = Pi/2; // 90 deg
-		}
-		else if ( fenestration_type == "TROPICALAWNING" )
-		{
-			fenestration_width = 1.5;
-			fenestration_height = 1.2;
-			tilt = Pi/2; // 90 deg
-		}
-		else if ( fenestration_type == "TUBULARDAYLIGHTINGDEVICE" )
-		{
-			fenestration_width = 0.3102;
-			fenestration_height = 0.3102;
-			tilt = 0.0; // 0 deg
-		}
-		else if ( fenestration_type == "VERTICALSLIDER" )
-		{
-			fenestration_width = 1.2;
-			fenestration_height = 1.5;
-			tilt = Pi/2; // 90 deg
-		}
-
-		if ( glazing_type == "POLYESTERFILM" )
-		{
-			glass_conductivity = 0.14;
-		}
-		else
-		{
-			glass_conductivity = 0.9;
-		}
-
-		if ( frame_width > 0.0 )
-		{
-			has_frame = true;
-		}
-		else
-		{
-			has_frame = false;
-		}
-
-		fenestration_area = fenestration_width*fenestration_height;
-		glazing_width = fenestration_width - 2.0*frame_width;
-		glazing_height = fenestration_height - 2.0*frame_width;
-		glazing_area = glazing_width*glazing_height;
-
-		if ( has_frame )
-		{
-			num_horizontal_dividers = ceil(glazing_height/max_divider_spacing);
-			num_vertical_dividers = ceil(glazing_width/max_divider_spacing);
-		}
-		else
-		{
-			num_horizontal_dividers = 0;
-			num_vertical_dividers = 0;
-		}
-
-
-		Surface( 1 ).Height = glazing_height;
-		Surface( 1 ).Width = glazing_width;
-		Surface( 1 ).Area = glazing_area;
-		Surface( 1 ).Tilt = tilt*180/Pi;
-		Surface( 1 ).CosTilt = cos(tilt);
-		Surface( 1 ).SinTilt = sin(tilt);
-		Surface( 1 ).ViewFactorSky = 0.5 * ( 1.0 + Surface( 1 ).CosTilt );
-		Surface( 1 ).ViewFactorGround = 0.5 * ( 1.0 - Surface( 1 ).CosTilt );
-		Surface( 1 ).ViewFactorSkyIR = Surface( 1 ).ViewFactorSky;
-		Surface( 1 ).ViewFactorGroundIR = Surface( 1 ).ViewFactorGround;
-		AirSkyRadSplit( 1 ) = std::sqrt( 0.5 * ( 1.0 + Surface( 1 ).CosTilt ) );
-
-		number_of_gaps = number_of_panes - 1;
-		number_of_new_materials = number_of_panes + number_of_gaps;
-
-		// Construction specific allocations
-		AWinSurf.allocate(1, number_of_panes);
-		QRadSWwinAbs.allocate(1, number_of_panes);
-		QRadSWwinAbsLayer.allocate(1, number_of_panes);
-
-		// Create New Material objects
-		if ( new_materials.size_ != number_of_new_materials ) {
-			new_materials.allocate( number_of_new_materials );
-			Material.allocate( number_of_new_materials );
-			NominalR.allocate( number_of_new_materials );
-			TotMaterials = number_of_new_materials;
-		}
-
-
-		// Define material properties for glazings
-		for ( int MaterNum = 1; MaterNum <= number_of_new_materials; MaterNum += 2 )
-		{
-			Material( MaterNum ).Group = WindowGlass;
-			Material( MaterNum ).Name = ConstructAlphas( 1 ) + ":GLAZING" + std::to_string(MaterNum);
-			Material( MaterNum ).Roughness = VerySmooth;
-			Material( MaterNum ).ROnly = true;
-			Material( MaterNum ).Thickness = glass_thickness;
-			Material( MaterNum ).Trans = glass_solar_transmissivity;
-		    Material( MaterNum ).ReflectSolBeamFront = glass_solar_reflectivity;
-			Material( MaterNum ).ReflectSolBeamBack = glass_solar_reflectivity;
-			Material( MaterNum ).TransVis = glass_visible_transmissivity;
-			Material( MaterNum ).ReflectVisBeamFront = glass_visible_reflectivity;
-			Material( MaterNum ).ReflectVisBeamBack = glass_visible_reflectivity;
-			Material( MaterNum ).TransThermal = glass_IR_transmissivity;
-			Material( MaterNum ).AbsorpThermalFront = glass_IR_absorptivity;
-			Material( MaterNum ).AbsorpThermalBack = glass_IR_absorptivity;
-			Material( MaterNum ).Conductivity = glass_conductivity;
-			Material( MaterNum ).GlassTransDirtFactor = 1.0;  // TODO Expose?
-			Material( MaterNum ).YoungModulus = glass_youngs_modulus;
-			Material( MaterNum ).PoissonsRatio = glass_poissons_ratio;
-			Material( MaterNum ).AbsorpThermal = Material( MaterNum ).AbsorpThermalBack;
-			Material( MaterNum ).SolarDiffusing = false;  // TODO Expose?
-
-			Material( MaterNum ).GlassSpectralDataPtr = 0;
-
-			NominalR( MaterNum ) = Material( MaterNum ).Thickness / Material( MaterNum ).Conductivity;
-			Material( MaterNum ).Resistance = NominalR( MaterNum );
-
-		}
-
-		// Define material properties for gaps
-		for ( int MaterNum = 2; MaterNum <= number_of_new_materials; MaterNum += 2 )
-		{
-			Material( MaterNum ).Group = WindowGas;
-			Material( MaterNum ).Name = ConstructAlphas( 1 ) + ":GAP" + std::to_string(MaterNum);
-			Material( MaterNum ).Roughness = MediumRough;
-			Material( MaterNum ).ROnly = true;
-			Material( MaterNum ).Thickness = gap_thickness;
-			Material( MaterNum ).NumberOfGasesInMixture = 1;
-			Material( MaterNum ).GasFract( 1 ) = 1.0;
-
-
-			if ( gas_type == "AIR" ) Material( MaterNum ).GasType( 1 ) = 1;
-			if ( gas_type == "ARGON" ) Material( MaterNum ).GasType( 1 ) = 2;
-			if ( gas_type == "KRYPTON" ) Material( MaterNum ).GasType( 1 ) = 3;
-			if ( gas_type == "XENON" ) Material( MaterNum ).GasType( 1 ) = 4;
-
-			Material( MaterNum ).GasWght( 1 ) = GasWght( Material( MaterNum ).GasType( 1 ) );
-			Material( MaterNum ).GasSpecHeatRatio( 1 ) = GasSpecificHeatRatio( Material( MaterNum ).GasType( 1 ) );
-			for ( int ICoeff = 1; ICoeff <= 3; ++ICoeff ) {
-				Material( MaterNum ).GasCon( 1, ICoeff ) = GasCoeffsCon( Material( MaterNum ).GasType( 1 ), ICoeff );
-				Material( MaterNum ).GasVis( 1, ICoeff ) = GasCoeffsVis( Material( MaterNum ).GasType( 1 ), ICoeff );
-				Material( MaterNum ).GasCp( 1, ICoeff ) = GasCoeffsCp( Material( MaterNum ).GasType( 1 ), ICoeff );
+			// set product sizes and tilts based on NFRC 100-2014 Table 4-3
+			if ( fenestration_type == "CASEMENTDOUBLE" )
+			{
+				fenestration_width = 1.2;
+				fenestration_height = 1.5;
+				tilt = Pi/2; // 90 deg
+			}
+			else if ( fenestration_type == "CASEMENTSINGLE" )
+			{
+				fenestration_width = 0.6;
+				fenestration_height = 1.5;
+				tilt = Pi/2; // 90 deg
+			}
+			else if ( fenestration_type == "DUALACTION" )
+			{
+				fenestration_width = 1.2;
+				fenestration_height = 1.5;
+				tilt = Pi/2; // 90 deg
+			}
+			else if ( fenestration_type == "FIXED" )
+			{
+				fenestration_width = 1.2;
+				fenestration_height = 1.5;
+				tilt = Pi/2; // 90 deg
+			}
+			else if ( fenestration_type == "GARAGEORROLLINGDOOR" )
+			{
+				fenestration_width = 2.134;
+				fenestration_height = 2.134;
+				tilt = Pi/2; // 90 deg
+			}
+			else if ( fenestration_type == "GREENHOUSEORGARDEN" )
+			{
+				fenestration_width = 1.5;
+				fenestration_height = 1.2;
+				tilt = Pi/2; // 90 deg
+			}
+			else if ( fenestration_type == "HINGEDESCAPE" )
+			{
+				fenestration_width = 1.5;
+				fenestration_height = 1.2;
+				tilt = Pi/2; // 90 deg
+			}
+			else if ( fenestration_type == "HORIZONTALSLIDER" )
+			{
+				fenestration_width = 1.5;
+				fenestration_height = 1.2;
+				tilt = Pi/2; // 90 deg
+			}
+			else if ( fenestration_type == "HYBRIDTUBULARDAYLIGHTINGDEVICE" )
+			{
+				fenestration_width = 0.4697;
+				fenestration_height = 0.4697;
+				tilt = 0.0; // 0 deg
+			}
+			else if ( fenestration_type == "JALORJALAWNING" )
+			{
+				fenestration_width = 1.2;
+				fenestration_height = 1.5;
+				tilt = Pi/2; // 90 deg
+			}
+			else if ( fenestration_type == "PIVOTED" )
+			{
+				fenestration_width = 1.2;
+				fenestration_height = 1.5;
+				tilt = Pi/2; // 90 deg
+			}
+			else if ( fenestration_type == "PROJECTINGAWNINGDUAL" )
+			{
+				fenestration_width = 1.5;
+				fenestration_height = 1.2;
+				tilt = Pi/2; // 90 deg
+			}
+			else if ( fenestration_type == "PROJECTINGAWNINGSINGLE" )
+			{
+				fenestration_width = 1.5;
+				fenestration_height = 0.6;
+				tilt = Pi/2; // 90 deg
+			}
+			else if ( fenestration_type == "DOORSIDELITE" )
+			{
+				fenestration_width = 0.6;
+				fenestration_height = 2.0;
+				tilt = Pi/2; // 90 deg
+			}
+			else if ( fenestration_type == "SKYLIGHTORROOFWINDOW" )
+			{
+				fenestration_width = 1.2;
+				fenestration_height = 1.2;
+				tilt = Pi/9; // 20 deg
+			}
+			else if ( fenestration_type == "SLIDINGPATIODOORWITHFRAME" )
+			{
+				fenestration_width = 2.0;
+				fenestration_height = 2.0;
+				tilt = Pi/2; // 90 deg
+			}
+			else if ( fenestration_type == "CURTAINWALLORWINDOWWALL" )
+			{
+				fenestration_width = 2.0;
+				fenestration_height = 2.0;
+				tilt = Pi/2; // 90 deg
+			}
+			else if ( fenestration_type == "SLOPEDGLAZING" )
+			{
+				fenestration_width = 2.0;
+				fenestration_height = 2.0;
+				tilt = Pi/9; // 20 deg
+			}
+			else if ( fenestration_type == "SPANDRELPANEL" )
+			{
+				fenestration_width = 2.0;
+				fenestration_height = 1.2;
+				tilt = Pi/2; // 90 deg
+			}
+			else if ( fenestration_type == "SWINGINGDOORWITHFRAME" )
+			{
+				// Assume single door (double door width = 1.92 m)
+				fenestration_width = 0.96;
+				fenestration_height = 2.09;
+				tilt = Pi/2; // 90 deg
+			}
+			else if ( fenestration_type == "DOORTRANSOM" )
+			{
+				fenestration_width = 2.0;
+				fenestration_height = 0.6;
+				tilt = Pi/2; // 90 deg
+			}
+			else if ( fenestration_type == "TROPICALAWNING" )
+			{
+				fenestration_width = 1.5;
+				fenestration_height = 1.2;
+				tilt = Pi/2; // 90 deg
+			}
+			else if ( fenestration_type == "TUBULARDAYLIGHTINGDEVICE" )
+			{
+				fenestration_width = 0.3102;
+				fenestration_height = 0.3102;
+				tilt = 0.0; // 0 deg
+			}
+			else if ( fenestration_type == "VERTICALSLIDER" )
+			{
+				fenestration_width = 1.2;
+				fenestration_height = 1.5;
+				tilt = Pi/2; // 90 deg
 			}
 
-			Real64 DenomRGas = ( Material( MaterNum ).GasCon( 1, 1 ) + Material( MaterNum ).GasCon( 1, 2 ) * 300.0 + Material( MaterNum ).GasCon( 1, 3 ) * 90000.0 );
-			NominalR( MaterNum ) = Material( MaterNum ).Thickness / DenomRGas;
+			if ( glazing_type == "POLYESTERFILM" )
+			{
+				glass_conductivity = 0.14;
+			}
+			else
+			{
+				glass_conductivity = 0.9;
+			}
 
-		}
+			if ( frame_width > 0.0 )
+			{
+				has_frame = true;
+			}
+			else
+			{
+				has_frame = false;
+			}
 
-		new_construct.TotLayers = number_of_new_materials;
+			fenestration_area = fenestration_width*fenestration_height;
+			glazing_width = fenestration_width - 2.0*frame_width;
+			glazing_height = fenestration_height - 2.0*frame_width;
+			glazing_area = glazing_width*glazing_height;
 
-		for ( int Layer = 1; Layer <= number_of_new_materials; ++Layer ) {
-			new_construct.LayerPoint( Layer ) = Layer;
-		}
-
-		Construct( 1 ) = new_construct;
-
-		NominalRforNominalUCalculation( 1 ) = 0.0;
-		for ( int Layer = 1; Layer <= Construct( 1 ).TotLayers; ++Layer ) {
-			NominalRforNominalUCalculation( 1 ) += NominalR( Construct( 1 ).LayerPoint( Layer ) );
-		}
-
-		CheckAndSetConstructionProperties( 1, ErrorsFound );
-
-		// Set frame and divider properties
-		if ( has_frame )
-		{
-			new_frame_divider.Name = ConstructAlphas( 1 ) + ":FRAME";
-			new_frame_divider.FrameWidth = frame_width;
-			new_frame_divider.FrameProjectionOut = 0.0;
-			new_frame_divider.FrameProjectionIn = 0.0;
-			new_frame_divider.FrameConductance = frame_conductance;
-			new_frame_divider.FrEdgeToCenterGlCondRatio = frame_edge_ratio;
-			new_frame_divider.FrameSolAbsorp = frame_solar_absorptivity;
-			new_frame_divider.FrameVisAbsorp = frame_visible_absorptivity;
-			new_frame_divider.FrameEmis = frame_IR_emissivity;
-			new_frame_divider.FrameEdgeWidth = 0.06355; // 2.5 in
-			new_frame_divider.DividerType = DividedLite;
-			new_frame_divider.DividerWidth = divider_width;
-			new_frame_divider.HorDividers = num_horizontal_dividers;
-			new_frame_divider.VertDividers = num_vertical_dividers;
-			new_frame_divider.DividerProjectionOut = 0.0;
-			new_frame_divider.DividerProjectionIn = 0.0;
-			new_frame_divider.DividerConductance = frame_conductance;
-			new_frame_divider.DivEdgeToCenterGlCondRatio = frame_edge_ratio;
-			new_frame_divider.DividerSolAbsorp = frame_solar_absorptivity;
-			new_frame_divider.DividerVisAbsorp = frame_visible_absorptivity;
-			new_frame_divider.DividerEmis = frame_IR_emissivity;
-			new_frame_divider.DividerEdgeWidth = 0.06355; // 2.5 in
-
-			SurfaceWindow( 1 ).FrameArea = fenestration_area - glazing_area;
-			SurfaceWindow( 1 ).DividerArea = divider_width*(num_horizontal_dividers*glazing_width + num_vertical_dividers*glazing_height - num_horizontal_dividers*num_vertical_dividers*divider_width);
-			Surface( 1 ).Area -= SurfaceWindow( 1 ).DividerArea;
-			SurfaceWindow( 1 ).GlazedFrac = Surface( 1 ).Area / ( Surface( 1 ).Area + SurfaceWindow( 1 ).DividerArea );
+			if ( has_frame )
+			{
+				num_horizontal_dividers = ceil(glazing_height/max_divider_spacing);
+				num_vertical_dividers = ceil(glazing_width/max_divider_spacing);
+			}
+			else
+			{
+				num_horizontal_dividers = 0;
+				num_vertical_dividers = 0;
+			}
 
 
-			FrameDivider( 1 ) = new_frame_divider;
+			Surface( 1 ).Height = glazing_height;
+			Surface( 1 ).Width = glazing_width;
+			Surface( 1 ).Area = glazing_area;
+			Surface( 1 ).Tilt = tilt*180/Pi;
+			Surface( 1 ).CosTilt = cos(tilt);
+			Surface( 1 ).SinTilt = sin(tilt);
+			Surface( 1 ).ViewFactorSky = 0.5 * ( 1.0 + Surface( 1 ).CosTilt );
+			Surface( 1 ).ViewFactorGround = 0.5 * ( 1.0 - Surface( 1 ).CosTilt );
+			Surface( 1 ).ViewFactorSkyIR = Surface( 1 ).ViewFactorSky;
+			Surface( 1 ).ViewFactorGroundIR = Surface( 1 ).ViewFactorGround;
+			AirSkyRadSplit( 1 ) = std::sqrt( 0.5 * ( 1.0 + Surface( 1 ).CosTilt ) );
 
-			Surface( 1 ).FrameDivider = 1;
-		}
-		else
-		{
-			Surface( 1 ).FrameDivider = 0;
-		}
+			number_of_gaps = number_of_panes - 1;
+			number_of_new_materials = number_of_panes + number_of_gaps;
 
-		Surface( 1 ).Construction = 1; // This is the only construction available to the dummy surface. The actual surface will reference the real construction.
+			// Construction specific allocations
+			AWinSurf.allocate(1, number_of_panes);
+			QRadSWwinAbs.allocate(1, number_of_panes);
+			QRadSWwinAbsLayer.allocate(1, number_of_panes);
+
+			// Create New Material objects
+			if ( new_materials.size_ != (unsigned)number_of_new_materials ) {
+				new_materials.allocate( number_of_new_materials );
+				Material.allocate( number_of_new_materials );
+				NominalR.allocate( number_of_new_materials );
+				TotMaterials = number_of_new_materials;
+			}
 
 
-		// Setup functions
+			// Define material properties for glazings
+			for ( int MaterNum = 1; MaterNum <= number_of_new_materials; MaterNum += 2 )
+			{
+				Material( MaterNum ).Group = WindowGlass;
+				Material( MaterNum ).Name = ConstructAlphas( 1 ) + ":GLAZING" + std::to_string(MaterNum);
+				Material( MaterNum ).Roughness = VerySmooth;
+				Material( MaterNum ).ROnly = true;
+				Material( MaterNum ).Thickness = glass_thickness;
+				Material( MaterNum ).Trans = glass_solar_transmissivity;
+			    Material( MaterNum ).ReflectSolBeamFront = glass_solar_reflectivity;
+				Material( MaterNum ).ReflectSolBeamBack = glass_solar_reflectivity;
+				Material( MaterNum ).TransVis = glass_visible_transmissivity;
+				Material( MaterNum ).ReflectVisBeamFront = glass_visible_reflectivity;
+				Material( MaterNum ).ReflectVisBeamBack = glass_visible_reflectivity;
+				Material( MaterNum ).TransThermal = glass_IR_transmissivity;
+				Material( MaterNum ).AbsorpThermalFront = glass_IR_absorptivity;
+				Material( MaterNum ).AbsorpThermalBack = glass_IR_absorptivity;
+				Material( MaterNum ).Conductivity = glass_conductivity;
+				Material( MaterNum ).GlassTransDirtFactor = 1.0;  // TODO Expose?
+				Material( MaterNum ).YoungModulus = glass_youngs_modulus;
+				Material( MaterNum ).PoissonsRatio = glass_poissons_ratio;
+				Material( MaterNum ).AbsorpThermal = Material( MaterNum ).AbsorpThermalBack;
+				Material( MaterNum ).SolarDiffusing = false;  // TODO Expose?
 
-		InitGlassOpticalCalculations();
+				Material( MaterNum ).GlassSpectralDataPtr = 0;
 
-		// Set up U-factor conditions
-		Real64 in_air_temp = 21.0;
-		Real64 out_air_temp = -18.0;
-		Real64 wind_speed = 5.5;
-		Real64 solar_inccident = 0.0;
+				NominalR( MaterNum ) = Material( MaterNum ).Thickness / Material( MaterNum ).Conductivity;
+				Material( MaterNum ).Resistance = NominalR( MaterNum );
 
-		calc_window_performance(in_air_temp, out_air_temp, wind_speed, solar_inccident);
+			}
 
-		Real64 u_factor = -WinHeatGain(1)/(fenestration_area*(in_air_temp - out_air_temp));
+			// Define material properties for gaps
+			for ( int MaterNum = 2; MaterNum <= number_of_new_materials; MaterNum += 2 )
+			{
+				Material( MaterNum ).Group = WindowGas;
+				Material( MaterNum ).Name = ConstructAlphas( 1 ) + ":GAP" + std::to_string(MaterNum);
+				Material( MaterNum ).Roughness = MediumRough;
+				Material( MaterNum ).ROnly = true;
+				Material( MaterNum ).Thickness = gap_thickness;
+				Material( MaterNum ).NumberOfGasesInMixture = 1;
+				Material( MaterNum ).GasFract( 1 ) = 1.0;
 
-		// Set up SHGC conditions
-		in_air_temp = 24.0;
-		out_air_temp = 32.0;
-		wind_speed = 2.75;
-		solar_inccident = 783.0;
 
-		calc_window_performance(in_air_temp, out_air_temp, wind_speed, solar_inccident);
+				if ( gas_type == "AIR" ) Material( MaterNum ).GasType( 1 ) = 1;
+				if ( gas_type == "ARGON" ) Material( MaterNum ).GasType( 1 ) = 2;
+				if ( gas_type == "KRYPTON" ) Material( MaterNum ).GasType( 1 ) = 3;
+				if ( gas_type == "XENON" ) Material( MaterNum ).GasType( 1 ) = 4;
 
-		Real64 q_total = WinHeatGain(1);
+				Material( MaterNum ).GasWght( 1 ) = GasWght( Material( MaterNum ).GasType( 1 ) );
+				Material( MaterNum ).GasSpecHeatRatio( 1 ) = GasSpecificHeatRatio( Material( MaterNum ).GasType( 1 ) );
+				for ( int ICoeff = 1; ICoeff <= 3; ++ICoeff ) {
+					Material( MaterNum ).GasCon( 1, ICoeff ) = GasCoeffsCon( Material( MaterNum ).GasType( 1 ), ICoeff );
+					Material( MaterNum ).GasVis( 1, ICoeff ) = GasCoeffsVis( Material( MaterNum ).GasType( 1 ), ICoeff );
+					Material( MaterNum ).GasCp( 1, ICoeff ) = GasCoeffsCp( Material( MaterNum ).GasType( 1 ), ICoeff );
+				}
 
-		// NFRC 201-2014 Equation 8-7
-		Real64 q_U = u_factor*fenestration_area*(out_air_temp - in_air_temp);
+				Real64 DenomRGas = ( Material( MaterNum ).GasCon( 1, 1 ) + Material( MaterNum ).GasCon( 1, 2 ) * 300.0 + Material( MaterNum ).GasCon( 1, 3 ) * 90000.0 );
+				NominalR( MaterNum ) = Material( MaterNum ).Thickness / DenomRGas;
 
-		// NFRC 201-2014 Equation 8-2
-		Real64 shgc = (q_total - q_U)/(fenestration_area*solar_inccident);
+			}
 
-		// if match not obtained adjust inputs
+			new_construct.TotLayers = number_of_new_materials;
 
-		// Deallocate construction specific arrays
-		AWinSurf.deallocate();
-		QRadSWwinAbs.deallocate();
-		QRadSWwinAbsLayer.deallocate();
+			for ( int Layer = 1; Layer <= number_of_new_materials; ++Layer ) {
+				new_construct.LayerPoint( Layer ) = Layer;
+			}
 
-		// end loop
+			Construct( 1 ) = new_construct;
+
+			NominalRforNominalUCalculation( 1 ) = 0.0;
+			for ( int Layer = 1; Layer <= Construct( 1 ).TotLayers; ++Layer ) {
+				NominalRforNominalUCalculation( 1 ) += NominalR( Construct( 1 ).LayerPoint( Layer ) );
+			}
+
+			CheckAndSetConstructionProperties( 1, ErrorsFound );
+
+			// Set frame and divider properties
+			if ( has_frame )
+			{
+				new_frame_divider.Name = ConstructAlphas( 1 ) + ":FRAME";
+				new_frame_divider.FrameWidth = frame_width;
+				new_frame_divider.FrameProjectionOut = 0.0;
+				new_frame_divider.FrameProjectionIn = 0.0;
+				new_frame_divider.FrameConductance = frame_conductance;
+				new_frame_divider.FrEdgeToCenterGlCondRatio = frame_edge_ratio;
+				new_frame_divider.FrameSolAbsorp = frame_solar_absorptivity;
+				new_frame_divider.FrameVisAbsorp = frame_visible_absorptivity;
+				new_frame_divider.FrameEmis = frame_IR_emissivity;
+				new_frame_divider.FrameEdgeWidth = 0.06355; // 2.5 in
+				new_frame_divider.DividerType = DividedLite;
+				new_frame_divider.DividerWidth = divider_width;
+				new_frame_divider.HorDividers = num_horizontal_dividers;
+				new_frame_divider.VertDividers = num_vertical_dividers;
+				new_frame_divider.DividerProjectionOut = 0.0;
+				new_frame_divider.DividerProjectionIn = 0.0;
+				new_frame_divider.DividerConductance = frame_conductance;
+				new_frame_divider.DivEdgeToCenterGlCondRatio = frame_edge_ratio;
+				new_frame_divider.DividerSolAbsorp = frame_solar_absorptivity;
+				new_frame_divider.DividerVisAbsorp = frame_visible_absorptivity;
+				new_frame_divider.DividerEmis = frame_IR_emissivity;
+				new_frame_divider.DividerEdgeWidth = 0.06355; // 2.5 in
+
+				SurfaceWindow( 1 ).FrameArea = fenestration_area - glazing_area;
+				SurfaceWindow( 1 ).DividerArea = divider_width*(num_horizontal_dividers*glazing_width + num_vertical_dividers*glazing_height - num_horizontal_dividers*num_vertical_dividers*divider_width);
+				Surface( 1 ).Area -= SurfaceWindow( 1 ).DividerArea;
+				SurfaceWindow( 1 ).GlazedFrac = Surface( 1 ).Area / ( Surface( 1 ).Area + SurfaceWindow( 1 ).DividerArea );
+
+
+				FrameDivider( 1 ) = new_frame_divider;
+
+				Surface( 1 ).FrameDivider = 1;
+			}
+			else
+			{
+				Surface( 1 ).FrameDivider = 0;
+			}
+
+			Surface( 1 ).Construction = 1; // This is the only construction available to the dummy surface. The actual surface will reference the real construction.
+
+
+			// Setup functions
+
+			InitGlassOpticalCalculations();
+
+			// Set up U-factor conditions
+			Real64 in_air_temp = 21.0;
+			Real64 out_air_temp = -18.0;
+			Real64 wind_speed = 5.5;
+			Real64 solar_inccident = 0.0;
+
+			calc_window_performance(in_air_temp, out_air_temp, wind_speed, solar_inccident);
+
+			u_factor = -WinHeatGain(1)/(fenestration_area*(in_air_temp - out_air_temp));
+
+			// Set up SHGC conditions
+			in_air_temp = 24.0;
+			out_air_temp = 32.0;
+			wind_speed = 2.75;
+			solar_inccident = 783.0;
+
+			calc_window_performance(in_air_temp, out_air_temp, wind_speed, solar_inccident);
+
+			Real64 q_total = WinHeatGain(1);
+
+			// NFRC 201-2014 Equation 8-7
+			Real64 q_U = u_factor*fenestration_area*(out_air_temp - in_air_temp);
+
+			// NFRC 201-2014 Equation 8-2
+			shgc = (q_total - q_U)/(fenestration_area*solar_inccident);
+
+			Real64 non_opaque_area_fraction = Surface( 1 ).Area/fenestration_area;
+			vt = POLYF(1.0,Construct( 1 ).TransVisBeamCoef( 1 ))*non_opaque_area_fraction;
+
+			// if match not obtained adjust inputs
+
+			// Deallocate construction specific arrays
+			AWinSurf.deallocate();
+			QRadSWwinAbs.deallocate();
+			QRadSWwinAbsLayer.deallocate();
+
+			if (!u_factor_set && !shgc_set && !vt_set) target_matched = true;
+
+			target_matched = true;
+
+		} // matching loop
 
 		ASHRAE1588RP_Flag = false;
 		KickOffSimulation = true;
+
+		// TODO This will trigger on the first ASHRAE 1588 construction found.
+		// It should be moved out of the construction loop to allow for multiple
+		// constructions.
+		if ( stand_alone_analysis )
+		{
+			// Write to file
+			int output_file;
+			output_file = GetNewUnitNumber();
+
+			{ IOFlags flags; flags.ACTION( "write" ); gio::open( output_file, ashrae1588_file_name, flags );}
+			gio::write( output_file, "(A)" ) << "Target U-factor: " + RoundSigDigits(target_u_factor,3);
+			gio::write( output_file, "(A)" ) << "Target SHGC: " + RoundSigDigits(target_shgc,3);
+			gio::write( output_file, "(A)" ) << "Target Visible Transmittance: " + RoundSigDigits(target_vt,3);
+
+			gio::write( output_file, "(A)" ) << "\nMatch U-factor: " + RoundSigDigits(u_factor,3);
+			gio::write( output_file, "(A)" ) << "Match SHGC: " + RoundSigDigits(shgc,3);
+			gio::write( output_file, "(A)" ) << "Match Visible Transmittance: " + RoundSigDigits(vt,3);
+
+			gio::close( output_file );
+
+
+
+			// Write to console
+			std::string Elapsed;
+			int Hours; // Elapsed Time Hour Reporting
+			int Minutes; // Elapsed Time Minute Reporting
+			Real64 Seconds; // Elapsed Time Second Reporting
+			gio::Fmt ETimeFmt( "(I2.2,'hr ',I2.2,'min ',F5.2,'sec')" );
+
+			Time_Finish = epElapsedTime();
+			if ( Time_Finish < Time_Start ) Time_Finish += 24.0 * 3600.0;
+			Elapsed_Time = Time_Finish - Time_Start;
+			Hours = Elapsed_Time / 3600.0;
+			Elapsed_Time -= Hours * 3600.0;
+			Minutes = Elapsed_Time / 60.0;
+			Elapsed_Time -= Minutes * 60.0;
+			Seconds = Elapsed_Time;
+			if ( Seconds < 0.0 ) Seconds = 0.0;
+			gio::write( Elapsed, ETimeFmt ) << Hours << Minutes << Seconds;
+
+			gio::write( "(1X,A)" ) << ( "EnergyPlus ASHRAE 1588-RP Window Construction Generated Successfully-- Elapsed Time=" + Elapsed );
+			exit (EXIT_SUCCESS);
+		}
 
 		// deallocate temporary arrays
 		remove_dummy_variables();
