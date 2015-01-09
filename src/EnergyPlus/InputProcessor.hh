@@ -1,15 +1,20 @@
 #ifndef InputProcessor_hh_INCLUDED
 #define InputProcessor_hh_INCLUDED
 
+// C++ Headers
+#include <iosfwd>
+
 // ObjexxFCL Headers
 #include <ObjexxFCL/FArray1D.hh>
 #include <ObjexxFCL/FArray1S.hh>
-#include <ObjexxFCL/gio_Fmt.hh>
 #include <ObjexxFCL/Optional.hh>
+#include <ObjexxFCL/string.functions.hh>
+#include <ObjexxFCL/Vector2.hh>
 
 // EnergyPlus Headers
 #include <EnergyPlus.hh>
 #include <DataGlobals.hh>
+#include <UtilityRoutines.hh>
 
 namespace EnergyPlus {
 
@@ -34,8 +39,6 @@ namespace InputProcessor {
 	extern std::string::size_type const MaxInputLineLength; // Maximum number of characters in an input line (in.idf, energy+.idd)
 	extern std::string::size_type const MaxFieldNameLength; // Maximum number of characters in a field name string
 	extern std::string const Blank;
-	extern std::string const AlphaNum; // Valid indicators for Alpha or Numeric fields (A or N)
-	extern gio::Fmt const fmta;
 	extern Real64 const DefAutoSizeValue;
 	extern Real64 const DefAutoCalculateValue;
 
@@ -51,8 +54,6 @@ namespace InputProcessor {
 	extern int NumSectionDefs; // Count of number of section defintions found in the IDD
 	extern int MaxObjectDefs; // Current "max" object defs (IDD), when reached will be reallocated and new Max set
 	extern int MaxSectionDefs; // Current "max" section defs (IDD), when reached will be reallocated and new Max set
-	extern int IDDFile; // Unit number for reading IDD (Energy+.idd)
-	extern int IDFFile; // Unit number for reading IDF (in.idf)
 	extern int NumLines; // Count of number of lines in IDF
 	extern int MaxIDFRecords; // Current "max" IDF records (lines), when reached will be reallocated and new Max set
 	extern int NumIDFRecords; // Count of number of IDF records
@@ -76,12 +77,13 @@ namespace InputProcessor {
 	extern int TotalAuditErrors; // Counting some warnings that go onto only the audit file
 	extern int NumSecretObjects; // Number of objects in "Secret Mode"
 	extern bool ProcessingIDD; // True when processing IDD, false when processing IDF
+	extern std::ostream * echo_stream; // Internal stream used for input file echoing (used for performance)
 
 	//Real Variables for Module
 	//na
 
 	//Character Variables for Module
-	extern std::string InputLine; // Each line can be up to MaxInputLineLength characters long
+	extern std::string InputLine;
 	extern FArray1D_string ListOfSections;
 	extern FArray1D_string ListOfObjects;
 	extern FArray1D_int iListOfObjects;
@@ -103,7 +105,6 @@ namespace InputProcessor {
 	extern bool RequiredObject; // Set to true when ReadInputLine has a required object
 	extern bool UniqueObject; // Set to true when ReadInputLine has a unique object
 	extern bool ExtensibleObject; // Set to true when ReadInputLine has an extensible object
-	extern bool StripCR; // If true, strip last character (<cr> off each schedule:file line)
 	extern int ExtensibleNumFields; // set to number when ReadInputLine has an extensible object
 	extern FArray1D_bool IDFRecordsGotten; // Denotes that this record has been "gotten" from the IDF
 
@@ -117,9 +118,9 @@ namespace InputProcessor {
 		bool MinMaxChk; // true when Min/Max has been added
 		int FieldNumber; // which field number this is
 		std::string FieldName; // Name of the field
-		FArray1D_string MinMaxString; // appropriate Min/Max Strings
-		FArray1D< Real64 > MinMaxValue; // appropriate Min/Max Values
-		FArray1D_int WhichMinMax; // =0 (none/invalid), =1 \min, =2 \min>, =3 \max, =4 \max<
+		Vector2_string MinMaxString; // appropriate Min/Max Strings
+		Vector2< Real64 > MinMaxValue; // appropriate Min/Max Values
+		Vector2_int WhichMinMax; // =0 (none/invalid), =1 \min, =2 \min>, =3 \max, =4 \max<
 		bool DefaultChk; // true when default has been entered
 		Real64 Default; // Default value
 		bool DefAutoSize; // Default value is "autosize"
@@ -133,9 +134,8 @@ namespace InputProcessor {
 		RangeCheckDef() :
 			MinMaxChk( false ),
 			FieldNumber( 0 ),
-			MinMaxString( 2, Blank ),
-			MinMaxValue( 2, 0.0 ),
-			WhichMinMax( 2, 0 ),
+			MinMaxValue( 0.0 ),
+			WhichMinMax( 0 ),
 			DefaultChk( false ),
 			Default( 0.0 ),
 			DefAutoSize( false ),
@@ -151,9 +151,9 @@ namespace InputProcessor {
 			bool const MinMaxChk, // true when Min/Max has been added
 			int const FieldNumber, // which field number this is
 			std::string const & FieldName, // Name of the field
-			FArray1_string const & MinMaxString, // appropriate Min/Max Strings
-			FArray1< Real64 > const & MinMaxValue, // appropriate Min/Max Values
-			FArray1_int const & WhichMinMax, // =0 (none/invalid), =1 \min, =2 \min>, =3 \max, =4 \max<
+			Vector2_string const & MinMaxString, // appropriate Min/Max Strings
+			Vector2< Real64 > const & MinMaxValue, // appropriate Min/Max Values
+			Vector2_int const & WhichMinMax, // =0 (none/invalid), =1 \min, =2 \min>, =3 \max, =4 \max<
 			bool const DefaultChk, // true when default has been entered
 			Real64 const Default, // Default value
 			bool const DefAutoSize, // Default value is "autosize"
@@ -166,9 +166,9 @@ namespace InputProcessor {
 			MinMaxChk( MinMaxChk ),
 			FieldNumber( FieldNumber ),
 			FieldName( FieldName ),
-			MinMaxString( 2, MinMaxString ),
-			MinMaxValue( 2, MinMaxValue ),
-			WhichMinMax( 2, WhichMinMax ),
+			MinMaxString( MinMaxString ),
+			MinMaxValue( MinMaxValue ),
+			WhichMinMax( WhichMinMax ),
 			DefaultChk( DefaultChk ),
 			Default( Default ),
 			DefAutoSize( DefAutoSize ),
@@ -416,7 +416,10 @@ namespace InputProcessor {
 	ProcessInput();
 
 	void
-	ProcessDataDicFile( bool & ErrorsFound ); // set to true if any errors flagged during IDD processing
+	ProcessDataDicFile(
+		std::istream & idd_stream,
+		bool & ErrorsFound // set to true if any errors flagged during IDD processing
+	);
 
 	void
 	AddSectionDef(
@@ -426,6 +429,7 @@ namespace InputProcessor {
 
 	void
 	AddObjectDefandParse(
+		std::istream & idd_stream,
 		std::string const & ProposedObject, // Proposed Object to Add
 		std::string::size_type & CurPos, // Current position (initially at first ',') of InputLine
 		bool & EndofFile, // End of File marker
@@ -433,7 +437,7 @@ namespace InputProcessor {
 	);
 
 	void
-	ProcessInputDataFile();
+	ProcessInputDataFile( std::istream & idf_stream );
 
 	void
 	ValidateSection(
@@ -443,6 +447,7 @@ namespace InputProcessor {
 
 	void
 	ValidateObjectandParse(
+		std::istream & idf_stream,
 		std::string const & ProposedObject,
 		std::string::size_type & CurPos,
 		bool & EndofFile
@@ -519,21 +524,28 @@ namespace InputProcessor {
 
 	void
 	ReadInputLine(
-		int const UnitNumber,
+		std::istream & in_stream,
 		std::string::size_type & CurPos,
 		bool & BlankLine,
-		int & InputLineLength,
+		bool & EndofFile
+	);
+
+	void
+	ReadInputLine(
+		std::istream & in_stream,
+		std::string::size_type & CurPos,
+		bool & BlankLine,
 		bool & EndofFile,
-		Optional_bool MinMax = _,
-		Optional_int WhichMinMax = _, // =0 (none/invalid), =1 \min, =2 \min>, =3 \max, =4 \max< //Autodesk:OPTIONAL Used without PRESENT check
-		Optional_string MinMaxString = _, //Autodesk:OPTIONAL Used without PRESENT check
-		Optional< Real64 > Value = _, //Autodesk:OPTIONAL Used without PRESENT check
-		Optional_bool Default = _,
-		Optional_string DefString = _, //Autodesk:OPTIONAL Used without PRESENT check
-		Optional_bool AutoSizable = _,
-		Optional_bool AutoCalculatable = _,
-		Optional_bool RetainCase = _, //Autodesk:OPTIONAL Used without PRESENT check
-		Optional_bool ErrorsFound = _ //Autodesk:OPTIONAL Used without PRESENT check
+		bool & MinMax,
+		int & WhichMinMax, // =0 (none/invalid), =1 \min, =2 \min>, =3 \max, =4 \max<
+		std::string & MinMaxString,
+		Real64 & Value,
+		bool & Default,
+		std::string & DefString,
+		bool & AutoSizable,
+		bool & AutoCalculatable,
+		bool & RetainCase,
+		bool & ErrorsFound
 	);
 
 	void
@@ -550,7 +562,7 @@ namespace InputProcessor {
 
 	void
 	ProcessMinMaxDefLine(
-		std::string const & UCInputLine, // part of input line starting \min or \max
+		std::string const & partLine, // part of input line starting \min or \max
 		int & WhichMinMax, // =0 (none/invalid), =1 \min, =2 \min>, =3 \max, =4 \max<
 		std::string & MinMaxString,
 		Real64 & Value,
@@ -574,7 +586,10 @@ namespace InputProcessor {
 		int const NumItems
 	)
 	{
-		return FindItemInList( String, FArray1D_string( ListOfItems ), NumItems );
+		for ( int Count = 1; Count <= NumItems; ++Count ) {
+			if ( String == ListOfItems( Count ) ) return Count;
+		}
+		return 0; // Not found
 	}
 
 	int
@@ -593,7 +608,24 @@ namespace InputProcessor {
 		int const NumItems
 	)
 	{
-		return FindItemInSortedList( String, FArray1D_string( ListOfItems ), NumItems );
+		int Probe( 0 );
+		int LBnd( 0 );
+		int UBnd( NumItems + 1 );
+		bool Found( false );
+		while ( ( ! Found ) || ( Probe != 0 ) ) {
+			Probe = ( UBnd - LBnd ) / 2;
+			if ( Probe == 0 ) break;
+			Probe += LBnd;
+			if ( equali( String, ListOfItems( Probe ) ) ) {
+				Found = true;
+				break;
+			} else if ( lessthani( String, ListOfItems( Probe ) ) ) {
+				UBnd = Probe;
+			} else {
+				LBnd = Probe;
+			}
+		}
+		return Probe;
 	}
 
 	int
@@ -612,17 +644,50 @@ namespace InputProcessor {
 		int const NumItems
 	)
 	{
-		return FindItem( String, FArray1D_string( ListOfItems ), NumItems );
+		int const item_number( FindItemInList( String, ListOfItems, NumItems ) );
+		if ( item_number != 0 ) return item_number;
+		for ( int Count = 1; Count <= NumItems; ++Count ) {
+			if ( equali( String, ListOfItems( Count ) ) ) return Count;
+		}
+		return 0; // Not found
 	}
 
 	std::string
 	MakeUPPERCase( std::string const & InputString ); // Input String
 
+	typedef char const * c_cstring;
+
+	inline
 	bool
-	SameString(
-		std::string const & TestString1, // First String to Test
-		std::string const & TestString2 // Second String to Test
-	);
+	SameString( std::string const & s, std::string const & t )
+	{
+		// case insensitive comparison
+		return equali( s, t );
+	}
+
+	inline
+	bool
+	SameString( std::string const & s, c_cstring const & t )
+	{
+		// case insensitive comparison
+		return equali( s, t );
+	}
+
+	inline
+	bool
+	SameString( c_cstring const & s, std::string const & t )
+	{
+		// case insensitive comparison
+		return equali( s, t );
+	}
+
+	inline
+	bool
+	SameString( c_cstring const & s, c_cstring const & t )
+	{
+		// case insensitive comparison
+		return equali( s, t );
+	}
 
 	void
 	VerifyName(
@@ -645,8 +710,25 @@ namespace InputProcessor {
 		bool & IsBlank,
 		std::string const & StringToDisplay
 	)
-	{
-		VerifyName( NameToVerify, FArray1D_string( NamesList ), NumOfNames, ErrorFound, IsBlank, StringToDisplay );
+	{ // Overload for member arrays: Implemented here to avoid copy to FArray_string to forward to other VerifyName
+		int Found;
+
+		ErrorFound = false;
+		if ( NumOfNames > 0 ) {
+			Found = FindItem( NameToVerify, NamesList, NumOfNames ); // Calls FindItem overload that accepts member arrays
+			if ( Found != 0 ) {
+				ShowSevereError( StringToDisplay + ", duplicate name=" + NameToVerify );
+				ErrorFound = true;
+			}
+		}
+
+		if ( NameToVerify.empty() ) {
+			ShowSevereError( StringToDisplay + ", cannot be blank" );
+			ErrorFound = true;
+			IsBlank = true;
+		} else {
+			IsBlank = false;
+		}
 	}
 
 	void
@@ -797,7 +879,7 @@ namespace InputProcessor {
 	//     Portions of the EnergyPlus software package have been developed and copyrighted
 	//     by other individuals, companies and institutions.  These portions have been
 	//     incorporated into the EnergyPlus software package under license.   For a complete
-	//     list of contributors, see "Notice" located in EnergyPlus.f90.
+	//     list of contributors, see "Notice" located in main.cc.
 
 	//     NOTICE: The U.S. Government is granted for itself and others acting on its
 	//     behalf a paid-up, nonexclusive, irrevocable, worldwide license in this data to

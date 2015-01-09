@@ -61,6 +61,8 @@ namespace EMSManager {
 	int const iMassFlowRateMinSetPoint( 108 ); // integer for node setpoint control type
 	int const iMassFlowRateMaxSetPoint( 109 ); // integer for node setpoint control type
 
+	static std::string const BlankString;
+
 	// DERIVED TYPE DEFINITIONS:
 
 	// MODULE VARIABLE TYPE DECLARATIONS:
@@ -542,7 +544,6 @@ namespace EMSManager {
 		using InputProcessor::GetObjectItem;
 		using InputProcessor::VerifyName;
 		using InputProcessor::FindItemInList;
-		using InputProcessor::MakeUPPERCase;
 		using InputProcessor::SameString;
 		using InputProcessor::GetObjectDefMaxArgs;
 		//  USE OutputProcessor, ONLY: GetReportVarPointerForEMS
@@ -556,7 +557,7 @@ namespace EMSManager {
 
 		// Locals
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		static std::string const Blank;
+		// na
 
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 
@@ -642,17 +643,11 @@ namespace EMSManager {
 		MaxNumAlphas = max( MaxNumAlphas, NumAlphas );
 
 		cAlphaFieldNames.allocate( MaxNumAlphas );
-		cAlphaFieldNames = "";
 		cAlphaArgs.allocate( MaxNumAlphas );
-		cAlphaArgs = "";
-		lAlphaFieldBlanks.allocate( MaxNumAlphas );
-		lAlphaFieldBlanks = false;
+		lAlphaFieldBlanks.dimension( MaxNumAlphas, false );
 		cNumericFieldNames.allocate( MaxNumNumbers );
-		cNumericFieldNames = "";
-		rNumericArgs.allocate( MaxNumNumbers );
-		rNumericArgs = 0.0;
-		lNumericFieldBlanks.allocate( MaxNumNumbers );
-		lNumericFieldBlanks = false;
+		rNumericArgs.dimension( MaxNumNumbers, 0.0 );
+		lNumericFieldBlanks.dimension( MaxNumNumbers, false );
 
 		cCurrentModuleObject = "EnergyManagementSystem:Sensor";
 		if ( NumSensors > 0 ) {
@@ -687,7 +682,7 @@ namespace EMSManager {
 					}
 				}
 
-				if ( cAlphaArgs( 2 ) == "*" ) cAlphaArgs( 2 ) = Blank;
+				if ( cAlphaArgs( 2 ) == "*" ) cAlphaArgs( 2 ).clear();
 				Sensor( SensorNum ).UniqueKeyName = cAlphaArgs( 2 );
 				Sensor( SensorNum ).OutputVarName = cAlphaArgs( 3 );
 
@@ -1306,7 +1301,7 @@ namespace EMSManager {
 		// na
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		// na
+		static gio::Fmt fmtA( "(A)" );
 
 		// INTERFACE BLOCK SPECIFICATIONS:
 		// na
@@ -1315,50 +1310,29 @@ namespace EMSManager {
 		// na
 
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
-		int ActuatorLoop;
-		FArray1D_string TempTypeName;
-		FArray1D_string TempCntrlType;
-		FArray1D_bool NonUniqueARRflag;
-		int FoundTypeName;
-		int FoundControlType;
 
 		if ( OutputEMSActuatorAvailFull ) {
 
-			gio::write( OutputEMSFileUnitNum, "(A)" ) << "! <EnergyManagementSystem:Actuator Available>, Component Unique Name, Component Type,  Control Type, Units";
-			for ( ActuatorLoop = 1; ActuatorLoop <= numEMSActuatorsAvailable; ++ActuatorLoop ) {
-				gio::write( OutputEMSFileUnitNum, "(A)" ) << "EnergyManagementSystem:Actuator Available," + EMSActuatorAvailable( ActuatorLoop ).UniqueIDName + ',' + EMSActuatorAvailable( ActuatorLoop ).ComponentTypeName + ',' + EMSActuatorAvailable( ActuatorLoop ).ControlTypeName + ',' + EMSActuatorAvailable( ActuatorLoop ).Units;
+			gio::write( OutputEMSFileUnitNum, fmtA ) << "! <EnergyManagementSystem:Actuator Available>, Component Unique Name, Component Type,  Control Type, Units";
+			for ( int ActuatorLoop = 1; ActuatorLoop <= numEMSActuatorsAvailable; ++ActuatorLoop ) {
+				gio::write( OutputEMSFileUnitNum, fmtA ) << "EnergyManagementSystem:Actuator Available," + EMSActuatorAvailable( ActuatorLoop ).UniqueIDName + ',' + EMSActuatorAvailable( ActuatorLoop ).ComponentTypeName + ',' + EMSActuatorAvailable( ActuatorLoop ).ControlTypeName + ',' + EMSActuatorAvailable( ActuatorLoop ).Units;
 			}
 		} else if ( OutputEMSActuatorAvailSmall ) {
-			gio::write( OutputEMSFileUnitNum, "(A)" ) << "! <EnergyManagementSystem:Actuator Available>, *, Component Type, Control Type, Units";
-
-			TempTypeName.allocate( numEMSActuatorsAvailable );
-			TempTypeName = EMSActuatorAvailable.ComponentTypeName();
-			TempCntrlType.allocate( numEMSActuatorsAvailable );
-			TempCntrlType = EMSActuatorAvailable.ControlTypeName();
-			NonUniqueARRflag.allocate( numEMSActuatorsAvailable );
-			NonUniqueARRflag = false;
-			for ( ActuatorLoop = 1; ActuatorLoop <= numEMSActuatorsAvailable; ++ActuatorLoop ) {
+			gio::write( OutputEMSFileUnitNum, fmtA ) << "! <EnergyManagementSystem:Actuator Available>, *, Component Type, Control Type, Units";
+			int FoundTypeName;
+			int FoundControlType;
+			for ( int ActuatorLoop = 1; ActuatorLoop <= numEMSActuatorsAvailable; ++ActuatorLoop ) {
 				if ( ActuatorLoop + 1 <= numEMSActuatorsAvailable ) {
-					FoundTypeName = FindItemInList( TempTypeName( ActuatorLoop ), TempTypeName( {ActuatorLoop + 1,numEMSActuatorsAvailable} ), ( numEMSActuatorsAvailable - ( ActuatorLoop + 1 ) ) );
-					FoundControlType = FindItemInList( TempCntrlType( ActuatorLoop ), TempCntrlType( {ActuatorLoop + 1,numEMSActuatorsAvailable} ), ( numEMSActuatorsAvailable - ( ActuatorLoop + 1 ) ) );
+					FoundTypeName = FindItemInList( EMSActuatorAvailable( ActuatorLoop ).ComponentTypeName, EMSActuatorAvailable( {ActuatorLoop + 1,numEMSActuatorsAvailable} ).ComponentTypeName(), numEMSActuatorsAvailable - ( ActuatorLoop + 1 ) );
+					FoundControlType = FindItemInList( EMSActuatorAvailable( ActuatorLoop ).ControlTypeName, EMSActuatorAvailable( {ActuatorLoop + 1,numEMSActuatorsAvailable} ).ControlTypeName(), numEMSActuatorsAvailable - ( ActuatorLoop + 1 ) );
 				} else {
 					FoundTypeName = 1;
 					FoundControlType = 1;
 				}
-				if ( ( FoundTypeName != 0 ) && ( FoundControlType != 0 ) ) {
-					NonUniqueARRflag( ActuatorLoop ) = true;
+				if ( ( FoundTypeName == 0 ) || ( FoundControlType == 0 ) ) {
+					gio::write( OutputEMSFileUnitNum, fmtA ) << "EnergyManagementSystem:Actuator Available, *," + EMSActuatorAvailable( ActuatorLoop ).ComponentTypeName + ',' + EMSActuatorAvailable( ActuatorLoop ).ControlTypeName + ',' + EMSActuatorAvailable( ActuatorLoop ).Units;
 				}
 			}
-			for ( ActuatorLoop = 1; ActuatorLoop <= numEMSActuatorsAvailable; ++ActuatorLoop ) {
-				if ( ! NonUniqueARRflag( ActuatorLoop ) ) {
-					gio::write( OutputEMSFileUnitNum, "(A)" ) << "EnergyManagementSystem:Actuator Available, *," + EMSActuatorAvailable( ActuatorLoop ).ComponentTypeName + ',' + EMSActuatorAvailable( ActuatorLoop ).ControlTypeName + ',' + EMSActuatorAvailable( ActuatorLoop ).Units;
-				}
-			}
-
-			TempTypeName.deallocate();
-			TempCntrlType.deallocate();
-			NonUniqueARRflag.deallocate();
-
 		}
 
 	}
@@ -1391,7 +1365,7 @@ namespace EMSManager {
 		// na
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		// na
+		static gio::Fmt fmtA( "(A)" );
 
 		// INTERFACE BLOCK SPECIFICATIONS:
 		// na
@@ -1400,40 +1374,25 @@ namespace EMSManager {
 		// na
 
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
-		int InternalDataLoop;
-		FArray1D_string TempTypeName;
-		FArray1D_bool UniqueARRflag;
-		int Found;
 
 		if ( OutputEMSInternalVarsFull ) {
 
-			gio::write( OutputEMSFileUnitNum, "(A)" ) << "! <EnergyManagementSystem:InternalVariable Available>, Unique Name, Internal Data Type, Units ";
-			for ( InternalDataLoop = 1; InternalDataLoop <= numEMSInternalVarsAvailable; ++InternalDataLoop ) {
-				gio::write( OutputEMSFileUnitNum, "(A)" ) << "EnergyManagementSystem:InternalVariable Available," + EMSInternalVarsAvailable( InternalDataLoop ).UniqueIDName + ',' + EMSInternalVarsAvailable( InternalDataLoop ).DataTypeName + ',' + EMSInternalVarsAvailable( InternalDataLoop ).Units;
+			gio::write( OutputEMSFileUnitNum, fmtA ) << "! <EnergyManagementSystem:InternalVariable Available>, Unique Name, Internal Data Type, Units ";
+			for ( int InternalDataLoop = 1; InternalDataLoop <= numEMSInternalVarsAvailable; ++InternalDataLoop ) {
+				gio::write( OutputEMSFileUnitNum, fmtA ) << "EnergyManagementSystem:InternalVariable Available," + EMSInternalVarsAvailable( InternalDataLoop ).UniqueIDName + ',' + EMSInternalVarsAvailable( InternalDataLoop ).DataTypeName + ',' + EMSInternalVarsAvailable( InternalDataLoop ).Units;
 			}
 
 		} else if ( OutputEMSInternalVarsSmall ) {
-			gio::write( OutputEMSFileUnitNum, "(A)" ) << "! <EnergyManagementSystem:InternalVariable Available>, *, Internal Data Type";
-			TempTypeName.allocate( numEMSInternalVarsAvailable );
-			TempTypeName = EMSInternalVarsAvailable.DataTypeName();
-			UniqueARRflag.allocate( numEMSInternalVarsAvailable );
-			UniqueARRflag = false;
-			for ( InternalDataLoop = 1; InternalDataLoop <= numEMSInternalVarsAvailable; ++InternalDataLoop ) {
+			gio::write( OutputEMSFileUnitNum, fmtA ) << "! <EnergyManagementSystem:InternalVariable Available>, *, Internal Data Type";
+			for ( int InternalDataLoop = 1; InternalDataLoop <= numEMSInternalVarsAvailable; ++InternalDataLoop ) {
+				int Found( 0 );
 				if ( InternalDataLoop + 1 <= numEMSInternalVarsAvailable ) {
-					Found = FindItemInList( TempTypeName( InternalDataLoop ), TempTypeName( {InternalDataLoop + 1,numEMSInternalVarsAvailable} ), ( numEMSInternalVarsAvailable - ( InternalDataLoop + 1 ) ) );
-				} else {
-					Found = 0;
+					Found = FindItemInList( EMSInternalVarsAvailable( InternalDataLoop ).DataTypeName, EMSInternalVarsAvailable( {InternalDataLoop + 1,numEMSInternalVarsAvailable} ).DataTypeName(), numEMSInternalVarsAvailable - ( InternalDataLoop + 1 ) );
 				}
-				if ( Found == 0 ) UniqueARRflag( InternalDataLoop ) = true;
-			}
-			for ( InternalDataLoop = 1; InternalDataLoop <= numEMSInternalVarsAvailable; ++InternalDataLoop ) {
-				if ( UniqueARRflag( InternalDataLoop ) ) {
-					gio::write( OutputEMSFileUnitNum, "(A)" ) << "EnergyManagementSystem:InternalVariable Available, *," + EMSInternalVarsAvailable( InternalDataLoop ).DataTypeName + ',' + EMSInternalVarsAvailable( InternalDataLoop ).Units;
+				if ( Found == 0 ) {
+					gio::write( OutputEMSFileUnitNum, fmtA ) << "EnergyManagementSystem:InternalVariable Available, *," + EMSInternalVarsAvailable( InternalDataLoop ).DataTypeName + ',' + EMSInternalVarsAvailable( InternalDataLoop ).Units;
 				}
 			}
-
-			TempTypeName.deallocate();
-			UniqueARRflag.deallocate();
 		}
 
 	}
@@ -1481,8 +1440,8 @@ namespace EMSManager {
 
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 		int LoopNode; // local do loop index
-		bool lDummy; // not going to setup a pointer to logical control
-		// (could this ever cause a fault?)
+		static bool lDummy; // not going to setup a pointer to logical control //Fix Changed to static: Passed to SetupEMSActuator as source of persistent Reference
+		// (could this ever cause a fault?) // It caused illegal memory access/corruption
 		// make it optional in Setup call?
 		int OutsideAirNodeNum; // local do loop index
 		int NodeNum; // local index.
@@ -1700,12 +1659,12 @@ namespace EMSManager {
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 		static int numAirLoops( 0 );
 		static int Loop( 0 );
-		bool lDummy;
+		static bool lDummy; //Fix Changed to static: Passed to SetupEMSActuator as source of persistent Reference
 
 		lDummy = false;
 
 		if ( allocated( PriAirSysAvailMgr ) ) {
-			numAirLoops = size( PriAirSysAvailMgr );
+			numAirLoops = isize( PriAirSysAvailMgr );
 			for ( Loop = 1; Loop <= numAirLoops; ++Loop ) {
 				SetupEMSActuator( "AirLoopHVAC", PrimaryAirSystem( Loop ).Name, "Availability Status", "[ ]", lDummy, PriAirSysAvailMgr( Loop ).AvailStatus );
 
@@ -2051,7 +2010,7 @@ namespace EMSManager {
 	//     Portions of the EnergyPlus software package have been developed and copyrighted
 	//     by other individuals, companies and institutions.  These portions have been
 	//     incorporated into the EnergyPlus software package under license.   For a complete
-	//     list of contributors, see "Notice" located in EnergyPlus.f90.
+	//     list of contributors, see "Notice" located in main.cc.
 
 	//     NOTICE: The U.S. Government is granted for itself and others acting on its
 	//     behalf a paid-up, nonexclusive, irrevocable, worldwide license in this data to
@@ -2107,21 +2066,17 @@ SetupEMSActuator(
 	int ActuatorVariableNum;
 	bool FoundActuatorType;
 	bool FoundDuplicate;
-	std::string UpperCaseObjectType;
-	std::string UpperCaseObjectName;
-	std::string UpperCaseActuatorName;
 
 	// Object Data
-	FArray1D< EMSActuatorAvailableType > TempEMSActuatorAvailable;
 
 	// FLOW:
 
 	FoundActuatorType = false;
 	FoundDuplicate = false;
 
-	UpperCaseObjectType = MakeUPPERCase( cComponentTypeName );
-	UpperCaseObjectName = MakeUPPERCase( cUniqueIDName );
-	UpperCaseActuatorName = MakeUPPERCase( cControlTypeName );
+	std::string const UpperCaseObjectType( MakeUPPERCase( cComponentTypeName ) );
+	std::string const UpperCaseObjectName( MakeUPPERCase( cUniqueIDName ) );
+	std::string const UpperCaseActuatorName( MakeUPPERCase( cControlTypeName ) );
 
 	for ( ActuatorVariableNum = 1; ActuatorVariableNum <= numEMSActuatorsAvailable; ++ActuatorVariableNum ) {
 		if ( ( EMSActuatorAvailable( ActuatorVariableNum ).ComponentTypeName == UpperCaseObjectType ) && ( EMSActuatorAvailable( ActuatorVariableNum ).ControlTypeName == UpperCaseActuatorName ) ) {
@@ -2145,13 +2100,7 @@ SetupEMSActuator(
 			maxEMSActuatorsAvailable = varsAvailableAllocInc;
 		} else {
 			if ( numEMSActuatorsAvailable + 1 > maxEMSActuatorsAvailable ) {
-				TempEMSActuatorAvailable.allocate( maxEMSActuatorsAvailable + varsAvailableAllocInc );
-				TempEMSActuatorAvailable( {1,numEMSActuatorsAvailable} ) = EMSActuatorAvailable( {1,numEMSActuatorsAvailable} );
-				EMSActuatorAvailable.deallocate();
-				EMSActuatorAvailable.allocate( maxEMSActuatorsAvailable + varsAvailableAllocInc );
-				EMSActuatorAvailable( {1,numEMSActuatorsAvailable} ) = TempEMSActuatorAvailable( {1,numEMSActuatorsAvailable} );
-				TempEMSActuatorAvailable.deallocate();
-				maxEMSActuatorsAvailable += varsAvailableAllocInc;
+				EMSActuatorAvailable.redimension( maxEMSActuatorsAvailable += varsAvailableAllocInc );
 			}
 			++numEMSActuatorsAvailable;
 		}
@@ -2206,12 +2155,8 @@ SetupEMSActuator(
 	int ActuatorVariableNum;
 	bool FoundActuatorType;
 	bool FoundDuplicate;
-	std::string UpperCaseObjectType;
-	std::string UpperCaseObjectName;
-	std::string UpperCaseActuatorName;
 
 	// Object Data
-	FArray1D< EMSActuatorAvailableType > TempEMSActuatorAvailable;
 
 	// FLOW:
 	//  IF (.NOT. ActuatorFileOpen) THEN
@@ -2223,9 +2168,9 @@ SetupEMSActuator(
 	FoundActuatorType = false;
 	FoundDuplicate = false;
 
-	UpperCaseObjectType = MakeUPPERCase( cComponentTypeName );
-	UpperCaseObjectName = MakeUPPERCase( cUniqueIDName );
-	UpperCaseActuatorName = MakeUPPERCase( cControlTypeName );
+	std::string const UpperCaseObjectType( MakeUPPERCase( cComponentTypeName ) );
+	std::string const UpperCaseObjectName( MakeUPPERCase( cUniqueIDName ) );
+	std::string const UpperCaseActuatorName( MakeUPPERCase( cControlTypeName ) );
 
 	for ( ActuatorVariableNum = 1; ActuatorVariableNum <= numEMSActuatorsAvailable; ++ActuatorVariableNum ) {
 		if ( ( EMSActuatorAvailable( ActuatorVariableNum ).ComponentTypeName == UpperCaseObjectType ) && ( EMSActuatorAvailable( ActuatorVariableNum ).ControlTypeName == UpperCaseActuatorName ) ) {
@@ -2249,13 +2194,7 @@ SetupEMSActuator(
 			maxEMSActuatorsAvailable = varsAvailableAllocInc;
 		} else {
 			if ( numEMSActuatorsAvailable + 1 > maxEMSActuatorsAvailable ) {
-				TempEMSActuatorAvailable.allocate( maxEMSActuatorsAvailable + varsAvailableAllocInc );
-				TempEMSActuatorAvailable( {1,numEMSActuatorsAvailable} ) = EMSActuatorAvailable( {1,numEMSActuatorsAvailable} );
-				EMSActuatorAvailable.deallocate();
-				EMSActuatorAvailable.allocate( maxEMSActuatorsAvailable + varsAvailableAllocInc );
-				EMSActuatorAvailable( {1,numEMSActuatorsAvailable} ) = TempEMSActuatorAvailable( {1,numEMSActuatorsAvailable} );
-				TempEMSActuatorAvailable.deallocate();
-				maxEMSActuatorsAvailable += varsAvailableAllocInc;
+				EMSActuatorAvailable.redimension( maxEMSActuatorsAvailable += varsAvailableAllocInc );
 			}
 			++numEMSActuatorsAvailable;
 		}
@@ -2310,20 +2249,16 @@ SetupEMSActuator(
 	int ActuatorVariableNum;
 	bool FoundActuatorType;
 	bool FoundDuplicate;
-	std::string UpperCaseObjectType;
-	std::string UpperCaseObjectName;
-	std::string UpperCaseActuatorName;
 
 	// Object Data
-	FArray1D< EMSActuatorAvailableType > TempEMSActuatorAvailable;
 
 	// FLOW:
 	FoundActuatorType = false;
 	FoundDuplicate = false;
 
-	UpperCaseObjectType = MakeUPPERCase( cComponentTypeName );
-	UpperCaseObjectName = MakeUPPERCase( cUniqueIDName );
-	UpperCaseActuatorName = MakeUPPERCase( cControlTypeName );
+	std::string const UpperCaseObjectType( MakeUPPERCase( cComponentTypeName ) );
+	std::string const UpperCaseObjectName( MakeUPPERCase( cUniqueIDName ) );
+	std::string const UpperCaseActuatorName( MakeUPPERCase( cControlTypeName ) );
 
 	for ( ActuatorVariableNum = 1; ActuatorVariableNum <= numEMSActuatorsAvailable; ++ActuatorVariableNum ) {
 		if ( ( EMSActuatorAvailable( ActuatorVariableNum ).ComponentTypeName == UpperCaseObjectType ) && ( EMSActuatorAvailable( ActuatorVariableNum ).ControlTypeName == UpperCaseActuatorName ) ) {
@@ -2347,13 +2282,7 @@ SetupEMSActuator(
 			maxEMSActuatorsAvailable = varsAvailableAllocInc;
 		} else {
 			if ( numEMSActuatorsAvailable + 1 > maxEMSActuatorsAvailable ) {
-				TempEMSActuatorAvailable.allocate( maxEMSActuatorsAvailable + varsAvailableAllocInc );
-				TempEMSActuatorAvailable( {1,numEMSActuatorsAvailable} ) = EMSActuatorAvailable( {1,numEMSActuatorsAvailable} );
-				EMSActuatorAvailable.deallocate();
-				EMSActuatorAvailable.allocate( maxEMSActuatorsAvailable + varsAvailableAllocInc );
-				EMSActuatorAvailable( {1,numEMSActuatorsAvailable} ) = TempEMSActuatorAvailable( {1,numEMSActuatorsAvailable} );
-				TempEMSActuatorAvailable.deallocate();
-				maxEMSActuatorsAvailable += varsAvailableAllocInc;
+				EMSActuatorAvailable.redimension( maxEMSActuatorsAvailable += varsAvailableAllocInc );
 			}
 			++numEMSActuatorsAvailable;
 		}
@@ -2418,7 +2347,6 @@ SetupEMSInternalVariable(
 	bool FoundDuplicate;
 
 	// Object Data
-	FArray1D< InternalVarsAvailableType > tmpEMSInternalVarsAvailable;
 
 	FoundInternalDataType = false;
 	FoundDuplicate = false;
@@ -2442,13 +2370,7 @@ SetupEMSInternalVariable(
 			maxEMSInternalVarsAvailable = varsAvailableAllocInc;
 		} else {
 			if ( numEMSInternalVarsAvailable + 1 > maxEMSInternalVarsAvailable ) {
-				tmpEMSInternalVarsAvailable.allocate( maxEMSInternalVarsAvailable + varsAvailableAllocInc );
-				tmpEMSInternalVarsAvailable( {1,numEMSInternalVarsAvailable} ) = EMSInternalVarsAvailable( {1,numEMSInternalVarsAvailable} );
-				EMSInternalVarsAvailable.deallocate();
-				EMSInternalVarsAvailable.allocate( maxEMSInternalVarsAvailable + varsAvailableAllocInc );
-				EMSInternalVarsAvailable( {1,numEMSInternalVarsAvailable} ) = tmpEMSInternalVarsAvailable( {1,numEMSInternalVarsAvailable} );
-				tmpEMSInternalVarsAvailable.deallocate();
-				maxEMSInternalVarsAvailable += varsAvailableAllocInc;
+				EMSInternalVarsAvailable.redimension( maxEMSInternalVarsAvailable += varsAvailableAllocInc );
 			}
 			++numEMSInternalVarsAvailable;
 		}
@@ -2510,7 +2432,6 @@ SetupEMSInternalVariable(
 	bool FoundDuplicate;
 
 	// Object Data
-	FArray1D< InternalVarsAvailableType > tmpEMSInternalVarsAvailable;
 
 	FoundInternalDataType = false;
 	FoundDuplicate = false;
@@ -2534,13 +2455,7 @@ SetupEMSInternalVariable(
 			maxEMSInternalVarsAvailable = varsAvailableAllocInc;
 		} else {
 			if ( numEMSInternalVarsAvailable + 1 > maxEMSInternalVarsAvailable ) {
-				tmpEMSInternalVarsAvailable.allocate( maxEMSInternalVarsAvailable + varsAvailableAllocInc );
-				tmpEMSInternalVarsAvailable( {1,numEMSInternalVarsAvailable} ) = EMSInternalVarsAvailable( {1,numEMSInternalVarsAvailable} );
-				EMSInternalVarsAvailable.deallocate();
-				EMSInternalVarsAvailable.allocate( maxEMSInternalVarsAvailable + varsAvailableAllocInc );
-				EMSInternalVarsAvailable( {1,numEMSInternalVarsAvailable} ) = tmpEMSInternalVarsAvailable( {1,numEMSInternalVarsAvailable} );
-				tmpEMSInternalVarsAvailable.deallocate();
-				maxEMSInternalVarsAvailable += varsAvailableAllocInc;
+				EMSInternalVarsAvailable.redimension( maxEMSInternalVarsAvailable += varsAvailableAllocInc );
 			}
 			++numEMSInternalVarsAvailable;
 		}

@@ -123,6 +123,10 @@ namespace SingleDuct {
 	int const FixedMin( 3 );
 	int NumATMixers( 0 );
 
+	static std::string const fluidNameSteam( "STEAM" );
+	static std::string const fluidNameWater( "WATER" );
+	static std::string const BlankString;
+
 	// DERIVED TYPE DEFINITIONS
 
 	//MODULE VARIABLE DECLARATIONS:
@@ -376,8 +380,7 @@ namespace SingleDuct {
 		Sys.allocate( NumSys );
 		SysInlet.allocate( NumSys );
 		SysOutlet.allocate( NumSys );
-		CheckEquipName.allocate( NumSys );
-		CheckEquipName = true;
+		CheckEquipName.dimension( NumSys, true );
 
 		MassFlow1.allocate( NumSys );
 		MassFlow2.allocate( NumSys );
@@ -409,17 +412,11 @@ namespace SingleDuct {
 		MaxAlphas = max( MaxAlphas, NumAlphas );
 
 		Alphas.allocate( MaxAlphas );
-		Alphas = "";
 		cAlphaFields.allocate( MaxAlphas );
-		cAlphaFields = "";
 		cNumericFields.allocate( MaxNums );
-		cNumericFields = "";
-		Numbers.allocate( MaxNums );
-		Numbers = 0.0;
-		lAlphaBlanks.allocate( MaxAlphas );
-		lAlphaBlanks = true;
-		lNumericBlanks.allocate( MaxNums );
-		lNumericBlanks = true;
+		Numbers.dimension( MaxNums, 0.0 );
+		lAlphaBlanks.dimension( MaxAlphas, true );
+		lNumericBlanks.dimension( MaxNums, true );
 
 		//Start Loading the System Input
 		for ( SysIndex = 1; SysIndex <= NumVAVSys; ++SysIndex ) {
@@ -1471,7 +1468,8 @@ namespace SingleDuct {
 		// SUBROUTINE ARGUMENT DEFINITIONS:
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		// na
+		static std::string const RoutineName( "InitSys" );
+		static std::string const RoutineNameFull( "InitHVACSingleDuct" );
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -1578,9 +1576,9 @@ namespace SingleDuct {
 			MassFlowDiff( SysNum ) = 1.0e-10 * Sys( SysNum ).AirMassFlowRateMax;
 
 			if ( Sys( SysNum ).HWLoopNum > 0 && Sys( SysNum ).ReheatComp_Num != HCoilType_SteamAirHeating ) { //protect early calls before plant is setup
-				rho = GetDensityGlycol( PlantLoop( Sys( SysNum ).HWLoopNum ).FluidName, InitConvTemp, PlantLoop( Sys( SysNum ).HWLoopNum ).FluidIndex, "InitSys" );
+				rho = GetDensityGlycol( PlantLoop( Sys( SysNum ).HWLoopNum ).FluidName, InitConvTemp, PlantLoop( Sys( SysNum ).HWLoopNum ).FluidIndex, RoutineName );
 			} else {
-				rho = 1000.;
+				rho = 1000.0;
 			}
 
 			Sys( SysNum ).MaxReheatWaterFlow = rho * Sys( SysNum ).MaxReheatWaterVolFlow;
@@ -1597,8 +1595,8 @@ namespace SingleDuct {
 			}
 
 			if ( Sys( SysNum ).ReheatComp_Num == HCoilType_SteamAirHeating ) {
-				SteamTemp = 100.;
-				SteamDensity = GetSatDensityRefrig( "STEAM", SteamTemp, 1.0, Sys( SysNum ).FluidIndex, "InitHVACSingleDuct" );
+				SteamTemp = 100.0;
+				SteamDensity = GetSatDensityRefrig( fluidNameSteam, SteamTemp, 1.0, Sys( SysNum ).FluidIndex, RoutineNameFull );
 				Sys( SysNum ).MaxReheatSteamFlow = SteamDensity * Sys( SysNum ).MaxReheatSteamVolFlow;
 				Sys( SysNum ).MinReheatSteamFlow = SteamDensity * Sys( SysNum ).MinReheatSteamVolFlow;
 			}
@@ -1737,7 +1735,8 @@ namespace SingleDuct {
 		// SUBROUTINE ARGUMENT DEFINITIONS:
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		// na
+		static std::string const RoutineName( "SizeSys" );
+		static std::string const RoutineNameFull( "SizeHVACSingleDuct" );
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -2045,9 +2044,9 @@ namespace SingleDuct {
 							DesCoilLoad = DesZoneHeatLoad + PsyCpAirFnWTdb( ZoneDesHumRat, 0.5 * ( CoilInTemp + ZoneDesTemp ) ) * DesMassFlow * ( ZoneDesTemp - CoilInTemp );
 							if ( DesCoilLoad >= SmallLoad ) {
 
-								rho = GetDensityGlycol( PlantLoop( Sys( SysNum ).HWLoopNum ).FluidName, 60., PlantLoop( Sys( SysNum ).HWLoopNum ).FluidIndex, "SizeSys" );
+								rho = GetDensityGlycol( PlantLoop( Sys( SysNum ).HWLoopNum ).FluidName, 60.0, PlantLoop( Sys( SysNum ).HWLoopNum ).FluidIndex, RoutineName );
 
-								Cp = GetSpecificHeatGlycol( PlantLoop( Sys( SysNum ).HWLoopNum ).FluidName, 60., PlantLoop( Sys( SysNum ).HWLoopNum ).FluidIndex, "SizeSys" );
+								Cp = GetSpecificHeatGlycol( PlantLoop( Sys( SysNum ).HWLoopNum ).FluidName, 60.0, PlantLoop( Sys( SysNum ).HWLoopNum ).FluidIndex, RoutineName );
 
 								MaxReheatWaterVolFlowDes = DesCoilLoad / ( PlantSizData( PltSizHeatNum ).DeltaT * Cp * rho );
 							} else {
@@ -2115,12 +2114,12 @@ namespace SingleDuct {
 							DesCoilLoad = DesZoneHeatLoad + PsyCpAirFnWTdb( ZoneDesHumRat, 0.5 * ( CoilInTemp + ZoneDesTemp ) ) * DesMassFlow * ( ZoneDesTemp - CoilInTemp );
 							if ( DesCoilLoad >= SmallLoad ) {
 								TempSteamIn = 100.00;
-								EnthSteamInDry = GetSatEnthalpyRefrig( "STEAM", TempSteamIn, 1.0, Sys( SysNum ).FluidIndex, "SizeHVACSingleDuct" );
-								EnthSteamOutWet = GetSatEnthalpyRefrig( "STEAM", TempSteamIn, 0.0, Sys( SysNum ).FluidIndex, "SizeHVACSingleDuct" );
+								EnthSteamInDry = GetSatEnthalpyRefrig( fluidNameSteam, TempSteamIn, 1.0, Sys( SysNum ).FluidIndex, RoutineNameFull );
+								EnthSteamOutWet = GetSatEnthalpyRefrig( fluidNameSteam, TempSteamIn, 0.0, Sys( SysNum ).FluidIndex, RoutineNameFull );
 								LatentHeatSteam = EnthSteamInDry - EnthSteamOutWet;
-								SteamDensity = GetSatDensityRefrig( "STEAM", TempSteamIn, 1.0, Sys( SysNum ).FluidIndex, "SizeHVACSingleDuct" );
+								SteamDensity = GetSatDensityRefrig( fluidNameSteam, TempSteamIn, 1.0, Sys( SysNum ).FluidIndex, RoutineNameFull );
 
-								Cp = GetSpecificHeatGlycol( "WATER", PlantSizData( PltSizHeatNum ).ExitTemp, DummyWaterIndex, "SizeSys" );
+								Cp = GetSpecificHeatGlycol( fluidNameWater, PlantSizData( PltSizHeatNum ).ExitTemp, DummyWaterIndex, RoutineName );
 								MaxReheatSteamVolFlowDes = DesCoilLoad / ( SteamDensity * ( LatentHeatSteam + PlantSizData( PltSizHeatNum ).DeltaT * Cp ) );
 							} else {
 								MaxReheatSteamVolFlowDes = 0.0;
@@ -5069,7 +5068,7 @@ namespace SingleDuct {
 	//     Portions of the EnergyPlus software package have been developed and copyrighted
 	//     by other individuals, companies and institutions.  These portions have been
 	//     incorporated into the EnergyPlus software package under license.   For a complete
-	//     list of contributors, see "Notice" located in EnergyPlus.f90.
+	//     list of contributors, see "Notice" located in main.cc.
 
 	//     NOTICE: The U.S. Government is granted for itself and others acting on its
 	//     behalf a paid-up, nonexclusive, irrevocable, worldwide license in this data to

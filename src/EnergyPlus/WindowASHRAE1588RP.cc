@@ -88,6 +88,9 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 		int TotMaterialsSave = TotMaterials;
 
 		// Save Materials
+
+		FArray1D< MaterialProperties > MaterialSave;
+		FArray1D< Real64 > NominalRSave;
 		MaterialSave.allocate( TotMaterials );
 		NominalRSave.allocate( TotMaterials );
 		MaterialSave = Material;
@@ -101,8 +104,9 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 		FArray1D< MaterialProperties > new_materials;
 		FArray1D< Real64 > new_nominal_R;
 
-
+		FArray1D< ConstructionData > ConstructSave;
 		FArray1D< Real64 > NominalRforNominalUCalculationSave;
+		FArray1D< Real64 > NominalUSave;
 		int TotConstructsSave = TotConstructs;
 
 		// Save Constructions -- The list will be deleted so that the only
@@ -1077,8 +1081,8 @@ void create_dummy_variables()
 	Zone( 1 ).SurfaceLast = 1;
 
 	MAT.allocate(1);
-	ZoneAirHumRatAvg.allocate(1);
-	ZoneAirHumRat.allocate(1);
+	ZoneAirHumRatAvg.dimension(1, 0.0);
+	ZoneAirHumRat.dimension(1, 0.0);
 	DSZone.allocate(1);
 	DGZone.allocate(1);
 	DBZoneSSG.allocate(1);
@@ -1091,9 +1095,6 @@ void create_dummy_variables()
 	ZoneDifSolFrExtWinsRepEnergy.allocate(1);
 	ZoneBmSolFrIntWinsRep.allocate(1);
 	ZoneBmSolFrIntWinsRepEnergy.allocate(1);
-
-	ZoneAirHumRatAvg(1) = 0.0;
-	ZoneAirHumRat(1) = 0.0;
 
 	// Surface
 	Surface.allocate(1);
@@ -1115,15 +1116,15 @@ void create_dummy_variables()
 
 	HConvIn.allocate(1);
 	TempEffBulkAir.allocate(1);
-	QHTRadSysSurf.allocate(1);
-	QHWBaseboardSurf.allocate(1);
-	QSteamBaseboardSurf.allocate(1);
-	QElecBaseboardSurf.allocate(1);
+	QHTRadSysSurf.dimension(1, 0.0);
+	QHWBaseboardSurf.dimension(1, 0.0);
+	QSteamBaseboardSurf.dimension(1, 0.0);
+	QElecBaseboardSurf.dimension(1, 0.0);
 	CosIncAng.allocate( 1, 1, 1 );
 	SunlitFrac.allocate(1, 1, 1);
 	AOSurf.allocate(1);
 	SunlitFracWithoutReveal.allocate(1,1,1);
-	QRadThermInAbs.allocate(1);
+	QRadThermInAbs.dimension(1, 0.0);
 	AirSkyRadSplit.allocate(1);
 	QRadSWOutIncident.allocate(1);
 	WinHeatGain.allocate(1);
@@ -1132,7 +1133,7 @@ void create_dummy_variables()
 	WinGainIRGlazToZoneRep.allocate(1);
 	WinGapConvHtFlowRep.allocate(1);
 	WinGapConvHtFlowRepEnergy.allocate(1);
-	QS.allocate(1);
+	QS.dimension(1, 0.0);
 	WinLossSWZoneToOutWinRep.allocate(1);
 	WinSysSolTransmittance.allocate(1);
 	WinSysSolAbsorptance.allocate(1);
@@ -1146,7 +1147,7 @@ void create_dummy_variables()
 	QRadOutReport.allocate(1);
 	AISurf.allocate(1);
 	AOSurf.allocate(1);
-	ISABSF.allocate(1);
+	ISABSF.dimension(1, 0.0);
 	BmIncInsSurfIntensRep.allocate(1);
 	BmIncInsSurfAmountRep.allocate(1);
 	BmIncInsSurfAmountRepEnergy.allocate(1);
@@ -1160,7 +1161,7 @@ void create_dummy_variables()
 	WinBmBmSolarEnergy.allocate(1);
 	WinBmDifSolarEnergy.allocate(1);
 	WinDirSolTransAtIncAngle.allocate(1);
-	AnisoSkyMult.allocate(1);
+	AnisoSkyMult.dimension(1, 0.0); // This may need to change if NFRC adds a diffuse component for SHGC tests
 	CosIncidenceAngle.allocate(1);
 	QRadSWOutIncidentBeam.allocate(1);
 	QRadSWOutIncidentSkyDiffuse.allocate(1);
@@ -1176,19 +1177,9 @@ void create_dummy_variables()
 	InsideFrameCondensationFlag.allocate(1);
 	InsideDividerCondensationFlag.allocate(1);
 
-	QHTRadSysSurf(1) = 0.0;
-	QHWBaseboardSurf(1) = 0.0;
-	QSteamBaseboardSurf(1) = 0.0;
-	QElecBaseboardSurf(1) = 0.0;
-	QRadThermInAbs(1) = 0.0;
-	QS(1) = 0.0;
-	ISABSF(1) = 0.0;
 	CosIncAng(1,1,1) = 1.0;
 	SunlitFrac(1,1,1) = 1.0;
 	SunlitFracWithoutReveal(1,1,1) = 1.0;
-	AnisoSkyMult(1) = 0.0;  // This may need to change if NFRC adds a diffuse component for SHGC tests
-
-
 
 }
 

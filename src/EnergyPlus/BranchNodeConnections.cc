@@ -45,7 +45,7 @@ namespace BranchNodeConnections {
 
 	// Data
 	// MODULE PARAMETER DEFINITIONS:
-	std::string const Blank;
+	static std::string const BlankString;
 
 	// DERIVED TYPE DEFINITIONS:
 	// na
@@ -134,13 +134,7 @@ namespace BranchNodeConnections {
 		if ( MakeNew ) {
 			++NumOfNodeConnections;
 			if ( NumOfNodeConnections > 1 && NumOfNodeConnections > MaxNumOfNodeConnections ) {
-				tmpNodeConnections.allocate( MaxNumOfNodeConnections + NodeConnectionAlloc );
-				tmpNodeConnections( {1,NumOfNodeConnections - 1} ) = NodeConnections( {1,NumOfNodeConnections - 1} );
-				NodeConnections.deallocate();
-				NodeConnections.allocate( MaxNumOfNodeConnections + NodeConnectionAlloc );
-				NodeConnections( {1,NumOfNodeConnections - 1} ) = tmpNodeConnections( {1,NumOfNodeConnections - 1} );
-				tmpNodeConnections.deallocate();
-				MaxNumOfNodeConnections += NodeConnectionAlloc;
+				NodeConnections.redimension( MaxNumOfNodeConnections += NodeConnectionAlloc );
 			} else if ( NumOfNodeConnections == 1 ) {
 				NodeConnections.allocate( NodeConnectionAlloc );
 				MaxNumOfNodeConnections = NodeConnectionAlloc;
@@ -160,13 +154,7 @@ namespace BranchNodeConnections {
 			if ( present( InputFieldName ) ) {
 				++NumOfAirTerminalNodes;
 				if ( NumOfAirTerminalNodes > 1 && NumOfAirTerminalNodes > MaxNumOfAirTerminalNodes ) {
-					tmpEqNodeConnections.allocate( MaxNumOfAirTerminalNodes );
-					tmpEqNodeConnections( {1,NumOfAirTerminalNodes - 1} ) = AirTerminalNodeConnections( {1,NumOfAirTerminalNodes - 1} );
-					AirTerminalNodeConnections.deallocate();
-					AirTerminalNodeConnections.allocate( MaxNumOfAirTerminalNodes + EqNodeConnectionAlloc );
-					AirTerminalNodeConnections( {1,NumOfAirTerminalNodes - 1} ) = tmpEqNodeConnections( {1,NumOfAirTerminalNodes - 1} );
-					tmpEqNodeConnections.deallocate();
-					MaxNumOfAirTerminalNodes += EqNodeConnectionAlloc;
+					AirTerminalNodeConnections.redimension( MaxNumOfAirTerminalNodes += EqNodeConnectionAlloc );
 				} else if ( NumOfAirTerminalNodes == 1 ) {
 					AirTerminalNodeConnections.allocate( EqNodeConnectionAlloc );
 					MaxNumOfAirTerminalNodes = EqNodeConnectionAlloc;
@@ -797,9 +785,9 @@ namespace BranchNodeConnections {
 		bool ErrInObject;
 		int Which;
 
-		InletNodeName = Blank;
+		InletNodeName = BlankString;
 		InletNodeNum = 0;
-		OutletNodeName = Blank;
+		OutletNodeName = BlankString;
 		OutletNodeNum = 0;
 		ErrInObject = false;
 
@@ -1160,10 +1148,10 @@ namespace BranchNodeConnections {
 		OutletNodeNums.allocate( NumOutlets );
 		OutletFluidStreams.allocate( NumOutlets );
 
-		InletNodeNames = Blank;
+		InletNodeNames = BlankString;
 		InletNodeNums = 0;
 		InletFluidStreams = 0;
-		OutletNodeNames = Blank;
+		OutletNodeNames = BlankString;
 		OutletNodeNums = 0;
 		OutletFluidStreams = 0;
 		NumInlets = 0;
@@ -1262,11 +1250,11 @@ namespace BranchNodeConnections {
 		//unused1109  LOGICAL Matched
 		int CountMatchLoop;
 
-		ChildrenCType = Blank;
-		ChildrenCName = Blank;
-		InletNodeName = Blank;
+		ChildrenCType = BlankString;
+		ChildrenCName = BlankString;
+		InletNodeName = BlankString;
 		InletNodeNum = 0;
-		OutletNodeName = Blank;
+		OutletNodeName = BlankString;
 		OutletNodeNum = 0;
 		ErrInObject = false;
 
@@ -1282,10 +1270,10 @@ namespace BranchNodeConnections {
 				ChildOutNodeName.allocate( NumChildren );
 				ChildInNodeNum.allocate( NumChildren );
 				ChildOutNodeNum.allocate( NumChildren );
-				ChildCType = Blank;
-				ChildCName = Blank;
-				ChildInNodeName = Blank;
-				ChildOutNodeName = Blank;
+				ChildCType = BlankString;
+				ChildCName = BlankString;
+				ChildInNodeName = BlankString;
+				ChildOutNodeName = BlankString;
 				ChildInNodeNum = 0;
 				ChildOutNodeNum = 0;
 				CountNum = 0;
@@ -1335,7 +1323,7 @@ namespace BranchNodeConnections {
 								InletNodeNum( CountNum ) = ChildInNodeNum( Loop );
 								OutletNodeName( CountNum ) = ChildOutNodeName( Loop );
 								OutletNodeNum( CountNum ) = ChildOutNodeNum( Loop );
-								ChildInNodeName( Loop ) = Blank; // So it won't match anymore
+								ChildInNodeName( Loop ).clear(); // So it won't match anymore
 								//              Matched=.TRUE.
 								MatchNodeName = ChildOutNodeName( Loop );
 								break;
@@ -1357,7 +1345,7 @@ namespace BranchNodeConnections {
 					}
 					if ( MatchNodeName != ParentOutletNodeName ) {
 						for ( Loop = 1; Loop <= NumChildren; ++Loop ) {
-							if ( ChildInNodeName( Loop ) == Blank ) continue;
+							if ( ChildInNodeName( Loop ).empty() ) continue;
 							if ( ChildOutNodeName( Loop ) == ParentOutletNodeName ) break;
 							//            CALL ShowSevereError('GetChildrenData: Sorting for flow connection order..'//  &
 							//                                 'Required Child Node, not matched.  Expected (Last) Outlet Node='//  &
@@ -1369,7 +1357,7 @@ namespace BranchNodeConnections {
 						}
 					}
 					for ( Loop = 1; Loop <= NumChildren; ++Loop ) {
-						if ( ChildInNodeName( Loop ) == Blank ) continue;
+						if ( ChildInNodeName( Loop ).empty() ) continue;
 						++CountNum;
 						ChildrenCType( CountNum ) = ChildCType( Loop );
 						ChildrenCName( CountNum ) = ChildCName( Loop );
@@ -1451,7 +1439,6 @@ namespace BranchNodeConnections {
 		int Found2;
 
 		// Object Data
-		FArray1D< ComponentListData > TempCompSets;
 
 		ParentTypeUC = MakeUPPERCase( ParentType );
 		CompTypeUC = MakeUPPERCase( CompType );
@@ -1559,22 +1546,7 @@ namespace BranchNodeConnections {
 			}
 		}
 		if ( Found == 0 ) {
-			++NumCompSets;
-			TempCompSets.allocate( NumCompSets );
-			if ( NumCompSets > 1 ) {
-				TempCompSets( {1,NumCompSets - 1} ) = CompSets;
-				CompSets.deallocate();
-			}
-			TempCompSets( NumCompSets ).CName = Blank;
-			TempCompSets( NumCompSets ).CType = Blank;
-			TempCompSets( NumCompSets ).InletNodeName = Blank;
-			TempCompSets( NumCompSets ).OutletNodeName = Blank;
-			TempCompSets( NumCompSets ).ParentCType = Blank;
-			TempCompSets( NumCompSets ).ParentCName = Blank;
-			TempCompSets( NumCompSets ).Description = "UNDEFINED";
-			CompSets.allocate( NumCompSets );
-			CompSets = TempCompSets;
-			TempCompSets.deallocate();
+			CompSets.redimension( ++NumCompSets );
 			CompSets( NumCompSets ).ParentCType = ParentTypeUC;
 			CompSets( NumCompSets ).ParentCName = ParentName;
 			CompSets( NumCompSets ).CType = CompTypeUC;
@@ -1631,8 +1603,7 @@ namespace BranchNodeConnections {
 		FArray1D_bool AlreadyNoted;
 
 		// Test component sets created by branches
-		AlreadyNoted.allocate( NumCompSets );
-		AlreadyNoted = false;
+		AlreadyNoted.dimension( NumCompSets, false );
 		for ( Count = 1; Count <= NumCompSets; ++Count ) {
 			for ( Other = 1; Other <= NumCompSets; ++Other ) {
 				if ( Count == Other ) continue;
@@ -1802,8 +1773,7 @@ namespace BranchNodeConnections {
 		FArray1D_bool AlreadyNoted;
 
 		// Test component sets created by branches
-		AlreadyNoted.allocate( NumCompSets );
-		AlreadyNoted = false;
+		AlreadyNoted.dimension( NumCompSets, false );
 		for ( Count = 1; Count <= NumCompSets; ++Count ) {
 			for ( Other = 1; Other <= NumCompSets; ++Other ) {
 				if ( Count == Other ) continue;
@@ -2002,8 +1972,7 @@ namespace BranchNodeConnections {
 
 		if ( CountOfItems > 0 ) {
 
-			AllNumbersInList.allocate( CountOfItems );
-			AllNumbersInList = 0;
+			AllNumbersInList.dimension( CountOfItems, 0 );
 			CountOfItems = 0;
 
 			for ( Count = 1; Count <= NumItems; ++Count ) {
@@ -2026,7 +1995,7 @@ namespace BranchNodeConnections {
 	//     Portions of the EnergyPlus software package have been developed and copyrighted
 	//     by other individuals, companies and institutions.  These portions have been
 	//     incorporated into the EnergyPlus software package under license.   For a complete
-	//     list of contributors, see "Notice" located in EnergyPlus.f90.
+	//     list of contributors, see "Notice" located in main.cc.
 
 	//     NOTICE: The U.S. Government is granted for itself and others acting on its
 	//     behalf a paid-up, nonexclusive, irrevocable, worldwide license in this data to

@@ -52,7 +52,7 @@ namespace General {
 	// parts of the simulation.
 
 	// MODULE PARAMETER DEFINITIONS
-	// na
+	static std::string const BlankString;
 
 	// DERIVED TYPE DEFINITIONS
 	// na
@@ -296,7 +296,7 @@ namespace General {
 		// FUNCTION ARGUMENT DEFINITIONS:
 
 		// FUNCTION PARAMETER DEFINITIONS:
-		Real64 const DeltaAngRad( Pi / 36. ); // Profile angle increment (rad)
+		Real64 const DeltaAngRad( Pi / 36.0 ); // Profile angle increment (rad)
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -458,7 +458,6 @@ namespace General {
 
 		// Using/Aliasing
 		using DataGlobals::Pi;
-		using DataGlobals::PiOvr2;
 		using DataSurfaces::MaxSlatAngs;
 
 		// Return value
@@ -468,7 +467,8 @@ namespace General {
 		// FUNCTION ARGUMENT DEFINITIONS:
 
 		// FUNCTION PARAMETER DEFINITIONS:
-		Real64 const DeltaAng( Pi / ( double( MaxSlatAngs ) - 1.0 ) );
+		static Real64 const DeltaAng( Pi / ( double( MaxSlatAngs ) - 1.0 ) );
+		static Real64 const DeltaAng_inv( ( double( MaxSlatAngs ) - 1.0 ) / Pi );
 
 		// FUNCTION LOCAL VARIABLE DECLARATIONS:
 		Real64 InterpFac; // Interpolation factor
@@ -485,8 +485,8 @@ namespace General {
 		}
 
 		if ( VarSlats ) { // Variable-angle slats
-			IBeta = 1 + int( SlatAng1 / DeltaAng );
-			InterpFac = ( SlatAng1 - DeltaAng * ( IBeta - 1 ) ) / DeltaAng;
+			IBeta = 1 + int( SlatAng1 * DeltaAng_inv );
+			InterpFac = ( SlatAng1 - DeltaAng * ( IBeta - 1 ) ) * DeltaAng_inv;
 			InterpSlatAng = PropArray( IBeta ) + InterpFac * ( PropArray( min( MaxSlatAngs, IBeta + 1 ) ) - PropArray( IBeta ) );
 		} else { // Fixed-angle slats or shade
 			InterpSlatAng = PropArray( 1 );
@@ -896,7 +896,9 @@ namespace General {
 		// FUNCTION ARGUMENT DEFINITIONS:
 
 		// FUNCTION PARAMETER DEFINITIONS:
-		// na
+		static std::string const NAN_string( "NAN" );
+		static std::string const ZEROOOO( "0.000000000000000000000000000" );
+		static gio::Fmt fmtLD( "*" );
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -906,13 +908,13 @@ namespace General {
 
 		// FUNCTION LOCAL VARIABLE DECLARATIONS:
 
-		if ( std::isnan( RealValue ) ) return "NAN";
+		if ( std::isnan( RealValue ) ) return NAN_string;
 
 		std::string String; // Working string
 		if ( RealValue != 0.0 ) {
-			gio::write( String, "*" ) << RealValue;
+			gio::write( String, fmtLD ) << RealValue;
 		} else {
-			String = "0.000000000000000000000000000";
+			String = ZEROOOO;
 		}
 		std::string::size_type const EPos = index( String, 'E' ); // Position of E in original string format xxEyy
 		std::string EString; // E string retained from original string
@@ -969,7 +971,7 @@ namespace General {
 		// FUNCTION ARGUMENT DEFINITIONS:
 
 		// FUNCTION PARAMETER DEFINITIONS:
-		// na
+		static gio::Fmt fmtLD( "*" );
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -980,7 +982,7 @@ namespace General {
 		// FUNCTION LOCAL VARIABLE DECLARATIONS:
 		std::string String; // Working string
 
-		gio::write( String, "*" ) << IntegerValue;
+		gio::write( String, fmtLD ) << IntegerValue;
 		return stripped( String );
 	}
 
@@ -1018,6 +1020,9 @@ namespace General {
 
 		// FUNCTION PARAMETER DEFINITIONS:
 		static std::string const DigitChar( "01234567890" );
+		static std::string const NAN_string( "NAN" );
+		static std::string const ZEROOOO( "0.000000000000000000000000000" );
+		static gio::Fmt fmtLD( "*" );
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -1027,13 +1032,13 @@ namespace General {
 
 		// FUNCTION LOCAL VARIABLE DECLARATIONS:
 
-		if ( std::isnan( RealValue ) ) return "NAN";
+		if ( std::isnan( RealValue ) ) return NAN_string;
 
 		std::string String; // Working string
 		if ( RealValue != 0.0 ) {
-			gio::write( String, "*" ) << RealValue;
+			gio::write( String, fmtLD ) << RealValue;
 		} else {
-			String = "0.000000000000000000000000000";
+			String = ZEROOOO;
 		}
 
 		std::string::size_type const EPos = index( String, 'E' ); // Position of E in original string format xxEyy
@@ -1155,7 +1160,7 @@ namespace General {
 		// FUNCTION ARGUMENT DEFINITIONS:
 
 		// FUNCTION PARAMETER DEFINITIONS:
-		// na
+		static gio::Fmt fmtLD( "*" );
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -1166,7 +1171,7 @@ namespace General {
 		// FUNCTION LOCAL VARIABLE DECLARATIONS:
 		std::string String; // Working string
 
-		gio::write( String, "*" ) << IntegerValue;
+		gio::write( String, fmtLD ) << IntegerValue;
 		return stripped( String );
 	}
 
@@ -1178,7 +1183,7 @@ namespace General {
 		//       AUTHOR         Linda Lawrie
 		//       DATE WRITTEN   September 2005
 		//       MODIFIED       na
-		//       RE-ENGINEERED  na
+		//       RE-ENGINEERED  July 2014, Performance and refinements, Stuart Mentzer
 
 		// PURPOSE OF THIS FUNCTION:
 		// Remove trailing zeroes from output strings.
@@ -1193,13 +1198,14 @@ namespace General {
 		// na
 
 		// Return value
-		std::string ResultString;
+		// na
 
 		// Locals
 		// FUNCTION ARGUMENT DEFINITIONS:
 
 		// FUNCTION PARAMETER DEFINITIONS:
-		// na
+		static std::string const ED( "ED" );
+		static std::string const zero_string( "0." );
 
 		// INTERFACE BLOCK SPECIFICATIONS:
 		// na
@@ -1209,24 +1215,72 @@ namespace General {
 
 		// FUNCTION LOCAL VARIABLE DECLARATIONS:
 
-		std::string::size_type Pos = scan( InputString, "ED" );
-		if ( Pos == std::string::npos ) {
-			Pos = scan( InputString, '.' );
-			if ( Pos != std::string::npos ) {
-				Pos = scan( InputString, "123456789.", true );
-				if ( Pos != std::string::npos ) {
-					ResultString = InputString.substr( 0, Pos + 1 );
-				} else {
-					ResultString = "0.";
-				}
-			} else { // no decimal, an integer.  leave as is
-				ResultString = InputString;
-			}
-		} else { // for now, ignore x.xExx
-			ResultString = InputString;
-		}
+		assert( ! has_any_of( InputString, "ed" ) ); //Pre Not using lowercase exponent letter
+		assert( InputString == stripped( InputString ) ); //Pre Already stripped surrounding spaces
 
-		return ResultString;
+		if ( has( InputString, '.' ) && ( ! has_any_of( InputString, ED ) ) ) { // In +/-<digits>.<digits> format
+			std::string::size_type const pos( InputString.find_last_not_of( '0' ) );
+			if ( pos + 1 < InputString.length() ) {
+				switch ( pos ) { // Handle [+/-].000... format
+				case 0u: // .0*
+					return zero_string;
+				case 1u:
+					if ( InputString[ 1 ] == '.' ) {
+						char const c0( InputString[ 0 ] );
+						if ( ( c0 == '+' ) || ( c0 == '-' ) ) {
+							return zero_string;
+						}
+					}
+				default:
+					return InputString.substr( 0, InputString.find_last_not_of( '0' ) + 1 );
+				}
+			} else { // No trailing zeros
+				return InputString;
+			}
+		} else { // Not in +/-<digits>.<digits> format
+			return InputString;
+		}
+	}
+
+	std::string &
+	strip_trailing_zeros( std::string & InputString )
+	{
+		// FUNCTION INFORMATION:
+		//       AUTHOR         Stuart Mentzer (in-place version of RemoveTrailingZeros by Linda Lawrie)
+		//       DATE WRITTEN   July 2014
+		//       MODIFIED       na
+		//       RE-ENGINEERED  na
+
+		// PURPOSE OF THIS FUNCTION:
+		// Remove trailing fractional zeros from floating point representation strings in place.
+
+		static std::string const ED( "ED" );
+		static std::string const zero_string( "0." );
+
+		assert( ! has_any_of( InputString, "ed" ) ); //Pre Not using lowercase exponent letter
+		assert( InputString == stripped( InputString ) ); //Pre Already stripped surrounding spaces
+
+		if ( has( InputString, '.' ) && ( ! has_any_of( InputString, ED ) ) ) { // Has decimal point and no exponent part
+			std::string::size_type const pos( InputString.find_last_not_of( '0' ) );
+			if ( pos + 1 < InputString.length() ) {
+				switch ( pos ) { // Handle [+/-].000... format
+				case 0u: // .0*
+					InputString = zero_string;
+					break;
+				case 1u:
+					if ( InputString[ 1 ] == '.' ) {
+						char const c0( InputString[ 0 ] );
+						if ( ( c0 == '+' ) || ( c0 == '-' ) ) {
+							InputString = zero_string;
+							break;
+						}
+					}
+				default:
+					InputString.erase( pos + 1 );
+				}
+			}
+		}
+		return InputString; // Allows chaining
 	}
 
 	void
@@ -1272,28 +1326,19 @@ namespace General {
 		// DERIVED TYPE DEFINITIONS
 
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
-		int i; // loop index
-		int j; // inner loop index
-		FArray1D< Real64 > TempData; // a scratch array
+		FArray1D< Real64 > TempData( 3 * NumDataItems ); // a scratch array
 
-		TempData.allocate( 3 * NumDataItems );
-
-		for ( i = 1; i <= NumDataItems; ++i ) {
-			TempData( i ) = DataIn( i );
-			TempData( NumDataItems + i ) = DataIn( i );
-			TempData( 2 * NumDataItems + i ) = DataIn( i );
+		for ( int i = 1; i <= NumDataItems; ++i ) {
+			TempData( i ) = TempData( NumDataItems + i ) = TempData( 2 * NumDataItems + i ) = DataIn( i );
 			SmoothedData( i ) = 0.0;
 		}
 
-		for ( i = 1; i <= NumDataItems; ++i ) {
-			for ( j = 1; j <= NumItemsInAvg; ++j ) {
+		for ( int i = 1; i <= NumDataItems; ++i ) {
+			for ( int j = 1; j <= NumItemsInAvg; ++j ) {
 				SmoothedData( i ) += TempData( NumDataItems + i - NumItemsInAvg + j );
 			}
 			SmoothedData( i ) /= double( NumItemsInAvg );
 		}
-
-		TempData.deallocate();
-
 	}
 
 	void
@@ -1347,7 +1392,7 @@ namespace General {
 		int TokenDay;
 		int TokenMonth;
 		int TokenWeekday;
-		int TokenYear;
+		int TokenYear; // what should this be initialized to?
 
 		FstNum = int( ProcessNumber( String, errFlag ) );
 		DateType = -1;
@@ -1423,7 +1468,6 @@ namespace General {
 		// SUBROUTINE ARGUMENT DEFINITIONS:
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		static std::string const Blank;
 		static int const NumSingleChars( 3 );
 		static FArray1D_string const SingleChars( NumSingleChars, { "/", ":", "-" } );
 		static int const NumDoubleChars( 6 );
@@ -1479,13 +1523,13 @@ namespace General {
 		}
 
 		strip( CurrentString );
-		if ( CurrentString == Blank ) {
+		if ( CurrentString == BlankString ) {
 			ShowSevereError( "Invalid date field=" + String );
 			ErrorsFound = true;
 		} else {
 			Loop = 0;
 			while ( Loop < 3 ) { // Max of 3 fields
-				if ( CurrentString == Blank ) break;
+				if ( CurrentString == BlankString ) break;
 				Pos = index( CurrentString, ' ' );
 				++Loop;
 				if ( Pos == std::string::npos ) Pos = CurrentString.length();
@@ -1712,24 +1756,22 @@ namespace General {
 		static FArray1D_int EndDayofMonth( 12, { 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 } );
 		// End day numbers of each month (without Leap Year)
 
-		{ auto const SELECT_CASE_var( Month );
-
-		if ( SELECT_CASE_var == 1 ) {
+		if ( Month == 1 ) {
 			//                                       CASE 1: JANUARY
 			JulianDay = Day;
 
-		} else if ( SELECT_CASE_var == 2 ) {
+		} else if ( Month == 2 ) {
 			//                                       CASE 2: FEBRUARY
 			JulianDay = Day + EndDayofMonth( 1 );
 
-		} else if ( ( SELECT_CASE_var >= 3 ) && ( SELECT_CASE_var <= 12 ) ) {
+		} else if ( ( Month >= 3 ) && ( Month <= 12 ) ) {
 			//                                       CASE 3: REMAINING MONTHS
 			JulianDay = Day + EndDayofMonth( Month - 1 ) + LeapYearValue;
 
 		} else {
 			JulianDay = 0;
 
-		}}
+		}
 
 		return JulianDay;
 
@@ -1892,8 +1934,8 @@ namespace General {
 		// FUNCTION ARGUMENT DEFINITIONS:
 
 		// FUNCTION PARAMETER DEFINITIONS:
-		static gio::Fmt const TStmpFmt( "(I2.2,':',F3.0)" );
-		static gio::Fmt const TStmpFmti( "(I2.2,':',I2.2)" );
+		static gio::Fmt TStmpFmt( "(I2.2,':',F3.0)" );
+		static gio::Fmt TStmpFmti( "(I2.2,':',I2.2)" );
 		Real64 const FracToMin( 60.0 );
 
 		// INTERFACE BLOCK SPECIFICATIONS
@@ -2102,8 +2144,8 @@ namespace General {
 	Iterate(
 		Real64 & ResultX, // ResultX is the final Iteration result passed back to the calling routine
 		Real64 const Tol, // Tolerance for Convergence
-		Real64 & X0, // Current value of X
-		Real64 & Y0, // Current value of the function Y(X)
+		Real64 const X0, // Current value of X
+		Real64 const Y0, // Current value of the function Y(X)
 		Real64 & X1, // First Previous values of X
 		Real64 & Y1, // First Previous values of Y(X1)
 		int const Iter, // Number of iterations
@@ -2642,7 +2684,7 @@ namespace General {
 
 		// PURPOSE OF THIS FUNCTION:
 		// This function creates the time stamp string from the time value specified in seconds.
-		// Inspired by similar function CreateSysTimeIntervalString() in General.f90
+		// Inspired by similar function CreateSysTimeIntervalString() in General.cc
 		// However, this function provides better accuracy for sub-minute time steps
 		// by also showing information down to the 10th of a second.
 		// Note that Time is expected to be specified in REAL(r64).
@@ -2663,7 +2705,7 @@ namespace General {
 		// FUNCTION ARGUMENT DEFINITIONS:
 
 		// FUNCTION PARAMETER DEFINITIONS:
-		static gio::Fmt const TStampFmt( "(I2.2,':',I2.2,':',F4.1)" );
+		static gio::Fmt TStampFmt( "(I2.2,':',I2.2,':',F4.1)" );
 
 		// INTERFACE BLOCK SPECIFICATIONS:
 		// na
@@ -2720,7 +2762,7 @@ namespace General {
 		// PURPOSE OF THIS FUNCTION:
 		// This function creates the time stamp with the current time interval from start and end
 		// time values specified in seconds.
-		// Inspired by similar function CreateSysTimeIntervalString() in General.f90
+		// Inspired by similar function CreateSysTimeIntervalString() in General.cc
 
 		// METHODOLOGY EMPLOYED:
 		// na
@@ -3188,63 +3230,6 @@ namespace General {
 	}
 
 	void
-	ReallocateRealArray(
-		FArray1D< Real64 > & Array,
-		int & ArrayMax, // Current and resultant dimension for Array
-		int const ArrayInc // increment for redimension
-	)
-	{
-
-		// SUBROUTINE INFORMATION:
-		//       AUTHOR         Linda K. Lawrie
-		//       DATE WRITTEN   October 2012
-		//       MODIFIED       na
-		//       RE-ENGINEERED  na
-
-		// PURPOSE OF THIS SUBROUTINE:
-		// This subroutine reallocates (preserving data) a REAL(r64) array.
-
-		// METHODOLOGY EMPLOYED:
-		// na
-
-		// REFERENCES:
-		// na
-
-		// USE STATEMENTS:
-		// na
-
-		// Argument array dimensioning
-
-		// Locals
-		// SUBROUTINE ARGUMENT DEFINITIONS:
-
-		// SUBROUTINE PARAMETER DEFINITIONS:
-		// na
-
-		// INTERFACE BLOCK SPECIFICATIONS:
-		// na
-
-		// DERIVED TYPE DEFINITIONS:
-		// na
-
-		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
-		FArray1D< Real64 > NewArray;
-
-		NewArray.allocate( ArrayMax + ArrayInc );
-		NewArray = 0.0;
-
-		if ( ArrayMax > 0 ) {
-			NewArray( {1,ArrayMax} ) = Array( {1,ArrayMax} );
-		}
-		Array.deallocate();
-		ArrayMax += ArrayInc;
-		Array.allocate( ArrayMax );
-		Array = NewArray;
-		NewArray.deallocate();
-
-	}
-
-	void
 	CheckCreatedZoneItemName(
 		std::string const & calledFrom, // routine called from
 		std::string const & CurrentObject, // object being parsed
@@ -3305,8 +3290,8 @@ namespace General {
 			ShowWarningError( calledFrom + CurrentObject + " Combination of ZoneList and Object Name generate a name too long." );
 			ShowContinueError( "Object Name=\"" + ItemName + "\"." );
 			ShowContinueError( "ZoneList/Zone Name=\"" + ZoneName + "\"." );
-			ShowContinueError( "Item length=[" + RoundSigDigits( ItemLength ) + "] > Maximum Length=[" + RoundSigDigits( MaxNameLength ) + "]. You may need to shorten the names." );
-			ShowContinueError( "Shortening the Object Name by [" + RoundSigDigits( ( MaxZoneNameLength + 1 + ItemNameLength ) - MaxNameLength ) + "] characters will assure uniqueness for this ZoneList." );
+			ShowContinueError( "Item length=[" + RoundSigDigits( int( ItemLength ) ) + "] > Maximum Length=[" + RoundSigDigits( MaxNameLength ) + "]. You may need to shorten the names." );
+			ShowContinueError( "Shortening the Object Name by [" + RoundSigDigits( int( MaxZoneNameLength + 1 + ItemNameLength - MaxNameLength ) ) + "] characters will assure uniqueness for this ZoneList." );
 			ShowContinueError( "name that will be used (may be needed in reporting)=\"" + ResultName + "\"." );
 			TooLong = true;
 		}
@@ -3325,14 +3310,14 @@ namespace General {
 
 	//     NOTICE
 
-	//     Copyright © 1996-2014 The Board of Trustees of the University of Illinois
+	//     Copyright ï¿½ 1996-2014 The Board of Trustees of the University of Illinois
 	//     and The Regents of the University of California through Ernest Orlando Lawrence
 	//     Berkeley National Laboratory.  All rights reserved.
 
 	//     Portions of the EnergyPlus software package have been developed and copyrighted
 	//     by other individuals, companies and institutions.  These portions have been
 	//     incorporated into the EnergyPlus software package under license.   For a complete
-	//     list of contributors, see "Notice" located in EnergyPlus.f90.
+	//     list of contributors, see "Notice" located in main.cc.
 
 	//     NOTICE: The U.S. Government is granted for itself and others acting on its
 	//     behalf a paid-up, nonexclusive, irrevocable, worldwide license in this data to

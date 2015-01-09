@@ -64,6 +64,8 @@ namespace HVACHXAssistedCoolingCoil {
 	int const On( 1 ); // normal compressor operation
 	int const Off( 0 ); // signal DXCoil that compressor shouldn't run
 
+	static std::string const BlankString;
+
 	// DERIVED TYPE DEFINITIONS
 
 	// MODULE VARIABLE DECLARATIONS:
@@ -141,7 +143,7 @@ namespace HVACHXAssistedCoolingCoil {
 		// (not used for Coil:Water:DetailedFlatCooling)
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		static std::string const Blank;
+		// na
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		//  na
@@ -177,7 +179,7 @@ namespace HVACHXAssistedCoolingCoil {
 				ShowFatalError( "SimHXAssistedCoolingCoil: Invalid CompIndex passed=" + TrimSigDigits( HXAssistedCoilNum ) + ", Number of HX Assisted Cooling Coils=" + TrimSigDigits( TotalNumHXAssistedCoils ) + ", Coil name=" + HXAssistedCoilName );
 			}
 			if ( CheckEquipName( HXAssistedCoilNum ) ) {
-				if ( HXAssistedCoilName != Blank && HXAssistedCoilName != HXAssistedCoil( HXAssistedCoilNum ).Name ) {
+				if ( ! HXAssistedCoilName.empty() && HXAssistedCoilName != HXAssistedCoil( HXAssistedCoilNum ).Name ) {
 					ShowFatalError( "SimHXAssistedCoolingCoil: Invalid CompIndex passed=" + TrimSigDigits( HXAssistedCoilNum ) + ", Coil name=" + HXAssistedCoilName + ", stored Coil Name for that index=" + HXAssistedCoil( HXAssistedCoilNum ).Name );
 				}
 				CheckEquipName( HXAssistedCoilNum ) = false;
@@ -311,8 +313,7 @@ namespace HVACHXAssistedCoolingCoil {
 			HXAssistedCoil.allocate( TotalNumHXAssistedCoils );
 			HXAssistedCoilOutletTemp.allocate( TotalNumHXAssistedCoils );
 			HXAssistedCoilOutletHumRat.allocate( TotalNumHXAssistedCoils );
-			CheckEquipName.allocate( TotalNumHXAssistedCoils );
-			CheckEquipName = true;
+			CheckEquipName.dimension( TotalNumHXAssistedCoils, true );
 		}
 
 		GetObjectDefMaxArgs( "CoilSystem:Cooling:DX:HeatExchangerAssisted", TotalArgs, NumAlphas, NumNums );
@@ -323,17 +324,11 @@ namespace HVACHXAssistedCoolingCoil {
 		MaxAlphas = max( MaxAlphas, NumAlphas );
 
 		AlphArray.allocate( MaxAlphas );
-		AlphArray = "";
 		cAlphaFields.allocate( MaxAlphas );
-		cAlphaFields = "";
 		cNumericFields.allocate( MaxNums );
-		cNumericFields = "";
-		NumArray.allocate( MaxNums );
-		NumArray = 0.0;
-		lAlphaBlanks.allocate( MaxAlphas );
-		lAlphaBlanks = true;
-		lNumericBlanks.allocate( MaxNums );
-		lNumericBlanks = true;
+		NumArray.dimension( MaxNums, 0.0 );
+		lAlphaBlanks.dimension( MaxAlphas, true );
+		lNumericBlanks.dimension( MaxNums, true );
 
 		// Get the data for the Coil:DX:CoolingHeatExchangerAssisted objects
 		CurrentModuleObject = "CoilSystem:Cooling:DX:HeatExchangerAssisted";
@@ -1746,12 +1741,12 @@ namespace HVACHXAssistedCoolingCoil {
 			if ( WhichCoil == 0 ) {
 				ShowSevereError( "GetCoilMaxWaterFlowRate: Could not find Coil, Type=\"" + CoilType + "\" Name=\"" + CoilName + "\"" );
 				ErrorsFound = true;
-				MaxWaterFlowRate = -1000.;
+				MaxWaterFlowRate = -1000.0;
 			}
 		} else {
 			ShowSevereError( "GetCoilMaxWaterFlowRate: Could not find Coil, Type=\"" + CoilType + "\" Name=\"" + CoilName + "\"" );
 			ErrorsFound = true;
-			MaxWaterFlowRate = -1000.;
+			MaxWaterFlowRate = -1000.0;
 		}
 
 		return MaxWaterFlowRate;
@@ -1924,7 +1919,7 @@ namespace HVACHXAssistedCoolingCoil {
 	//     Portions of the EnergyPlus software package have been developed and copyrighted
 	//     by other individuals, companies and institutions.  These portions have been
 	//     incorporated into the EnergyPlus software package under license.   For a complete
-	//     list of contributors, see "Notice" located in EnergyPlus.f90.
+	//     list of contributors, see "Notice" located in main.cc.
 
 	//     NOTICE: The U.S. Government is granted for itself and others acting on its
 	//     behalf a paid-up, nonexclusive, irrevocable, worldwide license in this data to

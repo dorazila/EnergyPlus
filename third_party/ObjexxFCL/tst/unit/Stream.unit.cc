@@ -15,6 +15,7 @@
 
 // ObjexxFCL Headers
 #include <ObjexxFCL/Stream.hh>
+#include "ObjexxFCL.unit.hh"
 
 // C++ Headers
 #include <cstdio>
@@ -40,11 +41,7 @@ TEST( StreamTest, IStringStream )
 	IStringStream stream( "A short text" );
 	EXPECT_EQ( std::string(), stream.name() );
 	EXPECT_FALSE( stream.is_file() );
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER) // VC++2013 bug work-around
-	EXPECT_EQ( "A short text", stream.operator ()().str() );
-#else
 	EXPECT_EQ( "A short text", stream().str() );
-#endif
 }
 
 TEST( StreamTest, OStringStream )
@@ -52,55 +49,39 @@ TEST( StreamTest, OStringStream )
 	OStringStream stream( "A short text" );
 	EXPECT_EQ( stream.name(), std::string() );
 	EXPECT_FALSE( stream.is_file() );
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER) // VC++2013 bug work-around
-	EXPECT_EQ( "A short text", stream.operator ()().str() );
-#else
 	EXPECT_EQ( "A short text", stream().str() );
-#endif
 }
 
-TEST( StreamTest, OFileStream )
+TEST( StreamTest, FileStream )
 {
-	OFileStream stream( "StreamTest.txt" );
-	EXPECT_EQ( stream.name(), "StreamTest.txt" );
-	EXPECT_TRUE( stream.is_file() );
-	EXPECT_TRUE( stream.is_open() );
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER) // VC++2013 bug work-around
-	stream.operator ()() << "This is line 1" << std::endl;
-	stream.operator ()() << "This is line 2" << std::endl;
-#else
-	stream() << "This is line 1" << std::endl;
-	stream() << "This is line 2" << std::endl;
-#endif
-	stream.close();
-}
+	{ // Output
+		OFileStream stream( "StreamTestFileStream.txt" );
+		EXPECT_EQ( "StreamTestFileStream.txt", stream.name() );
+		EXPECT_TRUE( stream.is_file() );
+		EXPECT_TRUE( stream.is_open() );
+		stream() << "This is line 1" << std::endl;
+		stream() << "This is line 2" << std::endl;
+		stream.close(); // Keep file for input test
+	}
 
-TEST( StreamTest, IFileStream )
-{
-	IFileStream stream( "StreamTest.txt" );
-	EXPECT_EQ( "StreamTest.txt", stream.name() );
-	EXPECT_TRUE( stream.is_file() );
-	EXPECT_TRUE( stream.is_open() );
-	std::string line;
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER) // VC++2013 bug work-around
-	std::getline( stream.operator ()(), line );
-#else
-	std::getline( stream(), line );
-#endif
-	EXPECT_EQ( "This is line 1", line );
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER) // VC++2013 bug work-around
-	std::getline( stream.operator ()(), line );
-#else
-	std::getline( stream(), line );
-#endif
-	EXPECT_EQ( "This is line 2", line );
-	stream.close();
-	EXPECT_FALSE( stream.is_open() );
-	stream.open();
-	EXPECT_TRUE( stream.is_open() );
-	stream.close();
-	EXPECT_FALSE( stream.is_open() );
-	std::remove( stream.name().c_str() ); // Clean up
+	{ // Input
+		IFileStream stream( "StreamTestFileStream.txt" );
+		EXPECT_EQ( "StreamTestFileStream.txt", stream.name() );
+		EXPECT_TRUE( stream.is_file() );
+		EXPECT_TRUE( stream.is_open() );
+		std::string line;
+		std::getline( stream(), line );
+		EXPECT_EQ( "This is line 1", line );
+		std::getline( stream(), line );
+		EXPECT_EQ( "This is line 2", line );
+		stream.close();
+		EXPECT_FALSE( stream.is_open() );
+		stream.open();
+		EXPECT_TRUE( stream.is_open() );
+		stream.close();
+		EXPECT_FALSE( stream.is_open() );
+		std::remove( stream.name().c_str() ); // Clean up
+	}
 }
 
 TEST( StreamTest, ScratchFileName )
@@ -120,13 +101,8 @@ TEST( StreamTest, ScratchFileUse )
 	OFileStream stream( Stream::scratch_name(), flags );
 	EXPECT_TRUE( stream.is_file() );
 	EXPECT_TRUE( stream.is_open() );
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER) // VC++2013 bug work-around
-	stream.operator ()() << "This is line 1" << std::endl;
-	stream.operator ()() << "This is line 2" << std::endl;
-#else
 	stream() << "This is line 1" << std::endl;
 	stream() << "This is line 2" << std::endl;
-#endif
 	stream.close();
 	EXPECT_FALSE( std::ifstream( stream.name() ).good() ); // Should have been deleted when closed
 }

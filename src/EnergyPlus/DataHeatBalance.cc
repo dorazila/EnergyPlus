@@ -60,7 +60,9 @@ namespace DataHeatBalance {
 	// Parameters for the definition and limitation of arrays:
 	int const MaxLayersInConstruct( 11 ); // Maximum number of layers allowed in a single construction
 	int const MaxCTFTerms( 19 ); // Maximum number of CTF terms allowed to still allow stability
-	int const MaxSolidWinLayers( 5 ); // Maximum number of solid layers in a window construction
+	int MaxSolidWinLayers( 0 ); // Maximum number of solid layers in a window construction 
+	                                   // ** has to be big enough to hold no matter what window model
+	                                   //    each window model should validate layers individually
 	int const MaxSpectralDataElements( 800 ); // Maximum number in Spectral Data arrays.
 
 	// Parameters to indicate material group type for use with the Material
@@ -193,6 +195,10 @@ namespace DataHeatBalance {
 	int const AirBalanceNone( 0 );
 	int const AirBalanceQuadrature( 1 );
 
+	// Parameter for source zone air flow mass balance infiltration treatment
+	int const AddInfiltrationFlow( 1 );
+	int const AdjustInfiltrationFlow( 2 );
+
 	int const NumZoneIntGainDeviceTypes( 45 );
 	FArray1D_string const ZoneIntGainDeviceTypes( NumZoneIntGainDeviceTypes, { "PEOPLE", "LIGHTS", "ELECTRICEQUIPMENT", "GASEQUIPMENT", "HOTWATEREQUIPMENT", "STEAMEQUIPMENT", "OTHEREQUIPMENT", "ZONEBASEBOARD:OUTDOORTEMPERATURECONTROLLED", "ZONECONTAMINANTSOURCEANDSINK:CARBONDIOXIDE", "WATERUSE:EQUIPMENT", "DAYLIGHTINGDEVICE:TUBULAR", "WATERHEATER:MIXED", "WATERHEATER:STRATIFIED", "THERMALSTORAGE:CHILLEDWATER:MIXED", "THERMALSTORAGE:CHILLEDWATER:STRATIFIED", "GENERATOR:FUELCELL", "GENERATOR:MICROCHP", "ELECTRICLOADCENTER:TRANSFORMER", "ELECTRICLOADCENTER:INVERTER:SIMPLE", "ELECTRICLOADCENTER:INVERTER:FUNCTIONOFPOWER", "ELECTRICLOADCENTER:INVERTER:LOOKUPTABLE", "ELECTRICLOADCENTER:STORAGE:BATTERY", "ELECTRICLOADCENTER:STORAGE:SIMPLE", "PIPE:INDOOR", "REFRIGERATION:CASE", "REFRIGERATION:COMPRESSORRACK", "REFRIGERATION:SYSTEM:CONDENSER:AIRCOOLED", "REFRIGERATION:TRANSCRITICALSYSTEM:GASCOOLER:AIRCOOLED", "REFRIGERATION:SYSTEM:SUCTIONPIPE", "REFRIGERATION:TRANSCRITICALSYSTEM:SUCTIONPIPEMT", "REFRIGERATION:TRANSCRITICALSYSTEM:SUCTIONPIPELT", "REFRIGERATION:SECONDARYSYSTEM:RECEIVER", "REFRIGERATION:SECONDARYSYSTEM:PIPE", "REFRIGERATION:WALKIN", "PUMP:VARIABLESPEED", "PUMP:CONSTANTSPEED", "PUMP:VARIABLESPEED:CONDENSATE", "HEADEREDPUMPS:VARIABLESPEED", "HEADEREDPUMPS:CONSTANTSPEED", "ZONECONTAMINANTSOURCEANDSINK:GENERICCONTAMINANT", "PLANTCOMPONENT:USERDEFINED", "COIL:USERDEFINED", "ZONEHVAC:FORCEDAIR:USERDEFINED", "AIRTERMINAL:SINGLEDUCT:USERDEFINED", "COIL:COOLING:DX:SINGLESPEED:THERMALSTORAGE" } ); // 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 | 32 | 33 | 34 | 35 | 36 | 37 | 38 | 39 | 40 | 41 | 42 | 43 | 44 | 45
 
@@ -285,7 +291,7 @@ namespace DataHeatBalance {
 	//                           !       Taking the still gas thermal conductivity for air at 0.0267 W/m-K (at 300K), then
 	//                           !       this limit of 1.0 corresponds to a completely still layer of air that is around 0.025 m thick
 	//                           !  5) The previous limit of 0.1 (before ver. 3.1) caused loads initialization problems in test files
-	Real64 HighHConvLimit( 1000. ); // upper limit for HConv, mostly used for user input limits in practics. !W/m2-K
+	Real64 HighHConvLimit( 1000.0 ); // upper limit for HConv, mostly used for user input limits in practics. !W/m2-K
 	Real64 MaxAllowedDelTempCondFD( 0.002 ); // Convergence criteria for inside surface temperatures for CondFD
 
 	std::string BuildingName; // Name of building
@@ -322,6 +328,7 @@ namespace DataHeatBalance {
 	int NumHotWaterEqStatements( 0 ); // number of Hot Water Equipment objects in input. - possibly global assignments
 	int NumSteamEqStatements( 0 ); // number of Steam Equipment objects in input. - possibly global assignments
 	int NumOtherEqStatements( 0 ); // number of Other Equipment objects in input. - possibly global assignments
+	int NumZoneITEqStatements( 0 ); // number of Other Equipment objects in input. - possibly global assignments
 	int TotPeople( 0 ); // Total People Statements in input and extrapolated from global assignments
 	int TotLights( 0 ); // Total Lights Statements in input and extrapolated from global assignments
 	int TotElecEquip( 0 ); // Total Electric Equipment Statements in input and extrapolated from global assignments
@@ -483,10 +490,8 @@ namespace DataHeatBalance {
 	//absorbed on outside of surface (j)
 
 	FArray1D< Real64 > NominalR; // Nominal R value of each material -- used in matching interzone surfaces
-	FArray1D< Real64 > NominalRSave;
 	FArray1D< Real64 > NominalRforNominalUCalculation; // Nominal R values are summed to calculate NominalU values for constructions
 	FArray1D< Real64 > NominalU; // Nominal U value for each construction -- used in matching interzone surfaces
-	FArray1D< Real64 > NominalUSave;
 
 	// removed variables (these were all arrays):
 	//REAL(r64), ALLOCATABLE, :: DifIncInsSurfIntensRep    !Diffuse sol irradiance from ext wins on inside of surface (W/m2)
@@ -581,6 +586,7 @@ namespace DataHeatBalance {
 	FArray1D< ZoneEquipData > ZoneOtherEq;
 	FArray1D< ZoneEquipData > ZoneHWEq;
 	FArray1D< ZoneEquipData > ZoneSteamEq;
+	FArray1D< ITEquipData > ZoneITEq;
 	FArray1D< BBHeatData > ZoneBBHeat;
 	FArray1D< InfiltrationData > Infiltration;
 	FArray1D< VentilationData > Ventilation;
@@ -593,8 +599,6 @@ namespace DataHeatBalance {
 	FArray1D< WindowThermalModelParams > WindowThermalModel;
 	FArray1D< SurfaceScreenProperties > SurfaceScreens;
 	FArray1D< ScreenTransData > ScreenTrans;
-	FArray1D< MaterialProperties > MaterialSave;
-	FArray1D< ConstructionData > ConstructSave;
 	FArray1D< ZoneCatEUseData > ZoneIntEEuse;
 	FArray1D< RefrigCaseCreditData > RefrigCaseCredit;
 	FArray1D< HeatReclaimRefrigeratedRackData > HeatReclaimRefrigeratedRack;
@@ -613,6 +617,8 @@ namespace DataHeatBalance {
 	FArray1D< GlobalInternalGainMiscObject > InfiltrationObjects;
 	FArray1D< GlobalInternalGainMiscObject > VentilationObjects;
 	FArray1D< ZoneReportVars > ZnRpt;
+	FArray1D< ZoneMassConservationData > MassConservation;
+	ZoneAirMassFlowConservation ZoneAirMassFlow;
 
 	// Functions
 
@@ -709,7 +715,24 @@ namespace DataHeatBalance {
 		for ( Layer = 1; Layer <= TotLayers; ++Layer ) {
 			MaterNum = Construct( ConstrNum ).LayerPoint( Layer );
 			if ( MaterNum == 0 ) continue; // error -- has been caught will stop program later
-			if ( Material( MaterNum ).Group == WindowGlass || Material( MaterNum ).Group == WindowGas || Material( MaterNum ).Group == WindowGasMixture || Material( MaterNum ).Group == Shade || Material( MaterNum ).Group == WindowBlind || Material( MaterNum ).Group == Screen || Material( MaterNum ).Group == WindowSimpleGlazing || Material( MaterNum ).Group == ComplexWindowShade || Material( MaterNum ).Group == ComplexWindowGap || Material( MaterNum ).Group == GlassEquivalentLayer || Material( MaterNum ).Group == ShadeEquivalentLayer || Material( MaterNum ).Group == DrapeEquivalentLayer || Material( MaterNum ).Group == ScreenEquivalentLayer || Material( MaterNum ).Group == BlindEquivalentLayer || Material( MaterNum ).Group == GapEquivalentLayer ) Construct( ConstrNum ).TypeIsWindow = true;
+			switch ( Material( MaterNum ).Group ) {
+				case WindowGlass:
+				case WindowGas:
+				case WindowGasMixture:
+				case Shade:
+				case WindowBlind:
+				case Screen:
+				case WindowSimpleGlazing:
+				case ComplexWindowShade:
+				case ComplexWindowGap:
+				case GlassEquivalentLayer:
+				case ShadeEquivalentLayer:
+				case DrapeEquivalentLayer:
+				case ScreenEquivalentLayer:
+				case BlindEquivalentLayer:
+				case GapEquivalentLayer:
+					Construct( ConstrNum ).TypeIsWindow = true;
+			}
 		}
 
 		if ( InsideMaterNum == 0 ) return;
@@ -724,7 +747,26 @@ namespace DataHeatBalance {
 			for ( Layer = 1; Layer <= TotLayers; ++Layer ) {
 				MaterNum = Construct( ConstrNum ).LayerPoint( Layer );
 				if ( MaterNum == 0 ) continue; // error -- has been caught will stop program later
-				if ( Material( MaterNum ).Group != WindowGlass && Material( MaterNum ).Group != WindowGas && Material( MaterNum ).Group != WindowGasMixture && Material( MaterNum ).Group != Shade && Material( MaterNum ).Group != WindowBlind && Material( MaterNum ).Group != Screen && Material( MaterNum ).Group != WindowSimpleGlazing && Material( MaterNum ).Group != ComplexWindowShade && Material( MaterNum ).Group != ComplexWindowGap && Material( MaterNum ).Group != GlassEquivalentLayer && Material( MaterNum ).Group != GapEquivalentLayer && Material( MaterNum ).Group != ShadeEquivalentLayer && Material( MaterNum ).Group != DrapeEquivalentLayer && Material( MaterNum ).Group != ScreenEquivalentLayer && Material( MaterNum ).Group != BlindEquivalentLayer ) WrongMaterialsMix = true;
+				switch ( Material( MaterNum ).Group ) {
+					case WindowGlass:
+					case WindowGas:
+					case WindowGasMixture:
+					case Shade:
+					case WindowBlind:
+					case Screen:
+					case WindowSimpleGlazing:
+					case ComplexWindowShade:
+					case ComplexWindowGap:
+					case GlassEquivalentLayer:
+					case ShadeEquivalentLayer:
+					case DrapeEquivalentLayer:
+					case ScreenEquivalentLayer:
+					case BlindEquivalentLayer:
+					case GapEquivalentLayer:
+						break; // everything is OK
+					default:
+						WrongMaterialsMix = true; // found a bad one
+				}
 			}
 
 			if ( WrongMaterialsMix ) { //Illegal material for a window construction
@@ -822,7 +864,7 @@ namespace DataHeatBalance {
 
 				// This is a construction with a between-glass shade or blind
 
-				if ( TotGlassLayers == 4 ) {
+				if ( TotGlassLayers >= 4 ) {
 					// Quadruple pane not allowed.
 					WrongWindowLayering = true;
 				} else if ( TotGlassLayers == 2 || TotGlassLayers == 3 ) {
@@ -848,30 +890,6 @@ namespace DataHeatBalance {
 						// For triple pane, it must be layer #5 (i.e., between two inner panes).
 						if ( Material( MatSh ).Group != Shade && Material( MatSh ).Group != WindowBlind ) WrongWindowLayering = true;
 						if ( TotLayers != 2 * TotGlassLayers + 1 ) WrongWindowLayering = true;
-
-						// TH 8/26/2010 commented out, CR 8206
-						// All glass layers must be SpectralAverage
-						//            IF(.not.WrongWindowLayering) THEN
-						//              IF(TotGlassLayers == 2) THEN   ! Double pane
-						//                IF(Material(Construct(ConstrNum)%LayerPoint(1))%GlassSpectralDataPtr > 0 .OR.  &
-						//                   Material(Construct(ConstrNum)%LayerPoint(5))%GlassSpectralDataPtr > 0) THEN
-						//                     CALL ShowSevereError('CheckAndSetConstructionProperties: For window construction '//  &
-						//                               TRIM(Construct(ConstrNum)%Name))
-						//                     CALL ShowContinueError('Glass layers cannot use SpectralData -- must be SpectralAverage.')
-						//                     WrongWindowLayering = .TRUE.
-						//                ENDIF
-						//              ELSE                           ! Triple pane
-						//                IF(Material(Construct(ConstrNum)%LayerPoint(1))%GlassSpectralDataPtr > 0 .OR.  &
-						//                   Material(Construct(ConstrNum)%LayerPoint(3))%GlassSpectralDataPtr > 0 .OR. &
-						//                   Material(Construct(ConstrNum)%LayerPoint(7))%GlassSpectralDataPtr > 0) THEN
-						//                     CALL ShowSevereError('CheckAndSetConstructionProperties: For window construction '//  &
-						//                               TRIM(Construct(ConstrNum)%Name))
-						//                     CALL ShowContinueError('Glass layers cannot use SpectralData -- must be SpectralAverage.')
-						//                     WrongWindowLayering = .TRUE.
-						//                ENDIF
-						//              END IF
-						//            END IF
-
 						if ( ! WrongWindowLayering ) {
 							// Gas on either side of a between-glass shade/blind must be the same
 							MatGapL = Construct( ConstrNum ).LayerPoint( LayNumSh - 1 );
@@ -933,7 +951,6 @@ namespace DataHeatBalance {
 				ShowContinueError( "    --A between-glass screen is not allowed," );
 				ShowContinueError( "    --A between-glass shade/blind is allowed only for double and triple glazing," );
 				ShowContinueError( "    --A between-glass shade/blind must have adjacent gas layers of the same type and width," );
-				//        CALL ShowContinueError('    --For between-glass shade/blind all glazing layers must be input using SpectralAverage data,')
 				ShowContinueError( "    --For triple glazing the between-glass shade/blind must be between the two inner glass layers," );
 				ShowContinueError( "    --The slat width of a between-glass blind must be less than the sum of the widths" );
 				ShowContinueError( "    ----of the gas layers adjacent to the blind." );
@@ -1087,27 +1104,12 @@ namespace DataHeatBalance {
 
 		// if need new one, bunch o stuff
 		if ( NewConstrNum == 0 ) {
-			ConstructSave.allocate( TotConstructs + 1 );
-			ConstructSave( {1,TotConstructs} ) = Construct( {1,TotConstructs} );
-			NominalRSave.allocate( TotConstructs + 1 );
-			NominalUSave.allocate( TotConstructs + 1 );
-			NominalRSave = 0.0;
-			NominalRSave( {1,TotConstructs} ) = NominalRforNominalUCalculation( {1,TotConstructs} );
-			NominalUSave = 0.0;
-			NominalUSave( {1,TotConstructs} ) = NominalU( {1,TotConstructs} );
 			++TotConstructs;
-			Construct.deallocate();
-			NominalRforNominalUCalculation.deallocate();
-			NominalU.deallocate();
-			Construct.allocate( TotConstructs );
-			Construct = ConstructSave;
-			ConstructSave.deallocate();
-			NominalRforNominalUCalculation.allocate( TotConstructs );
-			NominalU.allocate( TotConstructs );
-			NominalRforNominalUCalculation = NominalRSave;
-			NominalU = NominalUSave;
-			NominalRSave.deallocate();
-			NominalUSave.deallocate();
+			Construct.redimension( TotConstructs );
+			NominalRforNominalUCalculation.redimension( TotConstructs );
+			NominalRforNominalUCalculation( TotConstructs ) = 0.0;
+			NominalU.redimension( TotConstructs );
+			NominalU( TotConstructs ) = 0.0;
 			//  Put in new attributes
 			NewConstrNum = TotConstructs;
 			Construct( NewConstrNum ).IsUsed = true;
@@ -1184,20 +1186,13 @@ namespace DataHeatBalance {
 		Real64 MaxSlatAngGeom;
 
 		// Object Data
-		FArray1D< WindowBlindProperties > tmpBlind;
 
 		// maybe it's already there
 		errFlag = false;
 		Found = FindItemInList( "~" + Blind( inBlindNumber ).Name, Blind.Name(), TotBlinds );
 		if ( Found == 0 ) {
 			// Add a new blind
-			tmpBlind.allocate( TotBlinds );
-			tmpBlind = Blind;
-			Blind.deallocate();
-			++TotBlinds;
-			Blind.allocate( TotBlinds );
-			Blind( {1,TotBlinds - 1} ) = tmpBlind( {1,TotBlinds - 1} );
-			tmpBlind.deallocate();
+			Blind.redimension( ++TotBlinds );
 			Blind( TotBlinds ) = Blind( inBlindNumber );
 			Blind( TotBlinds ).Name = "~" + Blind( inBlindNumber ).Name;
 			outBlindNumber = TotBlinds;
@@ -1209,7 +1204,7 @@ namespace DataHeatBalance {
 			} else {
 				MinSlatAngGeom = 0.0;
 			}
-			MaxSlatAngGeom = 180. - MinSlatAngGeom;
+			MaxSlatAngGeom = 180.0 - MinSlatAngGeom;
 
 			// Error if maximum slat angle less than minimum
 
@@ -1380,7 +1375,7 @@ namespace DataHeatBalance {
 			NormalAzimuth = SunAzimuthToScreenNormal;
 		} else {
 			SunAzimuth = std::atan2( SOLCOS( 1 ), SOLCOS( 2 ) );
-			if ( SunAzimuth < 0.0 ) SunAzimuth += 2. * Pi;
+			if ( SunAzimuth < 0.0 ) SunAzimuth += 2.0 * Pi;
 			SurfaceAzimuth = Surface( SurfaceNum ).Azimuth * DegToRadians;
 			NormalAzimuth = SunAzimuth - SurfaceAzimuth;
 			//   Calculate the transmittance whether sun is in front of or behind screen, place result in BmBmTrans or BmBmTransBack
@@ -1436,7 +1431,7 @@ namespace DataHeatBalance {
 		if ( Beta > Small ) {
 			if ( std::abs( SunAltitudeToScreenNormal - PiOvr2 ) > Small ) {
 				AlphaDblPrime = std::atan( std::tan( SunAltitudeToScreenNormal ) / std::cos( SunAzimuthToScreenNormal ) );
-				TransYDir = 1.0 - Gamma * ( std::cos( AlphaDblPrime ) + std::sin( AlphaDblPrime ) * std::tan( SunAltitudeToScreenNormal ) * std::sqrt( 1.0 + std::pow( ( 1.0 / std::tan( Beta ) ), 2 ) ) );
+				TransYDir = 1.0 - Gamma * ( std::cos( AlphaDblPrime ) + std::sin( AlphaDblPrime ) * std::tan( SunAltitudeToScreenNormal ) * std::sqrt( 1.0 + pow_2( 1.0 / std::tan( Beta ) ) ) );
 				TransYDir = max( 0.0, TransYDir );
 			} else {
 				TransYDir = 0.0;
@@ -1445,14 +1440,14 @@ namespace DataHeatBalance {
 			TransYDir = 0.0;
 		}
 
-		COSMu = std::sqrt( std::pow( std::cos( SunAltitudeToScreenNormal ), 2 ) * std::pow( std::cos( SunAzimuthToScreenNormal ), 2 ) + std::pow( std::sin( SunAltitudeToScreenNormal ), 2 ) );
+		COSMu = std::sqrt( pow_2( std::cos( SunAltitudeToScreenNormal ) ) * pow_2( std::cos( SunAzimuthToScreenNormal ) ) + pow_2( std::sin( SunAltitudeToScreenNormal ) ) );
 		if ( COSMu > Small ) {
 			Epsilon = std::acos( std::cos( SunAltitudeToScreenNormal ) * std::cos( SunAzimuthToScreenNormal ) / COSMu );
 			Eta = PiOvr2 - Epsilon;
 			if ( std::cos( Epsilon ) != 0.0 ) {
 				MuPrime = std::atan( std::tan( std::acos( COSMu ) ) / std::cos( Epsilon ) );
 				if ( Eta != 0.0 ) {
-					TransXDir = 1.0 - Gamma * ( std::cos( MuPrime ) + std::sin( MuPrime ) * std::tan( std::acos( COSMu ) ) * std::sqrt( 1.0 + std::pow( ( 1.0 / std::tan( Eta ) ), 2 ) ) );
+					TransXDir = 1.0 - Gamma * ( std::cos( MuPrime ) + std::sin( MuPrime ) * std::tan( std::acos( COSMu ) ) * std::sqrt( 1.0 + pow_2( 1.0 / std::tan( Eta ) ) ) );
 					TransXDir = max( 0.0, TransXDir );
 				} else {
 					TransXDir = 0.0;
@@ -1478,15 +1473,15 @@ namespace DataHeatBalance {
 		} else {
 			//   DeltaMax and Delta are in degrees
 			DeltaMax = 89.7 - ( 10.0 * Gamma / 0.16 );
-			Delta = std::sqrt( std::pow( ( SunAzimuthToScreenNormal / DegToRadians ), 2 ) + std::pow( ( SunAltitudeToScreenNormal / DegToRadians ), 2 ) );
+			Delta = std::sqrt( pow_2( SunAzimuthToScreenNormal / DegToRadians ) + pow_2( SunAltitudeToScreenNormal / DegToRadians ) );
 
 			//   Use empirical model to determine maximum (peak) scattering
-			Tscattermax = 0.0229 * Gamma + 0.2971 * ReflectCyl - 0.03624 * std::pow( Gamma, 2 ) + 0.04763 * std::pow( ReflectCyl, 2 ) - 0.44416 * Gamma * ReflectCyl;
-			TscattermaxVis = 0.0229 * Gamma + 0.2971 * ReflectCylVis - 0.03624 * std::pow( Gamma, 2 ) + 0.04763 * std::pow( ReflectCylVis, 2 ) - 0.44416 * Gamma * ReflectCylVis;
+			Tscattermax = 0.0229 * Gamma + 0.2971 * ReflectCyl - 0.03624 * pow_2( Gamma ) + 0.04763 * pow_2( ReflectCyl ) - 0.44416 * Gamma * ReflectCyl;
+			TscattermaxVis = 0.0229 * Gamma + 0.2971 * ReflectCylVis - 0.03624 * pow_2( Gamma ) + 0.04763 * pow_2( ReflectCylVis ) - 0.44416 * Gamma * ReflectCylVis;
 
 			//   Vary slope of interior and exterior surface of scattering model
-			ExponentInterior = ( -std::pow( ( std::abs( Delta - DeltaMax ) ), 2.0 ) ) / 600.0;
-			ExponentExterior = ( -std::pow( ( std::abs( Delta - DeltaMax ) ), 2.5 ) ) / 600.0;
+			ExponentInterior = -pow_2( Delta - DeltaMax ) / 600.0;
+			ExponentExterior = -std::pow( std::abs( Delta - DeltaMax ), 2.5 ) / 600.0;
 
 			//   Determine ratio of scattering at 0,0 incident angle to maximum (peak) scattering
 			PeakToPlateauRatio = 1.0 / ( 0.2 * ( 1 - Gamma ) * ReflectCyl );
@@ -1745,7 +1740,7 @@ namespace DataHeatBalance {
 	//     Portions of the EnergyPlus software package have been developed and copyrighted
 	//     by other individuals, companies and institutions.  These portions have been
 	//     incorporated into the EnergyPlus software package under license.   For a complete
-	//     list of contributors, see "Notice" located in EnergyPlus.f90.
+	//     list of contributors, see "Notice" located in main.cc.
 
 	//     NOTICE: The U.S. Government is granted for itself and others acting on its
 	//     behalf a paid-up, nonexclusive, irrevocable, worldwide license in this data to

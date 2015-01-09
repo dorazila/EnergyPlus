@@ -39,6 +39,16 @@ namespace DataPlantPipingSystems {
 	int const PartitionType_BasementWall( -1 );
 	int const PartitionType_BasementFloor( -2 );
 	int const PartitionType_Pipe( -3 );
+	int const PartitionType_Slab( -4 );
+	int const PartitionType_XSide( -5 );
+	int const PartitionType_XSideWall( -6 );
+	int const PartitionType_ZSide( -7 );
+	int const PartitionType_ZSideWall( -8 );
+	int const PartitionType_FloorInside( -9 );
+	int const PartitionType_UnderFloor( -10 );
+	int const PartitionType_HorizInsXSide( 11 );
+	int const PartitionType_VertInsLowerEdge( -12 );
+	int const PartitionType_HorizInsZSide( -13 );
 
 	int const RegionType_Pipe( -1 );
 	int const RegionType_BasementWall( -2 );
@@ -46,6 +56,15 @@ namespace DataPlantPipingSystems {
 	int const RegionType_XDirection( -4 );
 	int const RegionType_YDirection( -5 );
 	int const RegionType_ZDirection( -6 );
+	int const RegionType_XSide( -7 );
+	int const RegionType_XSideWall( -8 );
+	int const RegionType_ZSide( -9 );
+	int const RegionType_ZSideWall( -10 );
+	int const RegionType_FloorInside( -11 );
+	int const RegionType_UnderFloor( -12 );
+	int const RegionType_HorizInsXSide( -13 );
+	int const RegionType_HorizInsZSide( -14 );
+	int const RegionType_VertInsLowerEdge( -15 );
 
 	int const MeshDistribution_Uniform( -1 );
 	int const MeshDistribution_SymmetricGeometric( -2 );
@@ -70,6 +89,12 @@ namespace DataPlantPipingSystems {
 	int const CellType_BasementFloor( -8 );
 	int const CellType_BasementCorner( -9 );
 	int const CellType_BasementCutaway( -10 );
+	int const CellType_Slab( -11 );
+	int const CellType_HorizInsulation( -12 );
+	int const CellType_VertInsulation( -13 );
+	int const CellType_ZoneGroundInterface( -14 );
+	int const CellType_BasementWallInsu( -15 );
+	int const CellType_BasementFloorInsu( -16 );
 
 	// DERIVED TYPE DEFINITIONS:
 
@@ -95,7 +120,7 @@ namespace DataPlantPipingSystems {
 	//     Portions of the EnergyPlus software package have been developed and copyrighted
 	//     by other individuals, companies and institutions.  These portions have been
 	//     incorporated into the EnergyPlus software package under license.   For a complete
-	//     list of contributors, see "Notice" located in EnergyPlus.f90.
+	//     list of contributors, see "Notice" located in main.cc.
 
 	//     NOTICE: The U.S. Government is granted for itself and others acting on its
 	//     behalf a paid-up, nonexclusive, irrevocable, worldwide license in this data to

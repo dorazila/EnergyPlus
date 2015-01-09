@@ -1,3 +1,6 @@
+// C++ Headers
+#include <cassert>
+
 // ObjexxFCL Headers
 #include <ObjexxFCL/FArray.functions.hh>
 #include <ObjexxFCL/Fmath.hh>
@@ -80,6 +83,8 @@ namespace PlantManager {
 	int const FlowSetPt( 1007 );
 	bool InitLoopEquip( true );
 	bool GetCompSizFac( false );
+
+	static std::string const fluidNameSteam( "STEAM" );
 
 	//MODULE DERIVED TYPE DEFINITIONS
 
@@ -176,7 +181,7 @@ namespace PlantManager {
 				LoopSide = PlantCallingOrderInfo( HalfLoopNum ).LoopSide;
 				OtherSide = 3 - LoopSide; //will give us 1 if LoopSide is 2, or 2 if LoopSide is 1
 
-				auto & this_loop( PlantLoop( LoopNum) );
+				auto & this_loop( PlantLoop( LoopNum ) );
 				auto & this_loop_side( this_loop.LoopSide( LoopSide ) );
 				auto & other_loop_side( this_loop.LoopSide( OtherSide ) );
 
@@ -364,14 +369,14 @@ namespace PlantManager {
 
 			this_loop.Name = Alpha( 1 ); // Load the Plant Loop Name
 
-			if ( Alpha( 2 ) == "STEAM" ) {
+			if ( SameString( Alpha( 2 ), "STEAM" ) ) {
 				this_loop.FluidType = NodeType_Steam;
 				this_loop.FluidName = Alpha( 2 );
-			} else if ( Alpha( 2 ) == "WATER" ) {
+			} else if ( SameString( Alpha( 2 ), "WATER" ) ) {
 				this_loop.FluidType = NodeType_Water;
 				this_loop.FluidName = Alpha( 2 );
 				this_loop.FluidIndex = FindGlycol( Alpha( 2 ) );
-			} else if ( Alpha( 2 ) == "USERDEFINEDFLUIDTYPE" ) {
+			} else if ( SameString( Alpha( 2 ), "USERDEFINEDFLUIDTYPE" ) ) {
 				this_loop.FluidType = NodeType_Water;
 				this_loop.FluidName = Alpha( 3 );
 				// check for valid fluid name
@@ -434,14 +439,18 @@ namespace PlantManager {
 			LoadingScheme = Alpha( 14 );
 			if ( SameString( LoadingScheme, "Optimal" ) ) {
 				this_loop.LoadDistribution = OptimalLoading;
-			} else if ( SameString( LoadingScheme, "Sequential" ) ) {
+			} else if ( SameString( LoadingScheme, "SequentialLoad" ) ) {
 				this_loop.LoadDistribution = SequentialLoading;
-			} else if ( SameString( LoadingScheme, "Uniform" ) ) {
+			} else if ( SameString( LoadingScheme, "UniformLoad" ) ) {
 				this_loop.LoadDistribution = UniformLoading;
+			} else if ( SameString( LoadingScheme, "UniformPLR" ) ) {
+				this_loop.LoadDistribution = UniformPLRLoading;
+			} else if ( SameString( LoadingScheme, "SequentialUniformPLR" ) ) {
+				this_loop.LoadDistribution = SequentialUniformPLRLoading;
 			} else {
 				ShowWarningError( RoutineName + CurrentModuleObject + "=\"" + Alpha( 1 ) + "\", Invalid choice." );
 				ShowContinueError( "..." + cAlphaFieldNames( 14 ) + "=\"" + Alpha( 14 ) + "\"." );
-				ShowContinueError( "Will default to SequentialLoading." ); // TODO rename point
+				ShowContinueError( "Will default to SequentialLoad." ); // TODO rename point
 				this_loop.LoadDistribution = SequentialLoading;
 			}
 
@@ -782,19 +791,12 @@ namespace PlantManager {
 					TempLoop.Branch( BranchNum ).IsBypass = false;
 
 					CompTypes.allocate( TempLoop.Branch( BranchNum ).TotalComponents );
-					CompTypes = "";
 					CompNames.allocate( TempLoop.Branch( BranchNum ).TotalComponents );
-					CompNames = "";
-					CompCtrls.allocate( TempLoop.Branch( BranchNum ).TotalComponents );
-					CompCtrls = 0;
+					CompCtrls.dimension( TempLoop.Branch( BranchNum ).TotalComponents, 0 );
 					InletNodeNames.allocate( TempLoop.Branch( BranchNum ).TotalComponents );
-					InletNodeNames = "";
-					InletNodeNumbers.allocate( TempLoop.Branch( BranchNum ).TotalComponents );
-					InletNodeNumbers = 0;
+					InletNodeNumbers.dimension( TempLoop.Branch( BranchNum ).TotalComponents, 0 );
 					OutletNodeNames.allocate( TempLoop.Branch( BranchNum ).TotalComponents );
-					OutletNodeNames = "";
-					OutletNodeNumbers.allocate( TempLoop.Branch( BranchNum ).TotalComponents );
-					OutletNodeNumbers = 0;
+					OutletNodeNumbers.dimension( TempLoop.Branch( BranchNum ).TotalComponents, 0 );
 
 					GetBranchData( TempLoop.Name, BranchNames( BranchNum ), TempLoop.Branch( BranchNum ).MaxVolFlowRate, TempLoop.Branch( BranchNum ).PressureCurveType, TempLoop.Branch( BranchNum ).PressureCurveIndex, TempLoop.Branch( BranchNum ).TotalComponents, CompTypes, CompNames, InletNodeNames, InletNodeNumbers, OutletNodeNames, OutletNodeNumbers, ErrorsFound ); // Why is this Vdot and not mdot?
 
@@ -1241,6 +1243,10 @@ namespace PlantManager {
 							this_comp.TypeOf_Num = TypeOf_PackagedTESCoolingCoil;
 							this_comp.GeneralEquipType = GenEquipTypes_DemandCoil;
 							this_comp.CurOpSchemeType = DemandOpSchemeType;
+						} else if ( SameString( this_comp_type, "SwimmingPool:Indoor" ) ) {
+							this_comp.TypeOf_Num = TypeOf_SwimmingPool_Indoor;
+							this_comp.GeneralEquipType = GenEquipTypes_ZoneHVACDemand;
+							this_comp.CurOpSchemeType = DemandOpSchemeType;
 						} else {
 							//discover unsupported equipment on branches.
 							ShowSevereError( "GetPlantInput: Branch=\"" + BranchNames( BranchNum ) + "\", invalid component on branch." );
@@ -1341,6 +1347,7 @@ namespace PlantManager {
 					// Map the inlet node to the splitter to a branch number
 					if ( TempLoop.Splitter( SplitNum - 1 ).Exists ) {
 						// Map the inlet node to the splitter to a branch number
+						SplitInBranch = false;
 						for ( BranchNum = 1; BranchNum <= TempLoop.TotalBranches; ++BranchNum ) {
 							CompNum = TempLoop.Branch( BranchNum ).TotalComponents;
 							if ( TempLoop.Splitter( SplitNum - 1 ).NodeNumIn == TempLoop.Branch( BranchNum ).Comp( CompNum ).NodeNumOut ) {
@@ -1357,11 +1364,8 @@ namespace PlantManager {
 						}
 
 						TempLoop.Splitter( SplitNum - 1 ).NodeNameOut.allocate( TempLoop.Splitter( SplitNum - 1 ).TotalOutletNodes );
-						TempLoop.Splitter( SplitNum - 1 ).NodeNameOut = "";
-						TempLoop.Splitter( SplitNum - 1 ).NodeNumOut.allocate( TempLoop.Splitter( SplitNum - 1 ).TotalOutletNodes );
-						TempLoop.Splitter( SplitNum - 1 ).NodeNumOut = 0;
-						TempLoop.Splitter( SplitNum - 1 ).BranchNumOut.allocate( TempLoop.Splitter( SplitNum - 1 ).TotalOutletNodes );
-						TempLoop.Splitter( SplitNum - 1 ).BranchNumOut = 0;
+						TempLoop.Splitter( SplitNum - 1 ).NodeNumOut.dimension( TempLoop.Splitter( SplitNum - 1 ).TotalOutletNodes, 0 );
+						TempLoop.Splitter( SplitNum - 1 ).BranchNumOut.dimension( TempLoop.Splitter( SplitNum - 1 ).TotalOutletNodes, 0 );
 
 						SplitOutBranch.allocate( TempLoop.Splitter( SplitNum - 1 ).TotalOutletNodes );
 						SplitOutBranch = false;
@@ -1427,11 +1431,8 @@ namespace PlantManager {
 						}
 
 						TempLoop.Mixer( MixNum - 1 ).NodeNameIn.allocate( TempLoop.Mixer( MixNum - 1 ).TotalInletNodes );
-						TempLoop.Mixer( MixNum - 1 ).NodeNameIn = "";
-						TempLoop.Mixer( MixNum - 1 ).NodeNumIn.allocate( TempLoop.Mixer( MixNum - 1 ).TotalInletNodes );
-						TempLoop.Mixer( MixNum - 1 ).NodeNumIn = 0;
-						TempLoop.Mixer( MixNum - 1 ).BranchNumIn.allocate( TempLoop.Mixer( MixNum - 1 ).TotalInletNodes );
-						TempLoop.Mixer( MixNum - 1 ).BranchNumIn = 0;
+						TempLoop.Mixer( MixNum - 1 ).NodeNumIn.dimension( TempLoop.Mixer( MixNum - 1 ).TotalInletNodes, 0 );
+						TempLoop.Mixer( MixNum - 1 ).BranchNumIn.dimension( TempLoop.Mixer( MixNum - 1 ).TotalInletNodes, 0 );
 
 						MixerInBranch.allocate( TempLoop.Mixer( MixNum - 1 ).TotalInletNodes );
 						MixerInBranch = false;
@@ -1743,7 +1744,7 @@ namespace PlantManager {
 		for ( LoopNum = 1; LoopNum <= NumCondLoops; ++LoopNum ) {
 
 			LoopNumInArray = LoopNum + NumPlantLoops;
-            
+
 			// set up references for this loop
 			auto & this_cond_loop( PlantLoop( LoopNumInArray ) );
 			auto & this_cond_supply ( this_cond_loop.LoopSide( SupplySide ) );
@@ -2271,6 +2272,8 @@ namespace PlantManager {
 		// SUBROUTINE PARAMETER DEFINITIONS:
 		Real64 const StartQuality( 1.0 );
 		Real64 const StartHumRat( 0.0 );
+		static std::string const RoutineNameAlt( "InitializeLoops" );
+		static std::string const RoutineName( "PlantManager:InitializeLoop" );
 
 		// INTERFACE BLOCK SPECIFICATIONS:
 		// na
@@ -2323,7 +2326,7 @@ namespace PlantManager {
 						// Get the range of setpoints
 						LoopSetPointTemperatureHi = Node( PlantLoop( LoopNum ).TempSetPointNodeNum ).TempSetPointHi;
 						LoopSetPointTemperatureLo = Node( PlantLoop( LoopNum ).TempSetPointNodeNum ).TempSetPointLo;
-						LoopSetPointTemp = ( LoopSetPointTemperatureLo + LoopSetPointTemperatureHi ) / 2.;
+						LoopSetPointTemp = ( LoopSetPointTemperatureLo + LoopSetPointTemperatureHi ) / 2.0;
 					}}
 
 					if ( ( PlantLoop( LoopNum ).CommonPipeType == CommonPipe_TwoWay ) && ( LoopSideNum == DemandSide ) && ( PlantLoop( LoopNum ).LoopSide( DemandSide ).InletNodeSetPt ) ) { // get a second setpoint for secondaryLoop
@@ -2338,7 +2341,7 @@ namespace PlantManager {
 
 					// trap for -999 and set to average of limits if so
 					if ( LoopSetPointTemp == SensedNodeFlagValue ) {
-						LoopSetPointTemp = ( LoopMinTemp + LoopMaxTemp ) / 2.;
+						LoopSetPointTemp = ( LoopMinTemp + LoopMaxTemp ) / 2.0;
 					}
 					// Check it against the loop temperature limits
 					LoopSetPointTemp = min( LoopMaxTemp, LoopSetPointTemp );
@@ -2359,12 +2362,12 @@ namespace PlantManager {
 					PlantLoop( LoopNum ).LoopSide( LoopSideNum ).OutletNode.MassFlowRateHistory = 0.0;
 
 					if ( PlantLoop( LoopNum ).FluidType != NodeType_Steam ) {
-						Cp = GetSpecificHeatGlycol( PlantLoop( LoopNum ).FluidName, LoopSetPointTemp, PlantLoop( LoopNum ).FluidIndex, "InitializeLoops" );
+						Cp = GetSpecificHeatGlycol( PlantLoop( LoopNum ).FluidName, LoopSetPointTemp, PlantLoop( LoopNum ).FluidIndex, RoutineNameAlt );
 						StartEnthalpy = Cp * LoopSetPointTemp;
 					}
 					// Use Min/Max flow rates to initialize loop
 					if ( PlantLoop( LoopNum ).FluidType == NodeType_Water ) {
-						rho = GetDensityGlycol( PlantLoop( LoopNum ).FluidName, LoopSetPointTemp, PlantLoop( LoopNum ).FluidIndex, "InitializeLoops" );
+						rho = GetDensityGlycol( PlantLoop( LoopNum ).FluidName, LoopSetPointTemp, PlantLoop( LoopNum ).FluidIndex, RoutineNameAlt );
 
 						LoopMaxMassFlowRate = PlantLoop( LoopNum ).MaxVolFlowRate * rho;
 						LoopMinMassFlowRate = PlantLoop( LoopNum ).MinVolFlowRate * rho;
@@ -2373,9 +2376,9 @@ namespace PlantManager {
 					//use saturated liquid of steam at the loop setpoint temp as the starting enthalpy for a water loop
 					if ( PlantLoop( LoopNum ).FluidType == NodeType_Steam ) {
 						SteamTemp = 100.0;
-						SteamDensity = GetSatDensityRefrig( "STEAM", SteamTemp, 1.0, PlantLoop( LoopNum ).FluidIndex, "PlantManager:InitializeLoop" );
+						SteamDensity = GetSatDensityRefrig( fluidNameSteam, SteamTemp, 1.0, PlantLoop( LoopNum ).FluidIndex, RoutineName );
 						LoopMaxMassFlowRate = PlantLoop( LoopNum ).MaxVolFlowRate * SteamDensity;
-						StartEnthalpy = GetSatEnthalpyRefrig( "STEAM", LoopSetPointTemp, 0.0, PlantLoop( LoopNum ).FluidIndex, "PlantManager:InitializeLoop" );
+						StartEnthalpy = GetSatEnthalpyRefrig( fluidNameSteam, LoopSetPointTemp, 0.0, PlantLoop( LoopNum ).FluidIndex, RoutineName );
 						LoopMinMassFlowRate = PlantLoop( LoopNum ).MinVolFlowRate * SteamDensity;
 					}
 
@@ -2946,7 +2949,7 @@ namespace PlantManager {
 		// SUBROUTINE ARGUMENT DEFINITIONS:
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		// na
+		static std::string const RoutineName( "SizePlantLoop" );
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -2970,7 +2973,7 @@ namespace PlantManager {
 		Real64 MaxSizFac;
 		Real64 BranchSizFac;
 		Real64 NumBrSizFac;
-		Real64 FluidDensity; // local value from glycol routine
+		Real64 FluidDensity( 0.0 ); // local value from glycol routine
 		bool Finalize;
 
 		Finalize = OkayToFinish;
@@ -3100,9 +3103,11 @@ namespace PlantManager {
 
 		//should now have plant volume, calculate plant volume's mass for fluid type
 		if ( PlantLoop( LoopNum ).FluidType == NodeType_Water ) {
-			FluidDensity = GetDensityGlycol( PlantLoop( LoopNum ).FluidName, InitConvTemp, PlantLoop( LoopNum ).FluidIndex, "SizePlantLoop" );
+			FluidDensity = GetDensityGlycol( PlantLoop( LoopNum ).FluidName, InitConvTemp, PlantLoop( LoopNum ).FluidIndex, RoutineName );
 		} else if ( PlantLoop( LoopNum ).FluidType == NodeType_Steam ) {
-			FluidDensity = GetSatDensityRefrig( "STEAM", 100.0, 1.0, PlantLoop( LoopNum ).FluidIndex, "SizePlantLoop" );
+			FluidDensity = GetSatDensityRefrig( fluidNameSteam, 100.0, 1.0, PlantLoop( LoopNum ).FluidIndex, RoutineName );
+		} else {
+			assert( false );
 		}
 
 		PlantLoop( LoopNum ).Mass = PlantLoop( LoopNum ).Volume * FluidDensity;
@@ -3405,37 +3410,19 @@ namespace PlantManager {
 		// na
 
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
-		int PumpsBeforeIncrement;
-		int PumpsAfterIncrement;
 
 		// Object Data
-		FArray1D< LoopSidePumpInformation > TempPumpArray;
 
-		if ( allocated( PlantLoop( LoopNum ).LoopSide( LoopSideNum ).Pumps ) ) {
-			PumpsBeforeIncrement = size( PlantLoop( LoopNum ).LoopSide( LoopSideNum ).Pumps );
-			TempPumpArray.allocate( PumpsBeforeIncrement + 1 );
-			TempPumpArray( {1,PumpsBeforeIncrement} ) = PlantLoop( LoopNum ).LoopSide( LoopSideNum ).Pumps;
-		} else {
-			PumpsBeforeIncrement = 0;
-			TempPumpArray.allocate( 1 );
-		}
-
-		PumpsAfterIncrement = size( TempPumpArray );
-
-		TempPumpArray( PumpsAfterIncrement ).PumpName = PumpName;
-		// TempPumpArray(PumpsAfterIncrement)%PumpTypeOf = FindItemInList(PumpType, SimPlantEquipTypes, SIZE(SimPlantEquipTypes))
-		TempPumpArray( PumpsAfterIncrement ).BranchNum = BranchNum;
-		TempPumpArray( PumpsAfterIncrement ).CompNum = CompNum;
-		TempPumpArray( PumpsAfterIncrement ).PumpOutletNode = PumpOutletNode;
-
-		if ( allocated( PlantLoop( LoopNum ).LoopSide( LoopSideNum ).Pumps ) ) PlantLoop( LoopNum ).LoopSide( LoopSideNum ).Pumps.deallocate();
-		PlantLoop( LoopNum ).LoopSide( LoopSideNum ).Pumps.allocate( PumpsAfterIncrement );
-		PlantLoop( LoopNum ).LoopSide( LoopSideNum ).Pumps = TempPumpArray;
-		PlantLoop( LoopNum ).LoopSide( LoopSideNum ).TotalPumps = PumpsAfterIncrement;
-		PlantLoop( LoopNum ).LoopSide( LoopSideNum ).BranchPumpsExist = HasBranchPumps;
-
-		if ( allocated( TempPumpArray ) ) TempPumpArray.deallocate();
-
+		auto & loop_side( PlantLoop( LoopNum ).LoopSide( LoopSideNum ) );
+		auto & pumps( loop_side.Pumps );
+		int const nPumpsAfterIncrement = loop_side.TotalPumps = pumps.size() + 1;
+		pumps.redimension( nPumpsAfterIncrement );
+		pumps( nPumpsAfterIncrement ).PumpName = PumpName;
+		// pumps( nPumpsAfterIncrement ).PumpTypeOf = FindItemInList( PumpType, SimPlantEquipTypes, SimPlantEquipTypes.size() );
+		pumps( nPumpsAfterIncrement ).BranchNum = BranchNum;
+		pumps( nPumpsAfterIncrement ).CompNum = CompNum;
+		pumps( nPumpsAfterIncrement ).PumpOutletNode = PumpOutletNode;
+		loop_side.BranchPumpsExist = HasBranchPumps;
 	}
 
 	void
@@ -4043,6 +4030,10 @@ namespace PlantManager {
 							this_component.FlowCtrl = ControlType_Active;
 							this_component.FlowPriority = LoopFlowStatus_TakesWhatGets;
 							this_component.HowLoadServed = HowMet_NoneDemand;
+						} else if ( SELECT_CASE_var == TypeOf_SwimmingPool_Indoor ) { // 90
+							this_component.FlowCtrl = ControlType_Active;
+							this_component.FlowPriority = LoopFlowStatus_NeedyAndTurnsLoopOn;
+							this_component.HowLoadServed = HowMet_NoneDemand;
 						} else {
 							ShowSevereError( "SetBranchControlTypes: Caught unexpected equipment type of number" );
 
@@ -4194,7 +4185,7 @@ namespace PlantManager {
 	//     Portions of the EnergyPlus software package have been developed and copyrighted
 	//     by other individuals, companies and institutions.  These portions have been
 	//     incorporated into the EnergyPlus software package under license.   For a complete
-	//     list of contributors, see "Notice" located in EnergyPlus.f90.
+	//     list of contributors, see "Notice" located in main.cc.
 
 	//     NOTICE: The U.S. Government is granted for itself and others acting on its
 	//     behalf a paid-up, nonexclusive, irrevocable, worldwide license in this data to

@@ -324,7 +324,7 @@ namespace ConductionTransferFunctionCalc {
 						Alpha = rk( Layer ) / ( rho( Layer ) * cp( Layer ) );
 						if ( Alpha > HighDiffusivityThreshold ) {
 							DeltaTimestep = TimeStepZone * SecInHour;
-							ThicknessThreshold = std::sqrt( Alpha * DeltaTimestep * 3. );
+							ThicknessThreshold = std::sqrt( Alpha * DeltaTimestep * 3.0 );
 							if ( Material( CurrentLayer ).Thickness < ThicknessThreshold ) {
 								ShowSevereError( "InitConductionTransferFunctions: Found Material that is too thin and/or too " "highly conductive, material name = " + Material( CurrentLayer ).Name );
 								ShowContinueError( "High conductivity Material layers are not well supported for internal source " "constructions, material conductivity = " + RoundSigDigits( Material( CurrentLayer ).Conductivity, 3 ) + " [W/m-K]" );
@@ -680,9 +680,9 @@ namespace ConductionTransferFunctionCalc {
 					for ( Layer = 1; Layer <= LayersInConstruct; ++Layer ) {
 						if ( Nodes( Layer ) >= MaxCTFTerms ) {
 							if ( Construct( ConstrNum ).SolutionDimensions == 1 ) {
-								dtn = rho( Layer ) * cp( Layer ) * std::pow( dx( Layer ), 2 ) / rk( Layer );
+								dtn = rho( Layer ) * cp( Layer ) * pow_2( dx( Layer ) ) / rk( Layer );
 							} else { // 2-D solution requested-->this changes length parameter in Fourier number calculation
-								dtn = rho( Layer ) * cp( Layer ) * ( ( std::pow( dx( Layer ), 2 ) ) + ( std::pow( dyn, 2 ) ) ) / rk( Layer );
+								dtn = rho( Layer ) * cp( Layer ) * ( pow_2( dx( Layer ) ) + pow_2( dyn ) ) / rk( Layer );
 							}
 							if ( dtn > Construct( ConstrNum ).CTFTimeStep ) Construct( ConstrNum ).CTFTimeStep = dtn;
 						}
@@ -738,8 +738,7 @@ namespace ConductionTransferFunctionCalc {
 					for ( ir = 1; ir <= rcmax; ++ir ) {
 						IdenMatrix( ir, ir ) = 1.0;
 					}
-					e.allocate( rcmax );
-					e = 0.0;
+					e.dimension( rcmax, 0.0 );
 					Gamma1.allocate( rcmax, 3 );
 					Gamma1 = 0.0;
 					Gamma2.allocate( rcmax, 3 );
@@ -1316,7 +1315,7 @@ namespace ConductionTransferFunctionCalc {
 		// takes advantage of the fact that AMat is tridiagonal.  Thus, it
 		// only factors the elements of the AMat that are known to be non-zero.
 
-		fact = delt / ( std::pow( 2.0, k ) ); // Start of Step 3 ...
+		fact = delt / std::pow( 2.0, k ); // Start of Step 3 ...
 		AMat1 *= fact; // ... end of Step 3.
 
 		// Step 4, page 128:  Calculate l, the highest power to which AMat
@@ -1329,7 +1328,7 @@ namespace ConductionTransferFunctionCalc {
 		// precision variable is used as a more practical limit on the
 		// exponentiation algorithm.
 
-		CheckVal = min( 3.0 * AMatRowNormMax + 6., 100.0 );
+		CheckVal = min( 3.0 * AMatRowNormMax + 6.0, 100.0 );
 		l = int( CheckVal );
 
 		// Step 5, page 128:  Calculate the exponential.  First, add the
@@ -2096,7 +2095,6 @@ namespace ConductionTransferFunctionCalc {
 		// SUBROUTINE ARGUMENT DEFINITIONS:
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		// na
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -2114,23 +2112,24 @@ namespace ConductionTransferFunctionCalc {
 		int I;
 
 		// Formats
-		static gio::Fmt const Format_700( "(' Construction CTF,',A,3(',',I4),',',F8.3,',',G15.4,4(',',F8.3),',',A)" );
-		static gio::Fmt const Format_701( "(' Material CTF Summary,',A,',',F8.4,',',F14.3,',',F11.3,',',F13.3,',',G12.4)" );
-		static gio::Fmt const Format_702( "(' Material:Air,',A,',',G12.4)" );
-		static gio::Fmt const Format_703( "(' CTF,',I4,4(',',G20.8))" );
-		static gio::Fmt const Format_704( "(' CTF,',I4,3(',',G20.8))" );
-		static gio::Fmt const Format_705( "(' QTF,',I4,2(',',G20.8))" );
-		static gio::Fmt const Format_706( "(' Source/Sink Loc Internal Temp QTF,',I4,3(',',G20.8))" );
-		static gio::Fmt const Format_707( "(' User Loc Internal Temp QTF,',I4,3(',',G20.8))" );
+		static gio::Fmt fmtA( "(A)" );
+		static gio::Fmt Format_700( "(' Construction CTF,',A,3(',',I4),',',F8.3,',',G15.4,4(',',F8.3),',',A)" );
+		static gio::Fmt Format_701( "(' Material CTF Summary,',A,',',F8.4,',',F14.3,',',F11.3,',',F13.3,',',G12.4)" );
+		static gio::Fmt Format_702( "(' Material:Air,',A,',',G12.4)" );
+		static gio::Fmt Format_703( "(' CTF,',I4,4(',',G20.8))" );
+		static gio::Fmt Format_704( "(' CTF,',I4,3(',',G20.8))" );
+		static gio::Fmt Format_705( "(' QTF,',I4,2(',',G20.8))" );
+		static gio::Fmt Format_706( "(' Source/Sink Loc Internal Temp QTF,',I4,3(',',G20.8))" );
+		static gio::Fmt Format_707( "(' User Loc Internal Temp QTF,',I4,3(',',G20.8))" );
 
 		ScanForReports( "Constructions", DoReport, "Constructions" );
 
 		if ( DoReport || DoReportBecauseError ) {
 			//                                      Write Descriptions
-			gio::write( OutputFileInits, "(A)" ) << "! <Construction CTF>,Construction Name,Index,#Layers,#CTFs,Time Step {hours}," "ThermalConductance {w/m2-K}," "OuterThermalAbsorptance,InnerThermalAbsorptance,OuterSolarAbsorptance," "InnerSolarAbsorptance,Roughness";
-			gio::write( OutputFileInits, "(A)" ) << "! <Material CTF Summary>,Material Name,Thickness {m},Conductivity {w/m-K},Density {kg/m3}," "Specific Heat {J/kg-K},ThermalResistance {m2-K/w}";
-			gio::write( OutputFileInits, "(A)" ) << "! <Material:Air>,Material Name,ThermalResistance {m2-K/w}";
-			gio::write( OutputFileInits, "(A)" ) << "! <CTF>,Time,Outside,Cross,Inside,Flux (except final one)";
+			gio::write( OutputFileInits, fmtA ) << "! <Construction CTF>,Construction Name,Index,#Layers,#CTFs,Time Step {hours},ThermalConductance {w/m2-K},OuterThermalAbsorptance,InnerThermalAbsorptance,OuterSolarAbsorptance,InnerSolarAbsorptance,Roughness";
+			gio::write( OutputFileInits, fmtA ) << "! <Material CTF Summary>,Material Name,Thickness {m},Conductivity {w/m-K},Density {kg/m3},Specific Heat {J/kg-K},ThermalResistance {m2-K/w}";
+			gio::write( OutputFileInits, fmtA ) << "! <Material:Air>,Material Name,ThermalResistance {m2-K/w}";
+			gio::write( OutputFileInits, fmtA ) << "! <CTF>,Time,Outside,Cross,Inside,Flux (except final one)";
 
 			for ( ThisNum = 1; ThisNum <= TotConstructs; ++ThisNum ) {
 
@@ -2188,7 +2187,7 @@ namespace ConductionTransferFunctionCalc {
 	//     Portions of the EnergyPlus software package have been developed and copyrighted
 	//     by other individuals, companies and institutions.  These portions have been
 	//     incorporated into the EnergyPlus software package under license.   For a complete
-	//     list of contributors, see "Notice" located in EnergyPlus.f90.
+	//     list of contributors, see "Notice" located in main.cc.
 
 	//     NOTICE: The U.S. Government is granted for itself and others acting on its
 	//     behalf a paid-up, nonexclusive, irrevocable, worldwide license in this data to

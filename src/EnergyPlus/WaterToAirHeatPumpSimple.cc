@@ -82,6 +82,7 @@ namespace WaterToAirHeatPumpSimple {
 	// Data
 	//MODULE PARAMETER DEFINITIONS
 	Real64 const CelsiustoKelvin( KelvinConv ); // Conversion from Celsius to Kelvin
+	static std::string const BlankString;
 
 	// DERIVED TYPE DEFINITIONS
 
@@ -184,7 +185,7 @@ namespace WaterToAirHeatPumpSimple {
 		// shut off after compressor cycle off  [s]
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		static std::string const Blank;
+		// na
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -217,7 +218,7 @@ namespace WaterToAirHeatPumpSimple {
 			if ( HPNum > NumWatertoAirHPs || HPNum < 1 ) {
 				ShowFatalError( "SimWatertoAirHPSimple: Invalid CompIndex passed=" + TrimSigDigits( HPNum ) + ", Number of Water to Air HPs=" + TrimSigDigits( NumWatertoAirHPs ) + ", WaterToAir HP name=" + CompName );
 			}
-			if ( CompName != Blank && CompName != SimpleWatertoAirHP( HPNum ).Name ) {
+			if ( ! CompName.empty() && CompName != SimpleWatertoAirHP( HPNum ).Name ) {
 				ShowFatalError( "SimWatertoAirHPSimple: Invalid CompIndex passed=" + TrimSigDigits( HPNum ) + ", WaterToAir HP name=" + CompName + ", stored WaterToAir HP Name for that index=" + SimpleWatertoAirHP( HPNum ).Name );
 			}
 		}
@@ -339,8 +340,7 @@ namespace WaterToAirHeatPumpSimple {
 		// Allocate Arrays
 		if ( NumWatertoAirHPs > 0 ) {
 			SimpleWatertoAirHP.allocate( NumWatertoAirHPs );
-			SimpleHPTimeStepFlag.allocate( NumWatertoAirHPs );
-			SimpleHPTimeStepFlag = true;
+			SimpleHPTimeStepFlag.dimension( NumWatertoAirHPs, true );
 		}
 
 		GetObjectDefMaxArgs( "Coil:Cooling:WaterToAirHeatPump:EquationFit", NumParams, NumAlphas, NumNums );
@@ -350,17 +350,11 @@ namespace WaterToAirHeatPumpSimple {
 		MaxNums = max( MaxNums, NumNums );
 		MaxAlphas = max( MaxAlphas, NumAlphas );
 		AlphArray.allocate( MaxAlphas );
-		AlphArray = "";
 		cAlphaFields.allocate( MaxAlphas );
-		cAlphaFields = "";
-		lAlphaBlanks.allocate( MaxAlphas );
-		lAlphaBlanks = true;
+		lAlphaBlanks.dimension( MaxAlphas, true );
 		cNumericFields.allocate( MaxNums );
-		cNumericFields = "";
-		lNumericBlanks.allocate( MaxNums );
-		lNumericBlanks = true;
-		NumArray.allocate( MaxNums );
-		NumArray = 0.0;
+		lNumericBlanks.dimension( MaxNums, true );
+		NumArray.dimension( MaxNums, 0.0 );
 
 		// Get the data for cooling coil
 		CurrentModuleObject = "Coil:Cooling:WaterToAirHeatPump:EquationFit";
@@ -607,7 +601,7 @@ namespace WaterToAirHeatPumpSimple {
 		// shut off after compressor cycle off  [s]
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		// na
+		static std::string const RoutineName( "InitSimpleWatertoAirHP" );
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -733,8 +727,8 @@ namespace WaterToAirHeatPumpSimple {
 			SimpleWatertoAirHP( HPNum ).RunFrac = 0.0;
 			SimpleWatertoAirHP( HPNum ).PartLoadRatio = 0.0;
 
-			rho = GetDensityGlycol( PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidName, InitConvTemp, PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidIndex, "InitSimpleWatertoAirHP" );
-			Cp = GetSpecificHeatGlycol( PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidName, InitConvTemp, PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidIndex, "InitSimpleWatertoAirHP" );
+			rho = GetDensityGlycol( PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidName, InitConvTemp, PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidIndex, RoutineName );
+			Cp = GetSpecificHeatGlycol( PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidName, InitConvTemp, PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidIndex, RoutineName );
 
 			SimpleWatertoAirHP( HPNum ).DesignWaterMassFlowRate = rho * SimpleWatertoAirHP( HPNum ).RatedWaterVolFlowRate;
 			SimpleWatertoAirHP( HPNum ).MaxONOFFCyclesperHour = MaxONOFFCyclesperHour;
@@ -907,6 +901,7 @@ namespace WaterToAirHeatPumpSimple {
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
 		static std::string const RoutineName( "SizeWaterToAirCoil" );
+		static std::string const RoutineNameAlt( "SizeHVACWaterToAir" );
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -1093,9 +1088,9 @@ namespace WaterToAirHeatPumpSimple {
 						}
 						OutTemp = FinalSysSizing( CurSysNum ).CoolOutTemp;
 						rhoair = PsyRhoAirFnPbTdbW( StdBaroPress, MixTemp, MixHumRat, RoutineName );
-						MixEnth = PsyHFnTdbW( MixTemp, MixHumRat, RoutineName );
+						MixEnth = PsyHFnTdbW( MixTemp, MixHumRat );
 						MixWetBulb = PsyTwbFnTdbWPb( MixTemp, MixHumRat, StdBaroPress, RoutineName );
-						SupEnth = PsyHFnTdbW( SupTemp, SupHumRat, RoutineName );
+						SupEnth = PsyHFnTdbW( SupTemp, SupHumRat );
 						TotalCapCoeff1 = SimpleWatertoAirHP( HPNum ).TotalCoolCap1;
 						TotalCapCoeff2 = SimpleWatertoAirHP( HPNum ).TotalCoolCap2;
 						TotalCapCoeff3 = SimpleWatertoAirHP( HPNum ).TotalCoolCap3;
@@ -1154,9 +1149,9 @@ namespace WaterToAirHeatPumpSimple {
 							OutTemp = 0.0;
 						}
 						rhoair = PsyRhoAirFnPbTdbW( StdBaroPress, MixTemp, MixHumRat, RoutineName );
-						MixEnth = PsyHFnTdbW( MixTemp, MixHumRat, RoutineName );
+						MixEnth = PsyHFnTdbW( MixTemp, MixHumRat );
 						MixWetBulb = PsyTwbFnTdbWPb( MixTemp, MixHumRat, StdBaroPress, RoutineName );
-						SupEnth = PsyHFnTdbW( SupTemp, SupHumRat, RoutineName );
+						SupEnth = PsyHFnTdbW( SupTemp, SupHumRat );
 						TotalCapCoeff1 = SimpleWatertoAirHP( HPNum ).TotalCoolCap1;
 						TotalCapCoeff2 = SimpleWatertoAirHP( HPNum ).TotalCoolCap2;
 						TotalCapCoeff3 = SimpleWatertoAirHP( HPNum ).TotalCoolCap3;
@@ -1261,9 +1256,9 @@ namespace WaterToAirHeatPumpSimple {
 						}
 						OutTemp = FinalSysSizing( CurSysNum ).CoolOutTemp;
 						rhoair = PsyRhoAirFnPbTdbW( StdBaroPress, MixTemp, MixHumRat, RoutineName );
-						MixEnth = PsyHFnTdbW( MixTemp, MixHumRat, RoutineName );
+						MixEnth = PsyHFnTdbW( MixTemp, MixHumRat );
 						MixWetBulb = PsyTwbFnTdbWPb( MixTemp, MixHumRat, StdBaroPress, RoutineName );
-						SupEnth = PsyHFnTdbW( SupTemp, SupHumRat, RoutineName );
+						SupEnth = PsyHFnTdbW( SupTemp, SupHumRat );
 						SensCapCoeff1 = SimpleWatertoAirHP( HPNum ).SensCoolCap1;
 						SensCapCoeff2 = SimpleWatertoAirHP( HPNum ).SensCoolCap2;
 						SensCapCoeff3 = SimpleWatertoAirHP( HPNum ).SensCoolCap3;
@@ -1274,7 +1269,7 @@ namespace WaterToAirHeatPumpSimple {
 						ratioTWB = ( MixWetBulb + 273.15 ) / 283.15;
 						// rated condenser water inlet temperature of 85F
 						ratioTS = ( ( ( 85.0 - 32.0 ) / 1.8 ) + 273.15 ) / 283.15;
-						CpAir = PsyCpAirFnWTdb( SupHumRat, SupTemp, RoutineName );
+						CpAir = PsyCpAirFnWTdb( SupHumRat, SupTemp );
 						SensCapTempModFac = SensCapCoeff1 + ( ratioTDB * SensCapCoeff2 ) + ( ratioTWB * SensCapCoeff3 ) + ( ratioTS * SensCapCoeff4 ) + ( 1.0 * SensCapCoeff5 ) + ( 1.0 * SensCapCoeff6 );
 						//       The mixed air temp for zone equipment without an OA mixer is 0.
 						//       This test avoids a negative capacity until a solution can be found.
@@ -1321,9 +1316,9 @@ namespace WaterToAirHeatPumpSimple {
 							OutTemp = 0.0;
 						}
 						rhoair = PsyRhoAirFnPbTdbW( StdBaroPress, MixTemp, MixHumRat, RoutineName );
-						MixEnth = PsyHFnTdbW( MixTemp, MixHumRat, RoutineName );
+						MixEnth = PsyHFnTdbW( MixTemp, MixHumRat );
 						MixWetBulb = PsyTwbFnTdbWPb( MixTemp, MixHumRat, StdBaroPress, RoutineName );
-						SupEnth = PsyHFnTdbW( SupTemp, SupHumRat, RoutineName );
+						SupEnth = PsyHFnTdbW( SupTemp, SupHumRat );
 						SensCapCoeff1 = SimpleWatertoAirHP( HPNum ).SensCoolCap1;
 						SensCapCoeff2 = SimpleWatertoAirHP( HPNum ).SensCoolCap2;
 						SensCapCoeff3 = SimpleWatertoAirHP( HPNum ).SensCoolCap3;
@@ -1334,7 +1329,7 @@ namespace WaterToAirHeatPumpSimple {
 						ratioTWB = ( MixWetBulb + 273.15 ) / 283.15;
 						// rated condenser water inlet temperature of 85F
 						ratioTS = ( ( ( 85.0 - 32.0 ) / 1.8 ) + 273.15 ) / 283.15;
-						CpAir = PsyCpAirFnWTdb( SupHumRat, SupTemp, RoutineName );
+						CpAir = PsyCpAirFnWTdb( SupHumRat, SupTemp );
 						SensCapTempModFac = SensCapCoeff1 + ( ratioTDB * SensCapCoeff2 ) + ( ratioTWB * SensCapCoeff3 ) + ( ratioTS * SensCapCoeff4 ) + ( 1.0 * SensCapCoeff5 ) + ( 1.0 * SensCapCoeff6 );
 						//       The mixed air temp for zone equipment without an OA mixer is 0.
 						//       This test avoids a negative capacity until a solution can be found.
@@ -1386,7 +1381,7 @@ namespace WaterToAirHeatPumpSimple {
 			}
 
 			// test autosized sensible and total cooling capacity for total > sensible
-			if ( RatedCapCoolSensAutoSized && RatedCapCoolTotalAutoSized || RatedCapCoolSensAutoSized ) {
+			if ( (RatedCapCoolSensAutoSized && RatedCapCoolTotalAutoSized) || RatedCapCoolSensAutoSized ) {
 				if ( SimpleWatertoAirHP( HPNum ).RatedCapCoolSens > SimpleWatertoAirHP( HPNum ).RatedCapCoolTotal ) {
 					ShowWarningError( "COIL:" + SimpleWatertoAirHP( HPNum ).WatertoAirHPType + ":WATERTOAIRHEATPUMP:EQUATIONFIT \"" + SimpleWatertoAirHP( HPNum ).Name + "\"" );
 					ShowContinueError( RoutineName + ": Rated Sensible Cooling Capacity > Rated Total Cooling Capacity" );
@@ -1533,8 +1528,8 @@ namespace WaterToAirHeatPumpSimple {
 			//    END IF
 
 			if ( PltSizNum > 0 ) {
-				rho = GetDensityGlycol( PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidName, PlantSizData( PltSizNum ).ExitTemp, PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidIndex, "SizeHVACWaterToAir" );
-				Cp = GetSpecificHeatGlycol( PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidName, PlantSizData( PltSizNum ).ExitTemp, PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidIndex, "SizeHVACWaterToAir" );
+				rho = GetDensityGlycol( PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidName, PlantSizData( PltSizNum ).ExitTemp, PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidIndex, RoutineNameAlt );
+				Cp = GetSpecificHeatGlycol( PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidName, PlantSizData( PltSizNum ).ExitTemp, PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidIndex, RoutineNameAlt );
 
 				if ( SimpleWatertoAirHP( HPNum ).WatertoAirHPType == "HEATING" ) {
 
@@ -1649,6 +1644,7 @@ namespace WaterToAirHeatPumpSimple {
 		// SUBROUTINE PARAMETER DEFINITIONS:
 		Real64 const Tref( 283.15 ); // Reference Temperature for performance curves,10C [K]
 		static std::string const RoutineName( "CalcHPCoolingSimple" );
+		static std::string const RoutineNameSourceSideInletTemp( "CalcHPCoolingSimple:SourceSideInletTemp" );
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -1714,8 +1710,8 @@ namespace WaterToAirHeatPumpSimple {
 			//Set indoor air conditions to the rated condition
 			LoadSideInletDBTemp_Init = 26.7;
 			LoadSideInletHumRat_Init = 0.0111;
-			LoadSideInletEnth_Init = PsyHFnTdbW( LoadSideInletDBTemp_Init, LoadSideInletHumRat_Init, RoutineName + ":Init" );
-			CpAir_Init = PsyCpAirFnWTdb( LoadSideInletHumRat_Init, LoadSideInletDBTemp_Init, RoutineName + ":Init" );
+			LoadSideInletEnth_Init = PsyHFnTdbW( LoadSideInletDBTemp_Init, LoadSideInletHumRat_Init );
+			CpAir_Init = PsyCpAirFnWTdb( LoadSideInletHumRat_Init, LoadSideInletDBTemp_Init );
 			firstTime = false;
 		}
 		LoadSideInletWBTemp_Init = PsyTwbFnTdbWPb( LoadSideInletDBTemp_Init, LoadSideInletHumRat_Init, OutBaroPress, RoutineName );
@@ -1751,7 +1747,7 @@ namespace WaterToAirHeatPumpSimple {
 		SourceSideMassFlowRate = SimpleWatertoAirHP( HPNum ).WaterMassFlowRate;
 		SourceSideInletTemp = SimpleWatertoAirHP( HPNum ).InletWaterTemp;
 		SourceSideInletEnth = SimpleWatertoAirHP( HPNum ).InletWaterEnthalpy;
-		CpWater = GetSpecificHeatGlycol( PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidName, SourceSideInletTemp, PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidIndex, "CalcHPCoolingSimple:SourceSideInletTemp" );
+		CpWater = GetSpecificHeatGlycol( PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidName, SourceSideInletTemp, PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidIndex, RoutineNameSourceSideInletTemp );
 
 		//Check for flows, do not perform simulation if no flow in load side or source side.
 		if ( SourceSideMassFlowRate <= 0.0 || LoadSideMassFlowRate <= 0.0 ) {
@@ -1856,7 +1852,7 @@ namespace WaterToAirHeatPumpSimple {
 			// continuous fan, cycling compressor
 			SimpleWatertoAirHP( HPNum ).OutletAirEnthalpy = PartLoadRatio * LoadSideOutletEnth + ( 1.0 - PartLoadRatio ) * LoadSideInletEnth;
 			SimpleWatertoAirHP( HPNum ).OutletAirHumRat = PartLoadRatio * LoadSideOutletHumRat + ( 1.0 - PartLoadRatio ) * LoadSideInletHumRat;
-			SimpleWatertoAirHP( HPNum ).OutletAirDBTemp = PsyTdbFnHW( SimpleWatertoAirHP( HPNum ).OutletAirEnthalpy, SimpleWatertoAirHP( HPNum ).OutletAirHumRat, RoutineName );
+			SimpleWatertoAirHP( HPNum ).OutletAirDBTemp = PsyTdbFnHW( SimpleWatertoAirHP( HPNum ).OutletAirEnthalpy, SimpleWatertoAirHP( HPNum ).OutletAirHumRat );
 			PLRCorrLoadSideMdot = LoadSideMassFlowRate;
 		} else {
 			// default to cycling fan, cycling compressor
@@ -1956,6 +1952,7 @@ namespace WaterToAirHeatPumpSimple {
 		// SUBROUTINE PARAMETER DEFINITIONS:
 		Real64 const Tref( 283.15 ); // Reference Temperature for performance curves,10C [K]
 		static std::string const RoutineName( "CalcHPHeatingSimple" );
+		static std::string const RoutineNameSourceSideInletTemp( "CalcHPHeatingSimple:SourceSideInletTemp" );
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -2012,11 +2009,11 @@ namespace WaterToAirHeatPumpSimple {
 
 		LoadSideInletWBTemp = PsyTwbFnTdbWPb( LoadSideInletDBTemp, LoadSideInletHumRat, OutBaroPress, RoutineName );
 		LoadSideInletEnth = SimpleWatertoAirHP( HPNum ).InletAirEnthalpy;
-		CpAir = PsyCpAirFnWTdb( LoadSideInletHumRat, LoadSideInletDBTemp, RoutineName );
+		CpAir = PsyCpAirFnWTdb( LoadSideInletHumRat, LoadSideInletDBTemp );
 		SourceSideMassFlowRate = SimpleWatertoAirHP( HPNum ).WaterMassFlowRate;
 		SourceSideInletTemp = SimpleWatertoAirHP( HPNum ).InletWaterTemp;
 		SourceSideInletEnth = SimpleWatertoAirHP( HPNum ).InletWaterEnthalpy;
-		CpWater = GetSpecificHeatGlycol( PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidName, SourceSideInletTemp, PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidIndex, RoutineName + ":SourceSideInletTemp" );
+		CpWater = GetSpecificHeatGlycol( PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidName, SourceSideInletTemp, PlantLoop( SimpleWatertoAirHP( HPNum ).LoopNum ).FluidIndex, RoutineNameSourceSideInletTemp );
 
 		//Check for flows, do not perform simulation if no flow in load side or source side.
 		if ( SourceSideMassFlowRate <= 0.0 || LoadSideMassFlowRate <= 0.0 ) {
@@ -2055,7 +2052,7 @@ namespace WaterToAirHeatPumpSimple {
 			// continuous fan, cycling compressor
 			SimpleWatertoAirHP( HPNum ).OutletAirEnthalpy = PartLoadRatio * LoadSideOutletEnth + ( 1.0 - PartLoadRatio ) * LoadSideInletEnth;
 			SimpleWatertoAirHP( HPNum ).OutletAirHumRat = PartLoadRatio * LoadSideOutletHumRat + ( 1.0 - PartLoadRatio ) * LoadSideInletHumRat;
-			SimpleWatertoAirHP( HPNum ).OutletAirDBTemp = PsyTdbFnHW( SimpleWatertoAirHP( HPNum ).OutletAirEnthalpy, SimpleWatertoAirHP( HPNum ).OutletAirHumRat, RoutineName );
+			SimpleWatertoAirHP( HPNum ).OutletAirDBTemp = PsyTdbFnHW( SimpleWatertoAirHP( HPNum ).OutletAirEnthalpy, SimpleWatertoAirHP( HPNum ).OutletAirHumRat );
 			PLRCorrLoadSideMdot = LoadSideMassFlowRate;
 		} else {
 			// default to cycling fan, cycling compressor
@@ -2321,18 +2318,18 @@ namespace WaterToAirHeatPumpSimple {
 		} else {
 			// For ContFanCycCoil, moisture is evaporated from the cooling coil back to the air stream
 			// for the entire heat pump off-cycle.
-			Toff = 3600. / ( 4. * MaxONOFFCyclesperHour * RTF ); // duration of cooling coil off-cycle (sec)
+			Toff = 3600.0 / ( 4.0 * MaxONOFFCyclesperHour * RTF ); // duration of cooling coil off-cycle (sec)
 		}
 
 		//  Cap Toff to meet the equation restriction
 		if ( Gamma > 0.0 ) {
-			Toffa = min( Toff, 2. * Twet / Gamma );
+			Toffa = min( Toff, 2.0 * Twet / Gamma );
 		} else {
 			Toffa = Toff;
 		}
 
 		//  Use sucessive substitution to solve for To
-		aa = ( Gamma * Toffa ) - ( 0.25 / Twet ) * ( std::pow( Gamma, 2 ) ) * ( std::pow( Toffa, 2 ) );
+		aa = ( Gamma * Toffa ) - ( 0.25 / Twet ) * pow_2( Gamma ) * pow_2( Toffa );
 
 		To1 = aa + HPTimeConstant;
 		Error = 1.0;

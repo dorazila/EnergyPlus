@@ -186,8 +186,7 @@ namespace CrossVentMgr {
 
 		// Do the one time initializations
 		if ( MyOneTimeFlag ) {
-			MyEnvrnFlag.allocate( NumOfZones );
-			MyEnvrnFlag = true;
+			MyEnvrnFlag.dimension( NumOfZones, true );
 			MyOneTimeFlag = false;
 		}
 
@@ -547,6 +546,7 @@ namespace CrossVentMgr {
 			ZZ = sum( Surface( Surface( MultizoneSurfaceData( MaxSurf ).SurfNum ).BaseSurf ).Vertex( {1,NSides} ).z() ) / double( NSides );
 		}
 
+		Real64 const Wroom_2( pow_2( Wroom ) );
 		for ( Ctd = PosZ_Wall( 2 * ZoneNum - 1 ); Ctd <= PosZ_Wall( 2 * ZoneNum ); ++Ctd ) {
 			if ( ( Surface( APos_Wall( Ctd ) ).Sides == 3 ) || ( Surface( APos_Wall( Ctd ) ).Sides == 4 ) ) {
 				XX_Wall = Surface( APos_Wall( Ctd ) ).Centroid.x;
@@ -558,10 +558,11 @@ namespace CrossVentMgr {
 				YY_Wall = sum( Surface( APos_Wall( Ctd ) ).Vertex( {1,NSides} ).y() ) / double( NSides );
 				ZZ_Wall = sum( Surface( APos_Wall( Ctd ) ).Vertex( {1,NSides} ).z() ) / double( NSides );
 			}
-			if ( std::sqrt( std::pow( ( XX - XX_Wall ), 2 ) + std::pow( ( YY - YY_Wall ), 2 ) + std::pow( ( ZZ - ZZ_Wall ), 2 ) ) > Droom( ZoneNum ) ) {
-				Droom( ZoneNum ) = std::sqrt( std::pow( ( XX - XX_Wall ), 2 ) + std::pow( ( YY - YY_Wall ), 2 ) + std::pow( ( ZZ - ZZ_Wall ), 2 ) );
+			auto DroomTemp = std::sqrt( pow_2( XX - XX_Wall ) + pow_2( YY - YY_Wall ) + pow_2( ZZ - ZZ_Wall ) );
+			if ( DroomTemp > Droom( ZoneNum ) ) {
+				Droom( ZoneNum ) = DroomTemp;
 			}
-			Dstar( ZoneNum ) = min( Droom( ZoneNum ) / CosPhi, std::sqrt( std::pow( Wroom, 2 ) + std::pow( Droom( ZoneNum ), 2 ) ) );
+			Dstar( ZoneNum ) = min( Droom( ZoneNum ) / CosPhi, std::sqrt( Wroom_2 + pow_2( Droom( ZoneNum ) ) ) );
 		}
 
 		// Room area
@@ -830,7 +831,7 @@ namespace CrossVentMgr {
 		}
 
 		SumAllInternalConvectionGains( ZoneNum, ConvGains );
-		ConvGains += SumConvHTRadSys( ZoneNum ) + SysDepZoneLoadsLagged( ZoneNum ) + NonAirSystemResponse( ZoneNum ) / ZoneMult;
+		ConvGains += SumConvHTRadSys( ZoneNum ) + SumConvPool( ZoneNum ) + SysDepZoneLoadsLagged( ZoneNum ) + NonAirSystemResponse( ZoneNum ) / ZoneMult;
 
 		// Add heat to return air if zonal system (no return air) or cycling system (return air frequently very low or zero)
 		if ( Zone( ZoneNum ).NoHeatToReturnAir ) {
@@ -943,7 +944,7 @@ namespace CrossVentMgr {
 	//     Portions of the EnergyPlus software package have been developed and copyrighted
 	//     by other individuals, companies and institutions.  These portions have been
 	//     incorporated into the EnergyPlus software package under license.   For a complete
-	//     list of contributors, see "Notice" located in EnergyPlus.f90.
+	//     list of contributors, see "Notice" located in main.cc.
 
 	//     NOTICE: The U.S. Government is granted for itself and others acting on its
 	//     behalf a paid-up, nonexclusive, irrevocable, worldwide license in this data to

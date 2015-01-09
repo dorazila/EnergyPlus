@@ -16,7 +16,7 @@ namespace DataBranchNodeConnections {
 
 	// Data
 	// MODULE PARAMETER DEFINITIONS:
-	extern std::string const Blank;
+	// na
 
 	// DERIVED TYPE DEFINITIONS:
 
@@ -181,8 +181,6 @@ namespace DataBranchNodeConnections {
 	extern FArray1D< ComponentListData > CompSets;
 	extern FArray1D< ParentListData > ParentNodeList;
 	extern FArray1D< NodeConnectionDef > NodeConnections;
-	extern FArray1D< NodeConnectionDef > tmpNodeConnections;
-	extern FArray1D< EqNodeConnectionDef > tmpEqNodeConnections;
 	extern FArray1D< EqNodeConnectionDef > AirTerminalNodeConnections;
 
 } // DataBranchNodeConnections

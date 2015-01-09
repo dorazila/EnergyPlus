@@ -1,12 +1,14 @@
+// C++ Headers
+#include <iostream>
+
 // ObjexxFCL Headers
 #include <ObjexxFCL/Fmath.hh>
-#include <ObjexxFCL/gio.hh>
-#include <ObjexxFCL/string.functions.hh>
 
 // EnergyPlus Headers
 #include <DisplayRoutines.hh>
 #include <DataGlobals.hh>
 #include <DataSystemVariables.hh>
+#include <sstream>
 
 namespace EnergyPlus {
 
@@ -24,7 +26,6 @@ DisplayString( std::string const & String ) // String to be displayed
 	// This subroutine provides a call to display strings during program execution.
 
 	// METHODOLOGY EMPLOYED:
-	// usage:=  call DisplayString(string)
 
 	// REFERENCES:
 	// na
@@ -37,7 +38,6 @@ DisplayString( std::string const & String ) // String to be displayed
 	// SUBROUTINE ARGUMENT DEFINITIONS:
 
 	// SUBROUTINE PARAMETER DEFINITIONS:
-	static gio::Fmt const FmtA( "(1X,A)" );
 
 	// INTERFACE BLOCK SPECIFICATIONS
 	// na
@@ -49,7 +49,51 @@ DisplayString( std::string const & String ) // String to be displayed
 	// na
 
 	if ( KickOffSimulation && ! DeveloperFlag ) return;
-	gio::write( FmtA ) << String;
+	std::cout << String << '\n';
+
+}
+
+void
+DisplayString( char const * String ) // String to be displayed
+{
+
+	// SUBROUTINE INFORMATION:
+	//       AUTHOR         Linda Lawrie
+	//       DATE WRITTEN   Version 1.0
+	//       MODIFIED       na
+	//       RE-ENGINEERED  Overload to avoid std::string creation overhead
+
+	// PURPOSE OF THIS SUBROUTINE:
+	// This subroutine provides a call to display strings during program execution.
+
+	// METHODOLOGY EMPLOYED:
+
+	// REFERENCES:
+	// na
+
+	// Using/Aliasing
+	using DataGlobals::KickOffSimulation;
+	using DataGlobals::fMessagePtr;
+	using DataSystemVariables::DeveloperFlag;
+
+	// Locals
+	// SUBROUTINE ARGUMENT DEFINITIONS:
+
+	// SUBROUTINE PARAMETER DEFINITIONS:
+
+	// INTERFACE BLOCK SPECIFICATIONS
+	// na
+
+	// DERIVED TYPE DEFINITIONS
+	// na
+
+	// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
+	// na
+
+	if ( fMessagePtr ) fMessagePtr(String);
+
+	if ( KickOffSimulation && ! DeveloperFlag ) return;
+	std::cout << String << '\n';
 
 }
 
@@ -79,12 +123,12 @@ DisplayNumberAndString(
 	// Using/Aliasing
 	using DataGlobals::KickOffSimulation;
 	using DataSystemVariables::DeveloperFlag;
-
+	using DataGlobals::fMessagePtr;
+	
 	// Locals
 	// SUBROUTINE ARGUMENT DEFINITIONS:
 
 	// SUBROUTINE PARAMETER DEFINITIONS:
-	static gio::Fmt const FmtA( "(1X,A)" );
 
 	// INTERFACE BLOCK SPECIFICATIONS
 	// na
@@ -93,17 +137,16 @@ DisplayNumberAndString(
 	// na
 
 	// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
-	std::string NumString;
-
+	std::stringstream sstm;
+	sstm << String << " " << Number;
+	if ( fMessagePtr ) fMessagePtr( sstm.str() );
+	
 	if ( KickOffSimulation && ! DeveloperFlag ) return;
-	gio::write( NumString, "*" ) << Number;
-	strip( NumString );
-
-	gio::write( FmtA ) << String + NumString;
+	std::cout << String << ' ' << Number << '\n';
 }
 
 void
-DisplaySimDaysProgress(
+DisplaySimDaysProgress( // This doesn't do anything!
 	int const CurrentSimDay, // Current Simulation Day
 	int const TotalSimDays // Total number of Simulation Days
 )
@@ -127,6 +170,7 @@ DisplaySimDaysProgress(
 
 	// Using/Aliasing
 	using DataGlobals::KickOffSimulation;
+	using DataGlobals::fProgressPtr;
 	using DataSystemVariables::DeveloperFlag;
 
 	// Locals
@@ -146,11 +190,13 @@ DisplaySimDaysProgress(
 
 	if ( KickOffSimulation && ! DeveloperFlag ) return;
 	if ( TotalSimDays > 0 ) {
-		percent = nint( ( CurrentSimDay / TotalSimDays ) * 100.0 );
+		percent = nint( ( ( float ) CurrentSimDay / ( float ) TotalSimDays ) * 100.0 );
 		percent = min( percent, 100 );
 	} else {
 		percent = 0;
 	}
+
+	if ( fProgressPtr ) fProgressPtr( percent );
 
 }
 
@@ -161,7 +207,7 @@ DisplaySimDaysProgress(
 //     Portions of the EnergyPlus software package have been developed and copyrighted
 //     by other individuals, companies and institutions.  These portions have been
 //     incorporated into the EnergyPlus software package under license.   For a complete
-//     list of contributors, see "Notice" located in EnergyPlus.f90.
+//     list of contributors, see "Notice" located in main.cc.
 //     NOTICE: The U.S. Government is granted for itself and others acting on its
 //     behalf a paid-up, nonexclusive, irrevocable, worldwide license in this data to
 //     reproduce, prepare derivative works, and perform publicly and display publicly.

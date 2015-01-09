@@ -50,6 +50,8 @@
 
 namespace EnergyPlus {
 
+static gio::Fmt fmtLD( "*" );
+
 void
 ControlCompOutput(
 	std::string const & CompName, // the component Name
@@ -105,7 +107,6 @@ ControlCompOutput(
 	using BaseboardRadiator::SimHWConvective;
 	using Psychrometrics::PsyCpAirFnWTdb;
 	using VentilatedSlab::CalcVentilatedSlabComps;
-	using InputProcessor::MakeUPPERCase;
 	using General::TrimSigDigits;
 	using General::RoundSigDigits;
 	using SteamBaseboardRadiator::CalcSteamBaseboard;
@@ -117,7 +118,8 @@ ControlCompOutput(
 
 	// SUBROUTINE PARAMETER DEFINITIONS:
 	//Iteration maximum for reheat control
-	int const MaxIter( 25 );
+	static int const MaxIter( 25 );
+	static Real64 const iter_fac( 1.0 / std::pow( 2, MaxIter - 3 ) );
 	int const iReverseAction( 1 );
 	int const iNormalAction( 2 );
 
@@ -236,10 +238,10 @@ ControlCompOutput(
 	LoadMet = 0.0;
 	HalvingPrec = 0.0;
 
-	//At the beginning of every time step the value is reset to the User Input
+	// At the beginning of every time step the value is reset to the User Input
 	ZoneController.SetPoint = 0.0;
 
-	//Set to converged controller
+	// Set to converged controller
 	ZoneInterHalf.MaxFlowCalc = true;
 	ZoneInterHalf.MinFlowCalc = false;
 	ZoneInterHalf.NormFlowCalc = false;
@@ -247,13 +249,13 @@ ControlCompOutput(
 	ZoneInterHalf.MaxResult = 1.0;
 	ZoneInterHalf.MinResult = 0.0;
 
-	//Start the Solution Iteration
+	// Start the Solution Iteration
 	while ( ! Converged ) {
 
 		if ( FirstHVACIteration ) {
 			Node( ActuatedNode ).MassFlowRateMaxAvail = MaxFlow;
 			Node( ActuatedNode ).MassFlowRateMinAvail = MinFlow;
-			//Check to make sure that the Minimum Flow rate is less than the max.
+			// Check to make sure that the Minimum Flow rate is less than the max.
 			if ( MinFlow > MaxFlow ) {
 				ShowSevereError( "ControlCompOutput:" + CompType + ':' + CompName + ", Min Control Flow is > Max Control Flow" );
 				ShowContinueError( "Acuated Node=" + NodeID( ActuatedNode ) + " MinFlow=[" + TrimSigDigits( MinFlow, 3 ) + "], Max Flow=" + TrimSigDigits( MaxFlow, 3 ) );
@@ -261,7 +263,7 @@ ControlCompOutput(
 				ShowFatalError( "Program terminates due to preceding condition." );
 			}
 		} // End of FirstHVACIteration Conditional If
-		//The interface managers can reset the Max or Min to available values during the time step
+		// The interface managers can reset the Max or Min to available values during the time step
 		// and these will then be the new setpoint limits for the controller to work within.
 		if ( ( SimCompNum == 3 ) && ( ! present( AirMassFlow ) ) ) {
 			ZoneController.MaxSetPoint = Node( ActuatedNode ).MassFlowRateMaxAvail;
@@ -286,7 +288,7 @@ ControlCompOutput(
 			//Record the minimum results and set flow to half way between the max and min and find results
 		} else if ( ZoneInterHalf.MinFlowResult ) {
 			ZoneInterHalf.MinResult = ZoneController.SensedValue;
-			HalvingPrec = ( ZoneInterHalf.MaxResult - ZoneInterHalf.MinResult ) * ( 1.0 / float( std::pow( 2, ( MaxIter - 3 ) ) ) );
+			HalvingPrec = ( ZoneInterHalf.MaxResult - ZoneInterHalf.MinResult ) * iter_fac;
 			ZoneInterHalf.MidFlow = ( ZoneInterHalf.MaxFlow + ZoneInterHalf.MinFlow ) / 2.0;
 			ZoneController.CalculatedSetPoint = ( ZoneInterHalf.MaxFlow + ZoneInterHalf.MinFlow ) / 2.0;
 			ZoneInterHalf.MinFlowResult = false;
@@ -297,7 +299,7 @@ ControlCompOutput(
 
 			// First check to see if the component is running; if not converge and return
 			if ( ZoneInterHalf.MaxResult == ZoneInterHalf.MinResult ) {
-				//Set to converged controller
+				// Set to converged controller
 				Converged = true;
 				ZoneInterHalf.MaxFlowCalc = true;
 				ZoneInterHalf.MinFlowCalc = false;
@@ -305,13 +307,12 @@ ControlCompOutput(
 				ZoneInterHalf.MinFlowResult = false;
 				ZoneInterHalf.MaxResult = 1.0;
 				ZoneInterHalf.MinResult = 0.0;
-				{ auto const SELECT_CASE_var( SimCompNum );
-				if ( ( SELECT_CASE_var >= 4 ) && ( SELECT_CASE_var <= 6 ) ) { //hot water baseboards use min flow
+				if ( ( SimCompNum >= 4 ) && ( SimCompNum <= 6 ) ) { //hot water baseboards use min flow
 					ZoneController.CalculatedSetPoint = 0.0; //CR7253
 				} else {
 					ZoneController.CalculatedSetPoint = ZoneInterHalf.MaxFlow; //CR7253
-				}}
-				//Set the Actuated node MassFlowRate with zero value
+				}
+				// Set the Actuated node MassFlowRate with zero value
 				if ( present( LoopNum ) ) { // this is a plant component
 					SetActuatedBranchFlowRate( ZoneController.CalculatedSetPoint, ActuatedNode, LoopNum, LoopSide, BranchIndex, false ); //Autodesk:OPTIONAL LoopSide, BranchIndex used without PRESENT check
 				} else { // assume not a plant component
@@ -331,7 +332,7 @@ ControlCompOutput(
 				} else {
 					ZoneController.CalculatedSetPoint = ZoneInterHalf.MinFlow;
 				}
-				//set to converged controller
+				// set to converged controller
 				Converged = true;
 				ZoneInterHalf.MaxFlowCalc = true;
 				ZoneInterHalf.MinFlowCalc = false;
@@ -341,11 +342,11 @@ ControlCompOutput(
 				ZoneInterHalf.MinResult = 0.0;
 				// MaxResult is greater than MinResult so simulation control algorithm may proceed normally
 			} else if ( ZoneInterHalf.MaxResult > ZoneInterHalf.MinResult ) {
-				//Now check to see if the setpoint is outside the endpoints of the control range
+				// Now check to see if the setpoint is outside the endpoints of the control range
 				// First check to see if the water is too cold and if so set to the minimum flow.
 				if ( ZoneController.SetPoint <= ZoneInterHalf.MinResult ) {
 					ZoneController.CalculatedSetPoint = ZoneInterHalf.MinFlow;
-					//Set to Converged Controller
+					// Set to Converged Controller
 					Converged = true;
 					ZoneInterHalf.MaxFlowCalc = true;
 					ZoneInterHalf.MinFlowCalc = false;
@@ -356,7 +357,7 @@ ControlCompOutput(
 					// Then check if too hot and if so set it to the maximum flow
 				} else if ( ZoneController.SetPoint >= ZoneInterHalf.MaxResult ) {
 					ZoneController.CalculatedSetPoint = ZoneInterHalf.MaxFlow;
-					//Set to Converged Controller
+					// Set to Converged Controller
 					Converged = true;
 					ZoneInterHalf.MaxFlowCalc = true;
 					ZoneInterHalf.MinFlowCalc = false;
@@ -415,7 +416,7 @@ ControlCompOutput(
 			ZoneInterHalf.MinResult = 0.0;
 		}
 
-		//Set the Actuated node MassFlowRate with the new value
+		// Set the Actuated node MassFlowRate with the new value
 		if ( present( LoopNum ) ) { // this is a plant component
 			SetActuatedBranchFlowRate( ZoneController.CalculatedSetPoint, ActuatedNode, LoopNum, LoopSide, BranchIndex, false ); //Autodesk:OPTIONAL LoopSide, BranchIndex used without PRESENT check
 		} else { // assume not a plant component, leave alone
@@ -434,25 +435,26 @@ ControlCompOutput(
 			}
 		}
 
-		{ auto const SELECT_CASE_var( SimCompNum );
-
-		if ( SELECT_CASE_var == 1 ) { // 'AIRTERMINAL:SINGLEDUCT:PARALLELPIU:REHEAT'
+		switch ( SimCompNum ) { //Tuned If block changed to switch
+		case 1: // 'AIRTERMINAL:SINGLEDUCT:PARALLELPIU:REHEAT'
 			// simulate series piu reheat coil
 			SimulateWaterCoilComponents( CompName, FirstHVACIteration, CompNum );
 			// Calculate the control signal (the variable we are forcing to zero)
 			CpAir = PsyCpAirFnWTdb( Node( TempOutNode ).HumRat, 0.5 * ( Node( TempOutNode ).Temp + Node( TempInNode ).Temp ) ); //Autodesk:OPTIONAL TempInNode, TempOutNode used without PRESENT check
 			LoadMet = CpAir * Node( TempOutNode ).MassFlowRate * ( Node( TempOutNode ).Temp - Node( TempInNode ).Temp ); //Autodesk:OPTIONAL TempInNode, TempOutNode used without PRESENT check
 			ZoneController.SensedValue = ( LoadMet - QZnReq ) / Denom;
+			break;
 
-		} else if ( SELECT_CASE_var == 2 ) { // 'AIRTERMINAL:SINGLEDUCT:SERIESPIU:REHEAT'
+		case 2: // 'AIRTERMINAL:SINGLEDUCT:SERIESPIU:REHEAT'
 			// simulate series piu reheat coil
 			SimulateWaterCoilComponents( CompName, FirstHVACIteration, CompNum );
 			// Calculate the control signal (the variable we are forcing to zero)
 			CpAir = PsyCpAirFnWTdb( Node( TempOutNode ).HumRat, 0.5 * ( Node( TempOutNode ).Temp + Node( TempInNode ).Temp ) ); //Autodesk:OPTIONAL TempInNode, TempOutNode used without PRESENT check
 			LoadMet = CpAir * Node( TempOutNode ).MassFlowRate * ( Node( TempOutNode ).Temp - Node( TempInNode ).Temp ); //Autodesk:OPTIONAL TempInNode, TempOutNode used without PRESENT check
 			ZoneController.SensedValue = ( LoadMet - QZnReq ) / Denom;
+			break;
 
-		} else if ( SELECT_CASE_var == 3 ) { // 'COIL:HEATING:WATER'
+		case 3: // 'COIL:HEATING:WATER'
 			// Simulate reheat coil for the VAV system
 			SimulateWaterCoilComponents( CompName, FirstHVACIteration, CompNum );
 			// Calculate the control signal (the variable we are forcing to zero)
@@ -465,59 +467,69 @@ ControlCompOutput(
 				LoadMet = Node( TempOutNode ).MassFlowRate * CpAir * ( Node( TempOutNode ).Temp - Node( TempInNode ).Temp ); //Autodesk:OPTIONAL TempInNode, TempOutNode used without PRESENT check
 				ZoneController.SensedValue = ( LoadMet - QZnReq ) / Denom;
 			}
+			break;
 
-		} else if ( SELECT_CASE_var == 4 ) { // 'ZONEHVAC:BASEBOARD:CONVECTIVE:WATER'
+		case 4: // 'ZONEHVAC:BASEBOARD:CONVECTIVE:WATER'
 			// Simulate baseboard
 			SimHWConvective( CompNum, LoadMet );
 			// Calculate the control signal (the variable we are forcing to zero)
 			ZoneController.SensedValue = ( LoadMet - QZnReq ) / Denom;
+			break;
 
-		} else if ( SELECT_CASE_var == 5 ) { // 'ZONEHVAC:BASEBOARD:RADIANTCONVECTIVE:STEAM'
+		case 5: // 'ZONEHVAC:BASEBOARD:RADIANTCONVECTIVE:STEAM'
 			// Simulate baseboard
 			CalcSteamBaseboard( CompNum, LoadMet );
 			// Calculate the control signal (the variable we are forcing to zero)
 			ZoneController.SensedValue = ( LoadMet - QZnReq ) / Denom;
+			break;
 
-		} else if ( SELECT_CASE_var == 6 ) { // 'ZONEHVAC:BASEBOARD:RADIANTCONVECTIVE:WATER'
+		case 6: // 'ZONEHVAC:BASEBOARD:RADIANTCONVECTIVE:WATER'
 			// Simulate baseboard
 			CalcHWBaseboard( CompNum, LoadMet );
 			// Calculate the control signal (the variable we are forcing to zero)
 			ZoneController.SensedValue = ( LoadMet - QZnReq ) / Denom;
+			break;
 
-		} else if ( SELECT_CASE_var == 7 ) { // 'ZONEHVAC:FOURPIPEFANCOIL'
+		case 7: // 'ZONEHVAC:FOURPIPEFANCOIL'
 			// Simulate fancoil unit
 			Calc4PipeFanCoil( CompNum, ControlledZoneIndex, FirstHVACIteration, LoadMet );
 			//Calculate the control signal (the variable we are forcing to zero)
 			ZoneController.SensedValue = ( LoadMet - QZnReq ) / Denom;
+			break;
 
-		} else if ( SELECT_CASE_var == 8 ) { //'ZONEHVAC:OUTDOORAIRUNIT'
+		case 8: //'ZONEHVAC:OUTDOORAIRUNIT'
 			// Simulate outdoor air unit components
 			CalcOAUnitCoilComps( CompNum, FirstHVACIteration, EquipIndex, LoadMet ); //Autodesk:OPTIONAL EquipIndex used without PRESENT check
 			//Calculate the control signal (the variable we are forcing to zero)
 			ZoneController.SensedValue = ( LoadMet - QZnReq ) / Denom;
+			break;
 
-		} else if ( SELECT_CASE_var == 9 ) { // 'ZONEHVAC:UNITHEATER'
+		case 9: // 'ZONEHVAC:UNITHEATER'
 			// Simulate unit heater components
 			CalcUnitHeaterComponents( CompNum, FirstHVACIteration, LoadMet );
 			//Calculate the control signal (the variable we are forcing to zero)
 			ZoneController.SensedValue = ( LoadMet - QZnReq ) / Denom;
+			break;
 
-		} else if ( SELECT_CASE_var == 10 ) { // 'ZONEHVAC:UNITVENTILATOR'
+		case 10: // 'ZONEHVAC:UNITVENTILATOR'
 			// Simulate unit ventilator components
 			CalcUnitVentilatorComponents( CompNum, FirstHVACIteration, LoadMet );
 			//Calculate the control signal (the variable we are forcing to zero)
 			ZoneController.SensedValue = ( LoadMet - QZnReq ) / Denom;
+			break;
 
-		} else if ( SELECT_CASE_var == 11 ) { // 'ZONEHVAC:VENTILATEDSLAB'
+		case 11: // 'ZONEHVAC:VENTILATEDSLAB'
 			// Simulate unit ventilator components
 			CalcVentilatedSlabComps( CompNum, FirstHVACIteration, LoadMet );
 			//Calculate the control signal (the variable we are forcing to zero)
 			ZoneController.SensedValue = ( LoadMet - QZnReq ) / Denom;
+			break;
 
-		} else {
+		default:
 			ShowFatalError( "ControlCompOutput: Illegal Component Number argument =[" + TrimSigDigits( SimCompNum ) + ']' );
+			break;
 
-		}}
+		}
 
 		// Check for Controller convergence to see if within the offset
 		if ( std::abs( ZoneController.SensedValue ) <= ControlOffset || std::abs( ZoneController.SensedValue ) <= HalvingPrec ) {
@@ -538,14 +550,14 @@ ControlCompOutput(
 			ShowWarningMessage( "ControlCompOutput: Maximum iterations exceeded for " + CompType + " = " + CompName );
 			ShowContinueError( "... Load met       = " + TrimSigDigits( LoadMet, 5 ) + " W." );
 			ShowContinueError( "... Load requested = " + TrimSigDigits( QZnReq, 5 ) + " W." );
-			ShowContinueError( "... Error          = " + TrimSigDigits( std::abs( ( LoadMet - QZnReq ) * 100. / Denom ), 8 ) + " %." );
-			ShowContinueError( "... Tolerance      = " + TrimSigDigits( ControlOffset * 100., 8 ) + " %." );
+			ShowContinueError( "... Error          = " + TrimSigDigits( std::abs( ( LoadMet - QZnReq ) * 100.0 / Denom ), 8 ) + " %." );
+			ShowContinueError( "... Tolerance      = " + TrimSigDigits( ControlOffset * 100.0, 8 ) + " %." );
 			ShowContinueError( "... Error          = (Load met - Load requested) / MAXIMUM(Load requested, 100)" );
 			ShowContinueError( "... Actuated Node Mass Flow Rate =" + RoundSigDigits( Node( ActuatedNode ).MassFlowRate, 9 ) + " kg/s" );
 			ShowContinueErrorTimeStamp( "" );
-			ShowRecurringWarningErrorAtEnd( "ControlCompOutput: Maximum iterations error for " + CompType + " = " + CompName, CompErrIndex, std::abs( ( LoadMet - QZnReq ) * 100. / Denom ), std::abs( ( LoadMet - QZnReq ) * 100. / Denom ), _, "%", "%" );
+			ShowRecurringWarningErrorAtEnd( "ControlCompOutput: Maximum iterations error for " + CompType + " = " + CompName, CompErrIndex, std::abs( ( LoadMet - QZnReq ) * 100.0 / Denom ), std::abs( ( LoadMet - QZnReq ) * 100.0 / Denom ), _, "%", "%" );
 			//}
-			ShowRecurringWarningErrorAtEnd( "ControlCompOutput: Maximum iterations error for " + CompType + " = " + CompName, CompErrIndex, std::abs( ( LoadMet - QZnReq ) * 100. / Denom ), std::abs( ( LoadMet - QZnReq ) * 100. / Denom ), _, "%", "%" );
+			ShowRecurringWarningErrorAtEnd( "ControlCompOutput: Maximum iterations error for " + CompType + " = " + CompName, CompErrIndex, std::abs( ( LoadMet - QZnReq ) * 100.0 / Denom ), std::abs( ( LoadMet - QZnReq ) * 100.0 / Denom ), _, "%", "%" );
 			break; // It will not converge this time
 		} else if ( Iter > MaxIter * 2 ) {
 			break;
@@ -922,6 +934,7 @@ CalcPassiveExteriorBaffleGap(
 	Real64 const Pr( 0.71 ); // Prandtl number for air
 	Real64 const Sigma( 5.6697e-08 ); // Stefan-Boltzmann constant
 	Real64 const KelvinConv( 273.15 ); // Conversion from Celsius to Kelvin
+	static std::string const RoutineName( "CalcPassiveExteriorBaffleGap" );
 	// INTERFACE BLOCK SPECIFICATIONS:
 
 	// DERIVED TYPE DEFINITIONS:
@@ -981,10 +994,10 @@ CalcPassiveExteriorBaffleGap(
 //	LocalWetBulbTemp = sum( Surface( SurfPtrARR ).Area * Surface( SurfPtrARR ).OutWetBulbTemp ) / sum( Surface( SurfPtrARR ).Area ); //Autodesk:F2C++ Array subscript usage: Replaced by below
 	LocalWetBulbTemp = sum_product_sub( Surface.Area(), Surface.OutWetBulbTemp(), SurfPtrARR ) / sum_sub( Surface.Area(), SurfPtrARR ); //Autodesk:F2C++ Functions handle array subscript usage
 
-	LocalOutHumRat = PsyWFnTdbTwbPb( LocalOutDryBulbTemp, LocalWetBulbTemp, OutBaroPress, "CalcPassiveExteriorBaffleGap" );
+	LocalOutHumRat = PsyWFnTdbTwbPb( LocalOutDryBulbTemp, LocalWetBulbTemp, OutBaroPress, RoutineName );
 
-	RhoAir = PsyRhoAirFnPbTdbW( OutBaroPress, LocalOutDryBulbTemp, LocalOutHumRat, "CalcPassiveExteriorBaffleGap" );
-	CpAir = PsyCpAirFnWTdb( LocalOutHumRat, LocalOutDryBulbTemp, "CalcPassiveExteriorBaffleGap" );
+	RhoAir = PsyRhoAirFnPbTdbW( OutBaroPress, LocalOutDryBulbTemp, LocalOutHumRat, RoutineName );
+	CpAir = PsyCpAirFnWTdb( LocalOutHumRat, LocalOutDryBulbTemp );
 	if ( ! IsRain ) {
 		Tamb = LocalOutDryBulbTemp;
 	} else { // when raining we use wetbulb not drybulb
@@ -996,18 +1009,12 @@ CalcPassiveExteriorBaffleGap(
 
 	//loop through underlying surfaces and collect needed data
 	NumSurfs = size( SurfPtrARR );
-	HSkyARR.allocate( NumSurfs );
-	HSkyARR = 0.0;
-	HGroundARR.allocate( NumSurfs );
-	HGroundARR = 0.0;
-	HAirARR.allocate( NumSurfs );
-	HAirARR = 0.0;
-	LocalWindArr.allocate( NumSurfs );
-	LocalWindArr = 0.0;
-	HPlenARR.allocate( NumSurfs );
-	HPlenARR = 0.0;
-	HExtARR.allocate( NumSurfs );
-	HExtARR = 0.0;
+	HSkyARR.dimension( NumSurfs, 0.0 );
+	HGroundARR.dimension( NumSurfs, 0.0 );
+	HAirARR.dimension( NumSurfs, 0.0 );
+	LocalWindArr.dimension( NumSurfs, 0.0 );
+	HPlenARR.dimension( NumSurfs, 0.0 );
+	HExtARR.dimension( NumSurfs, 0.0 );
 
 	for ( ThisSurf = 1; ThisSurf <= NumSurfs; ++ThisSurf ) {
 		SurfPtr = SurfPtrARR( ThisSurf );
@@ -1022,7 +1029,7 @@ CalcPassiveExteriorBaffleGap(
 		if ( TsBaffK == TsoK ) { // avoid divide by zero
 			HPlenARR( ThisSurf ) = 0.0; // no net heat transfer if same temperature
 		} else {
-			HPlenARR( ThisSurf ) = Sigma * AbsExt * AbsThermSurf * ( std::pow( TsBaffK, 4 ) - std::pow( TsoK, 4 ) ) / ( TsBaffK - TsoK );
+			HPlenARR( ThisSurf ) = Sigma * AbsExt * AbsThermSurf * ( pow_4( TsBaffK ) - pow_4( TsoK ) ) / ( TsBaffK - TsoK );
 		}
 		// Added for ICS collector OSCM
 		if ( Surface( SurfPtr ).IsICS ) {
@@ -1077,7 +1084,7 @@ CalcPassiveExteriorBaffleGap(
 
 	TmeanK = 0.5 * ( TmpTsBaf + Tso ) + KelvinConv;
 
-	Gr = g * std::pow( GapThick, 3 ) * std::abs( Tso - TmpTsBaf ) * std::pow( RhoAir, 2 ) / ( TmeanK * std::pow( nu, 2 ) );
+	Gr = g * pow_3( GapThick ) * std::abs( Tso - TmpTsBaf ) * pow_2( RhoAir ) / ( TmeanK * pow_2( nu ) );
 
 	PassiveGapNusseltNumber( AspRat, Tilt, TmpTsBaf, Tso, Gr, NuPlen ); //intentionally switch Tso to Tsi
 
@@ -1087,14 +1094,14 @@ CalcPassiveExteriorBaffleGap(
 	VdotWind = Cv * ( VentArea / 2.0 ) * Vwind;
 
 	if ( TaGap > Tamb ) {
-		VdotThermal = Cd * ( VentArea / 2. ) * std::pow( ( 2. * g * HdeltaNPL * ( TaGap - Tamb ) / ( TaGap + KelvinConv ) ), 0.5 );
+		VdotThermal = Cd * ( VentArea / 2.0 ) * std::sqrt( 2.0 * g * HdeltaNPL * ( TaGap - Tamb ) / ( TaGap + KelvinConv ) );
 	} else if ( TaGap == Tamb ) {
 		VdotThermal = 0.0;
 	} else {
-		if ( ( std::abs( Tilt ) < 5.0 ) || ( std::abs( Tilt - 180 ) < 5.0 ) ) {
+		if ( ( std::abs( Tilt ) < 5.0 ) || ( std::abs( Tilt - 180.0 ) < 5.0 ) ) {
 			VdotThermal = 0.0; // stable bouyancy situation
 		} else {
-			VdotThermal = Cd * ( VentArea / 2. ) * std::pow( ( 2. * g * HdeltaNPL * ( Tamb - TaGap ) / ( Tamb + KelvinConv ) ), 0.5 );
+			VdotThermal = Cd * ( VentArea / 2.0 ) * std::sqrt( 2.0 * g * HdeltaNPL * ( Tamb - TaGap ) / ( Tamb + KelvinConv ) );
 		}
 	}
 
@@ -1135,7 +1142,7 @@ PassiveGapNusseltNumber(
 {
 
 	// SUBROUTINE INFORMATION:
-	//       AUTHOR         Adapted by B. Griffith from Fred Winkelmann's from NusseltNumber in WindowManager.f90
+	//       AUTHOR         Adapted by B. Griffith from Fred Winkelmann's from NusseltNumber in WindowManager.cc
 	//       DATE WRITTEN   September 2001
 	//       MODIFIED       B. Griffith November 2004  (same models but slightly different for general use)
 	//       RE-ENGINEERED  na
@@ -1195,17 +1202,17 @@ PassiveGapNusseltNumber(
 		gnu901 = 1.0 + 1.7596678e-10 * std::pow( Ra, 2.2984755 ); // eq. 51
 	}
 	if ( Ra > 1.0e4 && Ra <= 5.0e4 ) gnu901 = 0.028154 * std::pow( Ra, 0.4134 ); // eq. 50
-	if ( Ra > 5.0e4 ) gnu901 = 0.0673838 * std::pow( Ra, ( 1.0 / 3.0 ) ); // eq. 49
+	if ( Ra > 5.0e4 ) gnu901 = 0.0673838 * std::pow( Ra, 1.0 / 3.0 ); // eq. 49
 
-	gnu902 = 0.242 * std::pow( ( Ra / AspRat ), .272 ); // eq. 52
+	gnu902 = 0.242 * std::pow( Ra / AspRat, 0.272 ); // eq. 52
 	gnu90 = max( gnu901, gnu902 );
 
 	if ( Tso > Tsi ) { // window heated from above
 		gNu = 1.0 + ( gnu90 - 1.0 ) * std::sin( tiltr ); // eq. 53
 	} else { // window heated from below
 		if ( Tilt >= 60.0 ) {
-			g = 0.5 * std::pow( ( 1.0 + std::pow( ( Ra / 3160. ), 20.6 ) ), ( -0.1 ) ); // eq. 47
-			gnu601a = 1.0 + std::pow( ( 0.0936 * ( std::pow( Ra, 0.314 ) ) / ( 1.0 + g ) ), 7 ); // eq. 45
+			g = 0.5 * std::pow( 1.0 + std::pow( Ra / 3160.0, 20.6 ), -0.1 ); // eq. 47
+			gnu601a = 1.0 + pow_7( 0.0936 * std::pow( Ra, 0.314 ) / ( 1.0 + g ) ); // eq. 45
 			gnu601 = std::pow( gnu601a, 0.142857 );
 
 			// For any aspect ratio
@@ -1218,10 +1225,10 @@ PassiveGapNusseltNumber(
 		if ( Tilt < 60.0 ) { // eq. 42
 			cra = Ra * std::cos( tiltr );
 			a = 1.0 - 1708.0 / cra;
-			b = std::pow( ( cra / 5830.0 ), 0.33333 ) - 1.0;
+			b = std::pow( cra / 5830.0, 0.33333 ) - 1.0;
 			gnua = ( std::abs( a ) + a ) / 2.0;
 			gnub = ( std::abs( b ) + b ) / 2.0;
-			ang = 1708.0 * std::pow( ( std::sin( 1.8 * tiltr ) ), 1.6 );
+			ang = 1708.0 * std::pow( std::sin( 1.8 * tiltr ), 1.6 );
 			gNu = 1.0 + 1.44 * gnua * ( 1.0 - ang / cra ) + gnub;
 		}
 	}
@@ -1453,15 +1460,15 @@ TestSupplyAirPathIntegrity( bool & ErrFound )
 	int WAirLoop;
 
 	// Formats
-	static gio::Fmt const Format_700( "('! <#Supply Air Paths>,<Number of Supply Air Paths>')" );
-	static gio::Fmt const Format_701( "(A)" );
-	static gio::Fmt const Format_702( "('! <Supply Air Path>,<Supply Air Path Count>,<Supply Air Path Name>,<AirLoopHVAC Name>')" );
-	static gio::Fmt const Format_703( "('! <#Components on Supply Air Path>,<Number of Components>')" );
-	static gio::Fmt const Format_704( "('! <Supply Air Path Component>,<Component Count>,<Component Type>,<Component Name>,','<AirLoopHVAC Name>')" );
-	static gio::Fmt const Format_705( "('! <#Nodes on Supply Air Path>,<Number of Nodes>')" );
-	static gio::Fmt const Format_706( "('! <Supply Air Path Node>,<Node Type>,<Node Count>,<Node Name>,<AirLoopHVAC Name>')" );
-	static gio::Fmt const Format_707( "('! <#Outlet Nodes on Supply Air Path Component>,<Number of Nodes>')" );
-	static gio::Fmt const Format_708( "('! <Supply Air Path Component Nodes>,<Node Count>,<Component Type>,<Component Name>,','<Inlet Node Name>,<Outlet Node Name>,<AirLoopHVAC Name>')" );
+	static gio::Fmt Format_700( "('! <#Supply Air Paths>,<Number of Supply Air Paths>')" );
+	static gio::Fmt Format_701( "(A)" );
+	static gio::Fmt Format_702( "('! <Supply Air Path>,<Supply Air Path Count>,<Supply Air Path Name>,<AirLoopHVAC Name>')" );
+	static gio::Fmt Format_703( "('! <#Components on Supply Air Path>,<Number of Components>')" );
+	static gio::Fmt Format_704( "('! <Supply Air Path Component>,<Component Count>,<Component Type>,<Component Name>,','<AirLoopHVAC Name>')" );
+	static gio::Fmt Format_705( "('! <#Nodes on Supply Air Path>,<Number of Nodes>')" );
+	static gio::Fmt Format_706( "('! <Supply Air Path Node>,<Node Type>,<Node Count>,<Node Name>,<AirLoopHVAC Name>')" );
+	static gio::Fmt Format_707( "('! <#Outlet Nodes on Supply Air Path Component>,<Number of Nodes>')" );
+	static gio::Fmt Format_708( "('! <Supply Air Path Component Nodes>,<Node Count>,<Component Type>,<Component Name>,','<Inlet Node Name>,<Outlet Node Name>,<AirLoopHVAC Name>')" );
 
 	// Do by Paths
 	ShowMessage( "Testing Individual Supply Air Path Integrity" );
@@ -1469,7 +1476,7 @@ TestSupplyAirPathIntegrity( bool & ErrFound )
 
 	gio::write( OutputFileBNDetails, Format_701 ) << "! ===============================================================";
 	gio::write( OutputFileBNDetails, Format_700 );
-	gio::write( ChrOut, "*" ) << NumSupplyAirPaths;
+	gio::write( ChrOut, fmtLD ) << NumSupplyAirPaths;
 	gio::write( OutputFileBNDetails, Format_701 ) << " #Supply Air Paths," + stripped( ChrOut );
 	gio::write( OutputFileBNDetails, Format_702 );
 	gio::write( OutputFileBNDetails, Format_703 );
@@ -1491,10 +1498,10 @@ TestSupplyAirPathIntegrity( bool & ErrFound )
 		}
 		if ( Found == 0 ) PrimaryAirLoopName = "**Unknown**";
 
-		gio::write( ChrOut, "*" ) << BCount;
+		gio::write( ChrOut, fmtLD ) << BCount;
 		gio::write( OutputFileBNDetails, Format_701 ) << " Supply Air Path," + stripped( ChrOut ) + ',' + SupplyAirPath( BCount ).Name + ',' + PrimaryAirLoopName;
 
-		gio::write( ChrOut, "*" ) << SupplyAirPath( BCount ).NumOfComponents;
+		gio::write( ChrOut, fmtLD ) << SupplyAirPath( BCount ).NumOfComponents;
 		gio::write( OutputFileBNDetails, Format_701 ) << "   #Components on Supply Air Path," + stripped( ChrOut );
 
 		AirPathNodeName = NodeID( SupplyAirPath( BCount ).InletNodeNum );
@@ -1503,7 +1510,7 @@ TestSupplyAirPathIntegrity( bool & ErrFound )
 
 		for ( Count = 1; Count <= SupplyAirPath( BCount ).NumOfComponents; ++Count ) {
 
-			gio::write( ChrOut, "*" ) << Count;
+			gio::write( ChrOut, fmtLD ) << Count;
 			strip( ChrOut );
 			gio::write( OutputFileBNDetails, Format_701 ) << "   Supply Air Path Component," + ChrOut + ',' + SupplyAirPath( BCount ).ComponentType( Count ) + ',' + SupplyAirPath( BCount ).ComponentName( Count ) + ',' + PrimaryAirLoopName;
 
@@ -1520,10 +1527,10 @@ TestSupplyAirPathIntegrity( bool & ErrFound )
 						ErrFound = true;
 						++NumErr;
 					}
-					gio::write( ChrOut, "*" ) << ZoneSupPlenCond( Count2 ).NumOutletNodes;
+					gio::write( ChrOut, fmtLD ) << ZoneSupPlenCond( Count2 ).NumOutletNodes;
 					gio::write( OutputFileBNDetails, Format_701 ) << "     #Outlet Nodes on Supply Air Path Component," + stripped( ChrOut );
 					for ( Count1 = 1; Count1 <= ZoneSupPlenCond( Count2 ).NumOutletNodes; ++Count1 ) {
-						gio::write( ChrOut, "*" ) << Count1;
+						gio::write( ChrOut, fmtLD ) << Count1;
 						gio::write( OutputFileBNDetails, Format_701 ) << "     Supply Air Path Component Nodes," + stripped( ChrOut ) + ',' + SupplyAirPath( BCount ).ComponentType( Count ) + ',' + SupplyAirPath( BCount ).ComponentName( Count ) + ',' + NodeID( ZoneSupPlenCond( Count2 ).InletNode ) + ',' + NodeID( ZoneSupPlenCond( Count2 ).OutletNode( Count1 ) ) + ',' + PrimaryAirLoopName;
 					}
 				}
@@ -1539,10 +1546,10 @@ TestSupplyAirPathIntegrity( bool & ErrFound )
 						ErrFound = true;
 						++NumErr;
 					}
-					gio::write( ChrOut, "*" ) << SplitterCond( Count2 ).NumOutletNodes;
+					gio::write( ChrOut, fmtLD ) << SplitterCond( Count2 ).NumOutletNodes;
 					gio::write( OutputFileBNDetails, Format_701 ) << "     #Outlet Nodes on Supply Air Path Component," + stripped( ChrOut );
 					for ( Count1 = 1; Count1 <= SplitterCond( Count2 ).NumOutletNodes; ++Count1 ) {
-						gio::write( ChrOut, "*" ) << Count1;
+						gio::write( ChrOut, fmtLD ) << Count1;
 						gio::write( OutputFileBNDetails, Format_701 ) << "     Supply Air Path Component Nodes," + stripped( ChrOut ) + ',' + SupplyAirPath( BCount ).ComponentType( Count ) + ',' + SupplyAirPath( BCount ).ComponentName( Count ) + ',' + NodeID( SplitterCond( Count2 ).InletNode ) + ',' + NodeID( SplitterCond( Count2 ).OutletNode( Count1 ) ) + ',' + PrimaryAirLoopName;
 					}
 				}
@@ -1558,11 +1565,11 @@ TestSupplyAirPathIntegrity( bool & ErrFound )
 		if ( SupplyAirPath( BCount ).NumNodes > 0 ) {
 			gio::write( OutputFileBNDetails, Format_705 );
 			gio::write( OutputFileBNDetails, Format_706 );
-			gio::write( ChrOut, "*" ) << SupplyAirPath( BCount ).NumNodes;
+			gio::write( ChrOut, fmtLD ) << SupplyAirPath( BCount ).NumNodes;
 			strip( ChrOut );
 			gio::write( OutputFileBNDetails, Format_701 ) << "#Nodes on Supply Air Path," + ChrOut;
 			for ( Count2 = 1; Count2 <= SupplyAirPath( BCount ).NumNodes; ++Count2 ) {
-				gio::write( ChrOut, "*" ) << Count2;
+				gio::write( ChrOut, fmtLD ) << Count2;
 				strip( ChrOut );
 				if ( SupplyAirPath( BCount ).NodeType( Count2 ) == PathInlet ) {
 					gio::write( OutputFileBNDetails, Format_701 ) << "   Supply Air Path Node,Inlet Node," + ChrOut + ',' + NodeID( SupplyAirPath( BCount ).Node( Count2 ) ) + ',' + PrimaryAirLoopName;
@@ -1587,12 +1594,9 @@ TestSupplyAirPathIntegrity( bool & ErrFound )
 	}
 
 	// now the reverse.  is every zone splitter and supply plenum on supply air path
-	FoundSupplyPlenum.allocate( NumZoneSupplyPlenums );
-	FoundSupplyPlenum = false;
-	FoundZoneSplitter.allocate( NumSplitters );
-	FoundZoneSplitter = false;
+	FoundSupplyPlenum.dimension( NumZoneSupplyPlenums, false );
+	FoundZoneSplitter.dimension( NumSplitters, false );
 	FoundNames.allocate( NumZoneSupplyPlenums );
-	FoundNames = "";
 	for ( Count1 = 1; Count1 <= NumZoneSupplyPlenums; ++Count1 ) {
 		for ( BCount = 1; BCount <= NumSupplyAirPaths; ++BCount ) {
 			for ( Count = 1; Count <= SupplyAirPath( BCount ).NumOfComponents; ++Count ) {
@@ -1611,7 +1615,6 @@ TestSupplyAirPathIntegrity( bool & ErrFound )
 	}
 	FoundNames.deallocate();
 	FoundNames.allocate( NumSplitters );
-	FoundNames = "";
 	for ( Count1 = 1; Count1 <= NumSplitters; ++Count1 ) {
 		for ( BCount = 1; BCount <= NumSupplyAirPaths; ++BCount ) {
 			for ( Count = 1; Count <= SupplyAirPath( BCount ).NumOfComponents; ++Count ) {
@@ -1755,15 +1758,15 @@ TestReturnAirPathIntegrity(
 	int WAirLoop;
 
 	// Formats
-	static gio::Fmt const Format_700( "('! <#Return Air Paths>,<Number of Return Air Paths>')" );
-	static gio::Fmt const Format_701( "(A)" );
-	static gio::Fmt const Format_702( "('! <Return Air Path>,<Return Air Path Count>,<Return Air Path Name>,<AirLoopHVAC Name>')" );
-	static gio::Fmt const Format_703( "('! <#Components on Return Air Path>,<Number of Components>')" );
-	static gio::Fmt const Format_704( "('! <Return Air Path Component>,<Component Count>,<Component Type>,<Component Name>,<AirLoopHVAC Name>')" );
-	static gio::Fmt const Format_705( "('! <#Nodes on Return Air Path>,<Number of Nodes>')" );
-	static gio::Fmt const Format_706( "('! <Return Air Path Node>,<Node Type>,<Node Count>,<Node Name>,<AirLoopHVAC Name>')" );
-	static gio::Fmt const Format_707( "('! <#Inlet Nodes on Return Air Path Component>,<Number of Nodes>')" );
-	static gio::Fmt const Format_708( "('! <Return Air Path Component Nodes>,<Node Count>,<Component Type>,<Component Name>,','<Inlet Node Name>,<Outlet Node Name>,<AirLoopHVAC Name>')" );
+	static gio::Fmt Format_700( "('! <#Return Air Paths>,<Number of Return Air Paths>')" );
+	static gio::Fmt Format_701( "(A)" );
+	static gio::Fmt Format_702( "('! <Return Air Path>,<Return Air Path Count>,<Return Air Path Name>,<AirLoopHVAC Name>')" );
+	static gio::Fmt Format_703( "('! <#Components on Return Air Path>,<Number of Components>')" );
+	static gio::Fmt Format_704( "('! <Return Air Path Component>,<Component Count>,<Component Type>,<Component Name>,<AirLoopHVAC Name>')" );
+	static gio::Fmt Format_705( "('! <#Nodes on Return Air Path>,<Number of Nodes>')" );
+	static gio::Fmt Format_706( "('! <Return Air Path Node>,<Node Type>,<Node Count>,<Node Name>,<AirLoopHVAC Name>')" );
+	static gio::Fmt Format_707( "('! <#Inlet Nodes on Return Air Path Component>,<Number of Nodes>')" );
+	static gio::Fmt Format_708( "('! <Return Air Path Component Nodes>,<Node Count>,<Component Type>,<Component Name>,','<Inlet Node Name>,<Outlet Node Name>,<AirLoopHVAC Name>')" );
 
 	// Do by Paths
 	ShowMessage( "Testing Individual Return Air Path Integrity" );
@@ -1772,7 +1775,7 @@ TestReturnAirPathIntegrity(
 
 	gio::write( OutputFileBNDetails, Format_701 ) << "! ===============================================================";
 	gio::write( OutputFileBNDetails, Format_700 );
-	gio::write( ChrOut, "*" ) << NumReturnAirPaths;
+	gio::write( ChrOut, fmtLD ) << NumReturnAirPaths;
 	gio::write( OutputFileBNDetails, Format_701 ) << " #Return Air Paths," + stripped( ChrOut );
 	gio::write( OutputFileBNDetails, Format_702 );
 	gio::write( OutputFileBNDetails, Format_703 );
@@ -1795,11 +1798,11 @@ TestReturnAirPathIntegrity(
 		}
 		if ( Found == 0 ) PrimaryAirLoopName = "**Unknown**";
 
-		gio::write( ChrOut, "*" ) << BCount;
+		gio::write( ChrOut, fmtLD ) << BCount;
 		gio::write( OutputFileBNDetails, Format_701 ) << " Return Air Path," + stripped( ChrOut ) + ',' + ReturnAirPath( BCount ).Name + ',' + PrimaryAirLoopName;
 
 		NumComp = ReturnAirPath( BCount ).NumOfComponents;
-		gio::write( ChrOut, "*" ) << NumComp;
+		gio::write( ChrOut, fmtLD ) << NumComp;
 		gio::write( OutputFileBNDetails, Format_701 ) << "   #Components on Return Air Path," + stripped( ChrOut );
 
 		AirPathNodeName = NodeID( ReturnAirPath( BCount ).OutletNodeNum );
@@ -1808,7 +1811,7 @@ TestReturnAirPathIntegrity(
 		MixerComp = 0;
 		MixerCount = 0;
 		for ( Count = 1; Count <= NumComp; ++Count ) {
-			gio::write( ChrOut, "*" ) << Count;
+			gio::write( ChrOut, fmtLD ) << Count;
 			strip( ChrOut );
 			gio::write( OutputFileBNDetails, Format_701 ) << "   Return Air Path Component," + ChrOut + ',' + ReturnAirPath( BCount ).ComponentType( Count ) + ',' + ReturnAirPath( BCount ).ComponentName( Count ) + ',' + PrimaryAirLoopName;
 
@@ -1853,10 +1856,10 @@ TestReturnAirPathIntegrity(
 							AllNodes( CountNodes ) = MixerCond( Count2 ).InletNode( Loop );
 						}
 					}
-					gio::write( ChrOut, "*" ) << MixerCond( Count2 ).NumInletNodes;
+					gio::write( ChrOut, fmtLD ) << MixerCond( Count2 ).NumInletNodes;
 					gio::write( OutputFileBNDetails, Format_701 ) << "     #Inlet Nodes on Return Air Path Component," + stripped( ChrOut );
 					for ( Count1 = 1; Count1 <= MixerCond( Count2 ).NumInletNodes; ++Count1 ) {
-						gio::write( ChrOut, "*" ) << Count1;
+						gio::write( ChrOut, fmtLD ) << Count1;
 						gio::write( OutputFileBNDetails, Format_701 ) << "     Return Air Path Component Nodes," + stripped( ChrOut ) + ',' + ReturnAirPath( BCount ).ComponentType( NumComp ) + ',' + ReturnAirPath( BCount ).ComponentName( NumComp ) + ',' + NodeID( MixerCond( Count2 ).InletNode( Count1 ) ) + ',' + NodeID( MixerCond( Count2 ).OutletNode ) + ',' + PrimaryAirLoopName;
 					}
 				}
@@ -1879,10 +1882,10 @@ TestReturnAirPathIntegrity(
 							AllNodes( CountNodes ) = ZoneRetPlenCond( Count2 ).InletNode( Loop );
 						}
 					}
-					gio::write( ChrOut, "*" ) << ZoneRetPlenCond( Count2 ).NumInletNodes;
+					gio::write( ChrOut, fmtLD ) << ZoneRetPlenCond( Count2 ).NumInletNodes;
 					gio::write( OutputFileBNDetails, Format_701 ) << "     #Inlet Nodes on Return Air Path Component," + stripped( ChrOut );
 					for ( Count1 = 1; Count1 <= ZoneRetPlenCond( Count2 ).NumInletNodes; ++Count1 ) {
-						gio::write( ChrOut, "*" ) << Count1;
+						gio::write( ChrOut, fmtLD ) << Count1;
 						gio::write( OutputFileBNDetails, Format_701 ) << "     Return Air Path Component Nodes," + stripped( ChrOut ) + ',' + ReturnAirPath( BCount ).ComponentType( NumComp ) + ',' + ReturnAirPath( BCount ).ComponentName( NumComp ) + ',' + NodeID( ZoneRetPlenCond( Count2 ).InletNode( Count1 ) ) + ',' + NodeID( ZoneRetPlenCond( Count2 ).OutletNode ) + ',' + PrimaryAirLoopName;
 					}
 				}
@@ -1926,11 +1929,11 @@ TestReturnAirPathIntegrity(
 		if ( CountNodes > 0 ) {
 			gio::write( OutputFileBNDetails, Format_705 );
 			gio::write( OutputFileBNDetails, Format_706 );
-			gio::write( ChrOut, "*" ) << CountNodes;
+			gio::write( ChrOut, fmtLD ) << CountNodes;
 			strip( ChrOut );
 			gio::write( OutputFileBNDetails, Format_701 ) << "   #Nodes on Return Air Path," + ChrOut;
 			for ( Count2 = 1; Count2 <= CountNodes; ++Count2 ) {
-				gio::write( ChrOut, "*" ) << Count2;
+				gio::write( ChrOut, fmtLD ) << Count2;
 				strip( ChrOut );
 				if ( Count2 == 1 ) {
 					gio::write( OutputFileBNDetails, Format_701 ) << "   Return Air Path Node,Outlet Node," + ChrOut + ',' + NodeID( AllNodes( Count2 ) ) + ',' + PrimaryAirLoopName;
@@ -1969,12 +1972,9 @@ TestReturnAirPathIntegrity(
 	}
 
 	// now the reverse.  is every zone Mixer and Return plenum on Return air path
-	FoundReturnPlenum.allocate( NumZoneReturnPlenums );
-	FoundReturnPlenum = false;
-	FoundZoneMixer.allocate( NumMixers );
-	FoundZoneMixer = false;
+	FoundReturnPlenum.dimension( NumZoneReturnPlenums, false );
+	FoundZoneMixer.dimension( NumMixers, false );
 	FoundNames.allocate( NumZoneReturnPlenums );
-	FoundNames = "";
 	for ( Count1 = 1; Count1 <= NumZoneReturnPlenums; ++Count1 ) {
 		for ( BCount = 1; BCount <= NumReturnAirPaths; ++BCount ) {
 			for ( Count = 1; Count <= ReturnAirPath( BCount ).NumOfComponents; ++Count ) {
@@ -1993,7 +1993,6 @@ TestReturnAirPathIntegrity(
 	}
 	FoundNames.deallocate();
 	FoundNames.allocate( NumMixers );
-	FoundNames = "";
 	for ( Count1 = 1; Count1 <= NumMixers; ++Count1 ) {
 		for ( BCount = 1; BCount <= NumReturnAirPaths; ++BCount ) {
 			for ( Count = 1; Count <= ReturnAirPath( BCount ).NumOfComponents; ++Count ) {
@@ -2055,7 +2054,7 @@ TestReturnAirPathIntegrity(
 //     Portions of the EnergyPlus software package have been developed and copyrighted
 //     by other individuals, companies and institutions.  These portions have been
 //     incorporated into the EnergyPlus software package under license.   For a complete
-//     list of contributors, see "Notice" located in EnergyPlus.f90.
+//     list of contributors, see "Notice" located in main.cc.
 //     NOTICE: The U.S. Government is granted for itself and others acting on its
 //     behalf a paid-up, nonexclusive, irrevocable, worldwide license in this data to
 //     reproduce, prepare derivative works, and perform publicly and display publicly.

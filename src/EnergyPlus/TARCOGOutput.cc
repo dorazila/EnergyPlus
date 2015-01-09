@@ -80,6 +80,8 @@ namespace TARCOGOutput {
 	std::string const VersionNumber( " 7.0.15.00 " );
 	std::string const VersionCompileDateCC( " August 02, 2012" );
 
+	static gio::Fmt fmtLD( "*" );
+
 	// Functions
 
 	void
@@ -192,98 +194,98 @@ namespace TARCOGOutput {
 		int nperr;
 
 		// Formats
-		static gio::Fmt const Format_10001( "('TARCOG v.',A,'compiled ',A)" );
-		static gio::Fmt const Format_1000( "('TARCOG input arguments:')" );
-		static gio::Fmt const Format_1001( "('TARCOG debug output, ',I4,'-',I2.2,'-',I2.2,', ',I2.2,':',I2.2,':',I2.2)" );
-		static gio::Fmt const Format_1002( "('     WindowID:',I8,'  - Not specified')" );
-		static gio::Fmt const Format_1003( "('     WindowID:',I8,' ')" );
-		static gio::Fmt const Format_1006( "('     IGUID:   ',I8,'  - Not specified')" );
-		static gio::Fmt const Format_1007( "('     IGUID:   ',I8,' ')" );
-		static gio::Fmt const Format_1005( "('Simulation parameters:')" );
-		static gio::Fmt const Format_1010( "('  Tout       =  ',F10.6,' K ( ',F7.3,' deg C) - Outdoor temperature')" );
-		static gio::Fmt const Format_1015( "('  Tint       =  ',F10.6,' K ( ',F7.3,' deg C) - Indoor temperature')" );
-		static gio::Fmt const Format_1014( "('Adjusted input arguments:')" );
-		static gio::Fmt const Format_1013( "(' Gass coefficients:')" );
-		static gio::Fmt const Format_1016( "('  Trmout     =  ',F10.6,' K ( ',F7.3,' deg C) - Outdoor mean radiant temp.')" );
-		static gio::Fmt const Format_1017( "('  Gout       =  ',F10.6,' ')" );
-		static gio::Fmt const Format_1018( "('  Gin        =  ',F10.6,' ')" );
-		static gio::Fmt const Format_1019( "('  Ebsky      =  ',F10.6,' ')" );
-		static gio::Fmt const Format_10191( "('  Ebroom     =  ',F10.6,' ')" );
-		static gio::Fmt const Format_1020( "('  Trmin      =  ',F10.6,' K ( ',F7.3,' deg C) - Indoor mean radiant temp.')" );
-		static gio::Fmt const Format_1030( "('  wso        =  ',F7.3,'    - Outdoor wind speed [m/s]')" );
-		static gio::Fmt const Format_1032( "('  iwd        =    0        - Wind direction - windward')" );
-		static gio::Fmt const Format_1033( "('  iwd        =    1        - Wind direction - leeward')" );
-		static gio::Fmt const Format_1035( "('  wsi        =  ',F7.3,'    - Indoor forced air speed [m/s]')" );
-		static gio::Fmt const Format_1040( "('  dir        = ',F8.3,'    - Direct solar radiation [W/m^2]')" );
-		static gio::Fmt const Format_1041( "('  outir       = ',F8.3,'    - IR radiation [W/m^2]')" );
-		static gio::Fmt const Format_1045( "('  isky       =  ',I3,'        - Flag for handling tsky, esky')" );
-		static gio::Fmt const Format_1050( "('  tsky           =  ',F10.6,' K ( ',F7.3,' deg C) - Night sky temperature')" );
-		static gio::Fmt const Format_1055( "('  esky           =  ',F7.3,'    - Effective night sky emmitance')" );
-		static gio::Fmt const Format_1060( "('  fclr           =  ',F7.3,'    - Fraction of sky that is clear')" );
-		static gio::Fmt const Format_1061( "('  VacuumPressure =  ',F7.3,'    - maximum allowed gas pressure to be considered as vacuum')" );
-		static gio::Fmt const Format_1062( "('  VacuumMaxGapThickness =  ',F7.3,'    - maximum allowed vacuum gap thickness with support pillar')" );
-		static gio::Fmt const Format_1063( "('  ibc(1)         =  ',I3,'        - Outdoor BC switch')" );
-		static gio::Fmt const Format_1065( "('  hout           =  ',F9.5,'  - Outdoor film coeff. [W/m^2-K]')" );
-		static gio::Fmt const Format_1066( "('  ibc(2)         =  ',I3,'        - Indoor BC switch')" );
-		static gio::Fmt const Format_1068( "('  hin            =  ',F9.5,'  - Indoor film coeff. [W/m^2-K]')" );
-		static gio::Fmt const Format_1070( "('  standard   =  ',I3,'        - ISO 15099 calc. standard')" );
-		static gio::Fmt const Format_1071( "('  standard   =  ',I3,'        - EN 673/ISO 10292 Declared calc. standard')" );
-		static gio::Fmt const Format_1072( "('  standard   =  ',I3,'        - EN 673/ISO 10292 Design calc. standard')" );
-		static gio::Fmt const Format_10731( "('  ThermalMod =  ',I3,'        - ISO15099 thermal model')" );
-		static gio::Fmt const Format_10732( "('  ThermalMod =  ',I3,'        - Scaled Cavity Width (SCW) thermal model')" );
-		static gio::Fmt const Format_10733( "('  ThermalMod =  ',I3,'        - Convective Scalar Model (CSM) thermal model')" );
-		static gio::Fmt const Format_10740( "('  SDScalar =  ',F7.5,'      - Factor of Venetian SD layer contribution to convection',/,/,' (only if ThermalModel = 2, otherwise ignored)')" );
-		static gio::Fmt const Format_1075( "('IGU parameters:')" );
-		static gio::Fmt const Format_1076( "('  height     =  ',F10.6,' - IGU cavity height [m]')" );
-		static gio::Fmt const Format_1077( "('  heightt    =  ',F10.6,' - Total window height [m]')" );
-		static gio::Fmt const Format_1078( "('  width      =  ',F10.6,' - Window width [m]')" );
-		static gio::Fmt const Format_1079( "('  tilt       =  ',F7.3,'    - Window tilt [deg]')" );
-		static gio::Fmt const Format_1080( "('  totsol     =  ',F10.6,' - Total solar transmittance of IGU')" );
-		static gio::Fmt const Format_1081( "('  nlayer     =  ',I3,'        - Number of glazing layers')" );
-		static gio::Fmt const Format_1089( "('IGU layers list:')" );
-		static gio::Fmt const Format_10802( "(' Layer',I3,' : ',I1,'              - Specular layer - Monolyhtic Glass')" );
-		static gio::Fmt const Format_10803( "(' Layer',I3,' : ',I1,'              - Laminated Glass')" );
-		static gio::Fmt const Format_10804( "(' Layer',I3,' : ',I1,'              - Venetian Blind')" );
-		static gio::Fmt const Format_10805( "(' Layer',I3,' : ',I1,'              - Woven Shade')" );
-		static gio::Fmt const Format_10806( "(' Layer',I3,' : ',I1,'              - Diffuse Shade')" );
-		static gio::Fmt const Format_10809( "(' Layer',I3,' : ',I1,'              - UNKNOWN TYPE!')" );
-		static gio::Fmt const Format_1085( "('    nslice     = ',I3,'          - Number of slices')" );
-		static gio::Fmt const Format_1086( "('    LaminateA  = ',F12.8,' - A coeff.')" );
-		static gio::Fmt const Format_1087( "('    LaminateB  = ',F12.8,' - B coeff.')" );
-		static gio::Fmt const Format_1088( "('    sumsol     = ',F12.8,' - Absorbed solar energy [W/m^2]')" );
-		static gio::Fmt const Format_1090( "('    thick   = ',F10.6,'   - Thickness [m]')" );
-		static gio::Fmt const Format_1091( "('    scon    = ',F10.6,'   - Thermal conductivity [W/m-K]')" );
-		static gio::Fmt const Format_1092( "('    asol    = ',F12.8,' - Absorbed solar energy [W/m^2]')" );
-		static gio::Fmt const Format_1093( "('    tir     = ',F12.8,' - IR transmittance')" );
-		static gio::Fmt const Format_1094( "('    emis1   = ',F10.6,'   - IR outdoor emissivity')" );
-		static gio::Fmt const Format_1095( "('    emis2   = ',F10.6,'   - IR indoor emissivity')" );
-		static gio::Fmt const Format_1100( "('    Atop    = ',F10.6,'   - Top opening area [m^2]')" );
-		static gio::Fmt const Format_1101( "('    Abot    = ',F10.6,'   - Bottom opening area [m^2]')" );
-		static gio::Fmt const Format_1102( "('    Al      = ',F10.6,'   - Left opening area [m^2]')" );
-		static gio::Fmt const Format_1103( "('    Ar      = ',F10.6,'   - Right opening area [m^2]')" );
-		static gio::Fmt const Format_1105( "('    Ah      = ',F10.6,'   - Total area of holes [m^2]')" );
-		static gio::Fmt const Format_11051( "('    SlatThick   = ',F10.6,'   - Slat thickness [m]')" );
-		static gio::Fmt const Format_11052( "('    SlatWidth   = ',F10.6,'   - Slat width [m]')" );
-		static gio::Fmt const Format_11053( "('    SlatAngle   = ',F10.6,'   - Slat tilt angle [deg]')" );
-		static gio::Fmt const Format_11054( "('    SlatCond    = ',F10.6,'   - Conductivity of the slat material [W/m.K]')" );
-		static gio::Fmt const Format_11055( "('    SlatSpacing = ',F10.6,'   - Distance between slats [m]')" );
-		static gio::Fmt const Format_11056( "('    SlatCurve   = ',F10.6,'   - Curvature radius of the slat [m]')" );
-		static gio::Fmt const Format_1110( "('IGU Gaps:')" );
-		static gio::Fmt const Format_1111( "(' Gap ',I2,':')" );
-		static gio::Fmt const Format_11110( "(' Outdoor space:')" );
-		static gio::Fmt const Format_11111( "(' Indoor space:')" );
-		static gio::Fmt const Format_1112( "('    gap        = ',F12.5,' - Gap width [m]')" );
-		static gio::Fmt const Format_1113( "('    presure    = ',F12.5,' - Gas pressure [N/m^2]')" );
-		static gio::Fmt const Format_1114( "('    nmix       = ',I6,'       - Num. of gasses in a gas mix')" );
-		static gio::Fmt const Format_1115( "('      Gas ',I1,':     ',A,'     ',F6.2,' %')" );
-		static gio::Fmt const Format_1120( "('    vvent      = ',F12.5,' - Forced ventilation speed [m/s]')" );
-		static gio::Fmt const Format_1121( "('    tvent      = ',F12.5,' - Temperature in connected gap [K]')" );
-		static gio::Fmt const Format_1130( "('      Gas mix coefficients - gas ',i1,', ',F6.2,' %')" );
-		static gio::Fmt const Format_1131( "('        gcon   = ',F11.6,', ',F11.6,', ',F11.6,' - Conductivity')" );
-		static gio::Fmt const Format_1132( "('        gvis   = ',F11.6,', ',F11.6,', ',F11.6,' - Dynamic viscosity')" );
-		static gio::Fmt const Format_1133( "('        gcp    = ',F11.6,', ',F11.6,', ',F11.6,' - Spec.heat @ const.P')" );
-		static gio::Fmt const Format_1134( "('        wght   = ',F11.6,'                           - Molecular weight')" );
-		static gio::Fmt const Format_1198( "('=====  =====  =====  =====  =====  =====  =====  =====  =====  =====  =====')" );
+		static gio::Fmt Format_10001( "('TARCOG v.',A,'compiled ',A)" );
+		static gio::Fmt Format_1000( "('TARCOG input arguments:')" );
+		static gio::Fmt Format_1001( "('TARCOG debug output, ',I4,'-',I2.2,'-',I2.2,', ',I2.2,':',I2.2,':',I2.2)" );
+		static gio::Fmt Format_1002( "('     WindowID:',I8,'  - Not specified')" );
+		static gio::Fmt Format_1003( "('     WindowID:',I8,' ')" );
+		static gio::Fmt Format_1006( "('     IGUID:   ',I8,'  - Not specified')" );
+		static gio::Fmt Format_1007( "('     IGUID:   ',I8,' ')" );
+		static gio::Fmt Format_1005( "('Simulation parameters:')" );
+		static gio::Fmt Format_1010( "('  Tout       =  ',F10.6,' K ( ',F7.3,' deg C) - Outdoor temperature')" );
+		static gio::Fmt Format_1015( "('  Tint       =  ',F10.6,' K ( ',F7.3,' deg C) - Indoor temperature')" );
+		static gio::Fmt Format_1014( "('Adjusted input arguments:')" );
+		static gio::Fmt Format_1013( "(' Gass coefficients:')" );
+		static gio::Fmt Format_1016( "('  Trmout     =  ',F10.6,' K ( ',F7.3,' deg C) - Outdoor mean radiant temp.')" );
+		static gio::Fmt Format_1017( "('  Gout       =  ',F10.6,' ')" );
+		static gio::Fmt Format_1018( "('  Gin        =  ',F10.6,' ')" );
+		static gio::Fmt Format_1019( "('  Ebsky      =  ',F10.6,' ')" );
+		static gio::Fmt Format_10191( "('  Ebroom     =  ',F10.6,' ')" );
+		static gio::Fmt Format_1020( "('  Trmin      =  ',F10.6,' K ( ',F7.3,' deg C) - Indoor mean radiant temp.')" );
+		static gio::Fmt Format_1030( "('  wso        =  ',F7.3,'    - Outdoor wind speed [m/s]')" );
+		static gio::Fmt Format_1032( "('  iwd        =    0        - Wind direction - windward')" );
+		static gio::Fmt Format_1033( "('  iwd        =    1        - Wind direction - leeward')" );
+		static gio::Fmt Format_1035( "('  wsi        =  ',F7.3,'    - Indoor forced air speed [m/s]')" );
+		static gio::Fmt Format_1040( "('  dir        = ',F8.3,'    - Direct solar radiation [W/m^2]')" );
+		static gio::Fmt Format_1041( "('  outir       = ',F8.3,'    - IR radiation [W/m^2]')" );
+		static gio::Fmt Format_1045( "('  isky       =  ',I3,'        - Flag for handling tsky, esky')" );
+		static gio::Fmt Format_1050( "('  tsky           =  ',F10.6,' K ( ',F7.3,' deg C) - Night sky temperature')" );
+		static gio::Fmt Format_1055( "('  esky           =  ',F7.3,'    - Effective night sky emmitance')" );
+		static gio::Fmt Format_1060( "('  fclr           =  ',F7.3,'    - Fraction of sky that is clear')" );
+		static gio::Fmt Format_1061( "('  VacuumPressure =  ',F7.3,'    - maximum allowed gas pressure to be considered as vacuum')" );
+		static gio::Fmt Format_1062( "('  VacuumMaxGapThickness =  ',F7.3,'    - maximum allowed vacuum gap thickness with support pillar')" );
+		static gio::Fmt Format_1063( "('  ibc(1)         =  ',I3,'        - Outdoor BC switch')" );
+		static gio::Fmt Format_1065( "('  hout           =  ',F9.5,'  - Outdoor film coeff. [W/m^2-K]')" );
+		static gio::Fmt Format_1066( "('  ibc(2)         =  ',I3,'        - Indoor BC switch')" );
+		static gio::Fmt Format_1068( "('  hin            =  ',F9.5,'  - Indoor film coeff. [W/m^2-K]')" );
+		static gio::Fmt Format_1070( "('  standard   =  ',I3,'        - ISO 15099 calc. standard')" );
+		static gio::Fmt Format_1071( "('  standard   =  ',I3,'        - EN 673/ISO 10292 Declared calc. standard')" );
+		static gio::Fmt Format_1072( "('  standard   =  ',I3,'        - EN 673/ISO 10292 Design calc. standard')" );
+		static gio::Fmt Format_10731( "('  ThermalMod =  ',I3,'        - ISO15099 thermal model')" );
+		static gio::Fmt Format_10732( "('  ThermalMod =  ',I3,'        - Scaled Cavity Width (SCW) thermal model')" );
+		static gio::Fmt Format_10733( "('  ThermalMod =  ',I3,'        - Convective Scalar Model (CSM) thermal model')" );
+		static gio::Fmt Format_10740( "('  SDScalar =  ',F7.5,'      - Factor of Venetian SD layer contribution to convection',/,/,' (only if ThermalModel = 2, otherwise ignored)')" );
+		static gio::Fmt Format_1075( "('IGU parameters:')" );
+		static gio::Fmt Format_1076( "('  height     =  ',F10.6,' - IGU cavity height [m]')" );
+		static gio::Fmt Format_1077( "('  heightt    =  ',F10.6,' - Total window height [m]')" );
+		static gio::Fmt Format_1078( "('  width      =  ',F10.6,' - Window width [m]')" );
+		static gio::Fmt Format_1079( "('  tilt       =  ',F7.3,'    - Window tilt [deg]')" );
+		static gio::Fmt Format_1080( "('  totsol     =  ',F10.6,' - Total solar transmittance of IGU')" );
+		static gio::Fmt Format_1081( "('  nlayer     =  ',I3,'        - Number of glazing layers')" );
+		static gio::Fmt Format_1089( "('IGU layers list:')" );
+		static gio::Fmt Format_10802( "(' Layer',I3,' : ',I1,'              - Specular layer - Monolyhtic Glass')" );
+		static gio::Fmt Format_10803( "(' Layer',I3,' : ',I1,'              - Laminated Glass')" );
+		static gio::Fmt Format_10804( "(' Layer',I3,' : ',I1,'              - Venetian Blind')" );
+		static gio::Fmt Format_10805( "(' Layer',I3,' : ',I1,'              - Woven Shade')" );
+		static gio::Fmt Format_10806( "(' Layer',I3,' : ',I1,'              - Diffuse Shade')" );
+		static gio::Fmt Format_10809( "(' Layer',I3,' : ',I1,'              - UNKNOWN TYPE!')" );
+		static gio::Fmt Format_1085( "('    nslice     = ',I3,'          - Number of slices')" );
+		static gio::Fmt Format_1086( "('    LaminateA  = ',F12.8,' - A coeff.')" );
+		static gio::Fmt Format_1087( "('    LaminateB  = ',F12.8,' - B coeff.')" );
+		static gio::Fmt Format_1088( "('    sumsol     = ',F12.8,' - Absorbed solar energy [W/m^2]')" );
+		static gio::Fmt Format_1090( "('    thick   = ',F10.6,'   - Thickness [m]')" );
+		static gio::Fmt Format_1091( "('    scon    = ',F10.6,'   - Thermal conductivity [W/m-K]')" );
+		static gio::Fmt Format_1092( "('    asol    = ',F12.8,' - Absorbed solar energy [W/m^2]')" );
+		static gio::Fmt Format_1093( "('    tir     = ',F12.8,' - IR transmittance')" );
+		static gio::Fmt Format_1094( "('    emis1   = ',F10.6,'   - IR outdoor emissivity')" );
+		static gio::Fmt Format_1095( "('    emis2   = ',F10.6,'   - IR indoor emissivity')" );
+		static gio::Fmt Format_1100( "('    Atop    = ',F10.6,'   - Top opening area [m^2]')" );
+		static gio::Fmt Format_1101( "('    Abot    = ',F10.6,'   - Bottom opening area [m^2]')" );
+		static gio::Fmt Format_1102( "('    Al      = ',F10.6,'   - Left opening area [m^2]')" );
+		static gio::Fmt Format_1103( "('    Ar      = ',F10.6,'   - Right opening area [m^2]')" );
+		static gio::Fmt Format_1105( "('    Ah      = ',F10.6,'   - Total area of holes [m^2]')" );
+		static gio::Fmt Format_11051( "('    SlatThick   = ',F10.6,'   - Slat thickness [m]')" );
+		static gio::Fmt Format_11052( "('    SlatWidth   = ',F10.6,'   - Slat width [m]')" );
+		static gio::Fmt Format_11053( "('    SlatAngle   = ',F10.6,'   - Slat tilt angle [deg]')" );
+		static gio::Fmt Format_11054( "('    SlatCond    = ',F10.6,'   - Conductivity of the slat material [W/m.K]')" );
+		static gio::Fmt Format_11055( "('    SlatSpacing = ',F10.6,'   - Distance between slats [m]')" );
+		static gio::Fmt Format_11056( "('    SlatCurve   = ',F10.6,'   - Curvature radius of the slat [m]')" );
+		static gio::Fmt Format_1110( "('IGU Gaps:')" );
+		static gio::Fmt Format_1111( "(' Gap ',I2,':')" );
+		static gio::Fmt Format_11110( "(' Outdoor space:')" );
+		static gio::Fmt Format_11111( "(' Indoor space:')" );
+		static gio::Fmt Format_1112( "('    gap        = ',F12.5,' - Gap width [m]')" );
+		static gio::Fmt Format_1113( "('    presure    = ',F12.5,' - Gas pressure [N/m^2]')" );
+		static gio::Fmt Format_1114( "('    nmix       = ',I6,'       - Num. of gasses in a gas mix')" );
+		static gio::Fmt Format_1115( "('      Gas ',I1,':     ',A,'     ',F6.2,' %')" );
+		static gio::Fmt Format_1120( "('    vvent      = ',F12.5,' - Forced ventilation speed [m/s]')" );
+		static gio::Fmt Format_1121( "('    tvent      = ',F12.5,' - Temperature in connected gap [K]')" );
+		static gio::Fmt Format_1130( "('      Gas mix coefficients - gas ',i1,', ',F6.2,' %')" );
+		static gio::Fmt Format_1131( "('        gcon   = ',F11.6,', ',F11.6,', ',F11.6,' - Conductivity')" );
+		static gio::Fmt Format_1132( "('        gvis   = ',F11.6,', ',F11.6,', ',F11.6,' - Dynamic viscosity')" );
+		static gio::Fmt Format_1133( "('        gcp    = ',F11.6,', ',F11.6,', ',F11.6,' - Spec.heat @ const.P')" );
+		static gio::Fmt Format_1134( "('        wght   = ',F11.6,'                           - Molecular weight')" );
+		static gio::Fmt Format_1198( "('=====  =====  =====  =====  =====  =====  =====  =====  =====  =====  =====')" );
 
 		//bi...Create debug file w/ Tarcog's input arguments:
 
@@ -292,10 +294,10 @@ namespace TARCOGOutput {
 
 		date_and_time_string( real_CLOCK( 1 ), real_CLOCK( 2 ), real_CLOCK( 3 ), DATE_TIME );
 
-		gio::write( InArgumentsFile, "*" );
+		gio::write( InArgumentsFile, fmtLD );
 		//  write(InArgumentsFile, 10001) VersionNumber, VersionCompileDateCC
 		gio::write( InArgumentsFile, Format_1001 ) << DATE_TIME( 1 ) << DATE_TIME( 2 ) << DATE_TIME( 3 ) << DATE_TIME( 5 ) << DATE_TIME( 6 ) << DATE_TIME( 7 );
-		gio::write( InArgumentsFile, "*" );
+		gio::write( InArgumentsFile, fmtLD );
 
 		if ( winID == -1 ) {
 			gio::write( InArgumentsFile, Format_1002 ) << winID;
@@ -309,11 +311,11 @@ namespace TARCOGOutput {
 			gio::write( InArgumentsFile, Format_1007 ) << iguID;
 		}
 
-		gio::write( InArgumentsFile, "*" ) << "    Debug dir:     " + DBGD;
+		gio::write( InArgumentsFile, fmtLD ) << "    Debug dir:     " + DBGD;
 
-		gio::write( InArgumentsFile, "*" );
+		gio::write( InArgumentsFile, fmtLD );
 		gio::write( InArgumentsFile, Format_1000 );
-		gio::write( InArgumentsFile, "*" );
+		gio::write( InArgumentsFile, fmtLD );
 		gio::write( InArgumentsFile, Format_1005 );
 		gio::write( InArgumentsFile, Format_1010 ) << tout << tout - KelvinConv;
 		gio::write( InArgumentsFile, Format_1015 ) << tind << tind - KelvinConv;
@@ -357,7 +359,7 @@ namespace TARCOGOutput {
 		//    if (ThermalMod.eq.THERM_MOD_CSM)
 		//        write(InArgumentsFile, 10740) SDScalar
 
-		gio::write( InArgumentsFile, "*" );
+		gio::write( InArgumentsFile, fmtLD );
 
 		gio::write( InArgumentsFile, Format_1075 );
 		gio::write( InArgumentsFile, Format_1076 ) << height;
@@ -366,7 +368,7 @@ namespace TARCOGOutput {
 		gio::write( InArgumentsFile, Format_1079 ) << tilt;
 		gio::write( InArgumentsFile, Format_1080 ) << totsol;
 		gio::write( InArgumentsFile, Format_1081 ) << nlayer;
-		gio::write( InArgumentsFile, "*" );
+		gio::write( InArgumentsFile, fmtLD );
 
 		gio::write( InArgumentsFile, Format_1089 );
 		for ( i = 1; i <= nlayer; ++i ) {
@@ -436,7 +438,7 @@ namespace TARCOGOutput {
 			}
 		} // i - layers
 
-		gio::write( InArgumentsFile, "*" );
+		gio::write( InArgumentsFile, fmtLD );
 
 		gio::write( InArgumentsFile, Format_1110 );
 
@@ -479,7 +481,7 @@ namespace TARCOGOutput {
 			//end if  ! MGAS = 1 - "table" gasses
 		} // i - gas loop
 
-		gio::write( InArgumentsFile, "*" );
+		gio::write( InArgumentsFile, fmtLD );
 		gio::write( InArgumentsFile, Format_1198 );
 
 		//close(InArgumentsFile)
@@ -555,37 +557,37 @@ namespace TARCOGOutput {
 		int nperr;
 
 		// Formats
-		static gio::Fmt const Format_1014( "('Adjusted input arguments:')" );
-		static gio::Fmt const Format_1013( "(' Gass coefficients:')" );
-		static gio::Fmt const Format_1016( "('  Trmout     =  ',F10.6,' K ( ',F7.3,' deg C) - Outdoor mean radiant temp.')" );
-		static gio::Fmt const Format_1017( "('  Gout       =  ',F10.6,' ')" );
-		static gio::Fmt const Format_1018( "('  Gin        =  ',F10.6,' ')" );
-		static gio::Fmt const Format_1019( "('  Ebsky      =  ',F10.6,' ')" );
-		static gio::Fmt const Format_10191( "('  Ebroom     =  ',F10.6,' ')" );
-		static gio::Fmt const Format_1020( "('  Trmin      =  ',F10.6,' K ( ',F7.3,' deg C) - Indoor mean radiant temp.')" );
-		static gio::Fmt const Format_1055( "('  esky       =  ',F7.3,'    - Effective night sky emmitance')" );
-		static gio::Fmt const Format_1084( "(' Layer',I3,' : ',I1,'              - Venetian Blind')" );
-		static gio::Fmt const Format_1090( "('    thick   = ',F10.6,'   - Thickness [m]')" );
-		static gio::Fmt const Format_1091( "('    scon    = ',F10.6,'   - Thermal conductivity [W/m-K]')" );
-		static gio::Fmt const Format_1130( "('      Gas mix coefficients - gas ',i1,', ',F6.2,' %')" );
-		static gio::Fmt const Format_1131( "('        gcon   = ',F11.6,', ',F11.6,', ',F11.6,' - Conductivity')" );
-		static gio::Fmt const Format_1132( "('        gvis   = ',F11.6,', ',F11.6,', ',F11.6,' - Dynamic viscosity')" );
-		static gio::Fmt const Format_1133( "('        gcp    = ',F11.6,', ',F11.6,', ',F11.6,' - Spec.heat @ const.P')" );
-		static gio::Fmt const Format_1134( "('        wght   = ',F11.6,'                           - Molecular weight')" );
-		static gio::Fmt const Format_1110( "('IGU Gaps:')" );
-		static gio::Fmt const Format_1111( "(' Gap ',I2,':')" );
-		static gio::Fmt const Format_1112( "(' Gap width: ',F11.8)" );
-		static gio::Fmt const Format_11110( "(' Outdoor space:')" );
-		static gio::Fmt const Format_11111( "(' Indoor space:')" );
-		static gio::Fmt const Format_1198( "('=====  =====  =====  =====  =====  =====  =====  =====  =====  =====  =====')" );
+		static gio::Fmt Format_1014( "('Adjusted input arguments:')" );
+		static gio::Fmt Format_1013( "(' Gass coefficients:')" );
+		static gio::Fmt Format_1016( "('  Trmout     =  ',F10.6,' K ( ',F7.3,' deg C) - Outdoor mean radiant temp.')" );
+		static gio::Fmt Format_1017( "('  Gout       =  ',F10.6,' ')" );
+		static gio::Fmt Format_1018( "('  Gin        =  ',F10.6,' ')" );
+		static gio::Fmt Format_1019( "('  Ebsky      =  ',F10.6,' ')" );
+		static gio::Fmt Format_10191( "('  Ebroom     =  ',F10.6,' ')" );
+		static gio::Fmt Format_1020( "('  Trmin      =  ',F10.6,' K ( ',F7.3,' deg C) - Indoor mean radiant temp.')" );
+		static gio::Fmt Format_1055( "('  esky       =  ',F7.3,'    - Effective night sky emmitance')" );
+		static gio::Fmt Format_1084( "(' Layer',I3,' : ',I1,'              - Venetian Blind')" );
+		static gio::Fmt Format_1090( "('    thick   = ',F10.6,'   - Thickness [m]')" );
+		static gio::Fmt Format_1091( "('    scon    = ',F10.6,'   - Thermal conductivity [W/m-K]')" );
+		static gio::Fmt Format_1130( "('      Gas mix coefficients - gas ',i1,', ',F6.2,' %')" );
+		static gio::Fmt Format_1131( "('        gcon   = ',F11.6,', ',F11.6,', ',F11.6,' - Conductivity')" );
+		static gio::Fmt Format_1132( "('        gvis   = ',F11.6,', ',F11.6,', ',F11.6,' - Dynamic viscosity')" );
+		static gio::Fmt Format_1133( "('        gcp    = ',F11.6,', ',F11.6,', ',F11.6,' - Spec.heat @ const.P')" );
+		static gio::Fmt Format_1134( "('        wght   = ',F11.6,'                           - Molecular weight')" );
+		static gio::Fmt Format_1110( "('IGU Gaps:')" );
+		static gio::Fmt Format_1111( "(' Gap ',I2,':')" );
+		static gio::Fmt Format_1112( "(' Gap width: ',F11.8)" );
+		static gio::Fmt Format_11110( "(' Outdoor space:')" );
+		static gio::Fmt Format_11111( "(' Indoor space:')" );
+		static gio::Fmt Format_1198( "('=====  =====  =====  =====  =====  =====  =====  =====  =====  =====  =====')" );
 
 		//open(unit=InArgumentsFile,  file=TRIM(DBGD)//DebugOutputFileName,  status='unknown', access=FileMode, &
 		//        position=FilePosition, form='formatted', iostat=nperr)
 		//if (nperr.ne.0)  open(unit=InArgumentsFile,  file=DebugOutputFileName,  status='unknown', access=FileMode, &
 		//        position=FilePosition, form='formatted', iostat=nperr)
-		gio::write( InArgumentsFile, "*" );
+		gio::write( InArgumentsFile, fmtLD );
 		gio::write( InArgumentsFile, Format_1014 );
-		gio::write( InArgumentsFile, "*" );
+		gio::write( InArgumentsFile, fmtLD );
 		gio::write( InArgumentsFile, Format_1055 ) << esky;
 		gio::write( InArgumentsFile, Format_1016 ) << trmout << trmout - KelvinConv;
 		gio::write( InArgumentsFile, Format_1020 ) << trmin << trmin - KelvinConv;
@@ -593,7 +595,7 @@ namespace TARCOGOutput {
 		gio::write( InArgumentsFile, Format_10191 ) << ebroom;
 		gio::write( InArgumentsFile, Format_1017 ) << Gout;
 		gio::write( InArgumentsFile, Format_1018 ) << Gin;
-		gio::write( InArgumentsFile, "*" );
+		gio::write( InArgumentsFile, fmtLD );
 
 		for ( i = 1; i <= nlayer; ++i ) {
 			if ( LayerType( i ) == VENETBLIND ) { // SD layer
@@ -602,7 +604,7 @@ namespace TARCOGOutput {
 				gio::write( InArgumentsFile, Format_1091 ) << scon( i );
 			}
 		}
-		gio::write( InArgumentsFile, "*" );
+		gio::write( InArgumentsFile, fmtLD );
 
 		gio::write( InArgumentsFile, Format_1013 );
 		for ( i = 1; i <= nlayer + 1; ++i ) { // loop through gaps:
@@ -619,7 +621,7 @@ namespace TARCOGOutput {
 				gio::write( InArgumentsFile, Format_1134 ) << xwght( j );
 			} // j - gas mix
 		} // i - gaps
-		gio::write( InArgumentsFile, "*" );
+		gio::write( InArgumentsFile, fmtLD );
 		gio::write( InArgumentsFile, Format_1198 );
 		//close(InArgumentsFile)
 
@@ -711,73 +713,73 @@ namespace TARCOGOutput {
 		int nperr;
 
 		// Formats
-		static gio::Fmt const Format_2000( "('TARCOG calculation results - ',I4,'-',I2.2,'-',I2.2,', ',I2.2,':',I2.2,':',I2.2)" );
-		static gio::Fmt const Format_2120( "('  Ufactor  = ',F12.6)" );
-		static gio::Fmt const Format_2130( "('  SHGC     = ',F12.6)" );
-		static gio::Fmt const Format_2131( "('  SHGC_OLD = ',F12.6)" );
-		static gio::Fmt const Format_2132( "('  SC       = ',F12.6)" );
-		static gio::Fmt const Format_2140( "('  hcin  = ',F10.6,3x,'hrin  = ',F10.6,3x,'hin  = ',F10.6)" );
-		static gio::Fmt const Format_2150( "('  hcout = ',F10.6,3x,'hrout = ',F10.6,3x,'hout = ',F10.6)" );
-		static gio::Fmt const Format_2155( "('  Ra(',I1,') =',F15.6,'        Nu(',I1,') =',F12.6)" );
-		static gio::Fmt const Format_2160( "('  hcgas(',I1,') =',F15.6,'      hrgas(',I1,') =',F24.6)" );
-		static gio::Fmt const Format_2165( "('  rhum  =',F15.6,'        rhout =',F12.6)" );
-		static gio::Fmt const Format_2170( "('  hflux    = ',F12.6)" );
-		static gio::Fmt const Format_2105( "('                                            Tamb =',F11.6,' K ( ',F7.3,' deg C)')" );
-		static gio::Fmt const Format_2110( "('  ----------------- ------------------   Theta',I2,' =',F11.6,' K ( ',F7.3,' deg C)')" );
-		static gio::Fmt const Format_2111( "('  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\   Theta',I2,' =',F11.6,' K ( ',F7.3,' deg C)')" );
-		static gio::Fmt const Format_2112( "('  +++++++++++++++++ ++++++++++++++++++   Theta',I2,' =',F11.6,' K ( ',F7.3,' deg C)')" );
-		static gio::Fmt const Format_2113( "('  ooooooooooooooooo oooooooooooooooooo   Theta',I2,' =',F11.6,' K ( ',F7.3,' deg C)')" );
-		static gio::Fmt const Format_2115( "('                                           Troom =',F11.6,' K ( ',F7.3,' deg C)')" );
-		static gio::Fmt const Format_2180( "('           qout =',F12.5)" );
-		static gio::Fmt const Format_2190( "('  |     qpane',i2,' =',F12.5,'        |')" );
-		static gio::Fmt const Format_2195( "('  |     qpane',i2,' =',F12.5,'        |         keffc',i2,' =',F11.6)" );
-		static gio::Fmt const Format_2199( "('  |      qlayer',i2,' =',F12.5,'       |')" );
-		static gio::Fmt const Format_2210( "('            qin =',F11.6)" );
-		static gio::Fmt const Format_2300( "('            q',i2,' =',F12.5)" );
-		static gio::Fmt const Format_2310( "('        qprim',i2,' =',F12.5)" );
-		static gio::Fmt const Format_2320( "('           qv',i2,' =',F12.5)" );
-		static gio::Fmt const Format_2321( "('       airspd',i2,' =',F12.5,'    keff',i2,' =',F12.5)" );
-		static gio::Fmt const Format_2322( "('           qc',i2,' =',F12.5,'      qr',i2,' =',F12.5)" );
-		static gio::Fmt const Format_2330( "('  ShadeEmisRatioIn  =',F11.6,'        ShadeEmisRatioOut =',F11.6)" );
-		static gio::Fmt const Format_2331( "('  ShadeHcRatioIn    =',F11.6,'        ShadeHcRatioOut   =',F11.6)" );
-		static gio::Fmt const Format_2332( "('  HcUnshadedIn      =',F11.6,'        HcUnshadedOut     =',F11.6)" );
-		static gio::Fmt const Format_2340( "('  ')" );
-		static gio::Fmt const Format_2350( "('Heat Flux Flow and Temperatures of Layer Surfaces:')" );
-		static gio::Fmt const Format_2351( "('Basic IGU properties:')" );
-		static gio::Fmt const Format_2220( "('  he = ',F8.4,',',3x,'hi = ',F8.4)" );
-		static gio::Fmt const Format_2230( "('  hg',I2,' =',E15.6,'      hr',I2,' =',E15.6,'      hs',I2,' =',E15.6)" );
-		static gio::Fmt const Format_3333( "('Flux (non-solar pass): ',F12.6,' ; Flux per W7: ',F12.6)" );
-		static gio::Fmt const Format_4205( "('  Ebsky =',F11.6,' [W/m2], Gout =',F11.6,' [W/m2]')" );
-		static gio::Fmt const Format_4215( "('  Ebroom =',F11.6,' [W/m2], Gin  =',F11.6,' [W/m2]')" );
-		static gio::Fmt const Format_4110( "('  Ef',I2,' =',F11.6,' [W/m2], Rf',I2,' =',F11.6,' [W/m2]')" );
-		static gio::Fmt const Format_4111( "('  ----------------- ------------------')" );
-		static gio::Fmt const Format_4112( "('  Ef',I2,' =',F11.6,' [W/m2], Rf',I2,' =',F11.6,' [W/m2]')" );
-		static gio::Fmt const Format_4113( "('  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\')" );
-		static gio::Fmt const Format_4114( "('  Ef',I2,' =',F11.6,' [W/m2], Rf',I2,' =',F11.6,' [W/m2]')" );
-		static gio::Fmt const Format_4115( "('  +++++++++++++++++ ++++++++++++++++++')" );
-		static gio::Fmt const Format_4116( "('  Ef',I2,' =',F11.6,' [W/m2], Rf',I2,' =',F11.6,' [W/m2]')" );
-		static gio::Fmt const Format_4117( "('  ooooooooooooooooo oooooooooooooooooo')" );
-		static gio::Fmt const Format_4120( "('  Eb',I2,' =',F11.6,' [W/m2], Rb',I2,' =',F11.6,' [W/m2]')" );
-		static gio::Fmt const Format_4121( "('  ----------------- ------------------')" );
-		static gio::Fmt const Format_4122( "('  Eb',I2,' =',F11.6,' [W/m2], Rb',I2,' =',F11.6,' [W/m2]')" );
-		static gio::Fmt const Format_4123( "('  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\')" );
-		static gio::Fmt const Format_4124( "('  Eb',I2,' =',F11.6,' [W/m2], Rb',I2,' =',F11.6,' [W/m2]')" );
-		static gio::Fmt const Format_4125( "('  +++++++++++++++++ ++++++++++++++++++')" );
-		static gio::Fmt const Format_4126( "('  Eb',I2,' =',F11.6,' [W/m2], Rb',I2,' =',F11.6,' [W/m2]')" );
-		static gio::Fmt const Format_4127( "('  ooooooooooooooooo oooooooooooooooooo')" );
-		static gio::Fmt const Format_4190( "('  |                     |')" );
-		static gio::Fmt const Format_4350( "('Energy balances on Layer Surfaces:')" );
+		static gio::Fmt Format_2000( "('TARCOG calculation results - ',I4,'-',I2.2,'-',I2.2,', ',I2.2,':',I2.2,':',I2.2)" );
+		static gio::Fmt Format_2120( "('  Ufactor  = ',F12.6)" );
+		static gio::Fmt Format_2130( "('  SHGC     = ',F12.6)" );
+		static gio::Fmt Format_2131( "('  SHGC_OLD = ',F12.6)" );
+		static gio::Fmt Format_2132( "('  SC       = ',F12.6)" );
+		static gio::Fmt Format_2140( "('  hcin  = ',F10.6,3x,'hrin  = ',F10.6,3x,'hin  = ',F10.6)" );
+		static gio::Fmt Format_2150( "('  hcout = ',F10.6,3x,'hrout = ',F10.6,3x,'hout = ',F10.6)" );
+		static gio::Fmt Format_2155( "('  Ra(',I1,') =',F15.6,'        Nu(',I1,') =',F12.6)" );
+		static gio::Fmt Format_2160( "('  hcgas(',I1,') =',F15.6,'      hrgas(',I1,') =',F24.6)" );
+		static gio::Fmt Format_2165( "('  rhum  =',F15.6,'        rhout =',F12.6)" );
+		static gio::Fmt Format_2170( "('  hflux    = ',F12.6)" );
+		static gio::Fmt Format_2105( "('                                            Tamb =',F11.6,' K ( ',F7.3,' deg C)')" );
+		static gio::Fmt Format_2110( "('  ----------------- ------------------   Theta',I2,' =',F11.6,' K ( ',F7.3,' deg C)')" );
+		static gio::Fmt Format_2111( "('  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\   Theta',I2,' =',F11.6,' K ( ',F7.3,' deg C)')" );
+		static gio::Fmt Format_2112( "('  +++++++++++++++++ ++++++++++++++++++   Theta',I2,' =',F11.6,' K ( ',F7.3,' deg C)')" );
+		static gio::Fmt Format_2113( "('  ooooooooooooooooo oooooooooooooooooo   Theta',I2,' =',F11.6,' K ( ',F7.3,' deg C)')" );
+		static gio::Fmt Format_2115( "('                                           Troom =',F11.6,' K ( ',F7.3,' deg C)')" );
+		static gio::Fmt Format_2180( "('           qout =',F12.5)" );
+		static gio::Fmt Format_2190( "('  |     qpane',i2,' =',F12.5,'        |')" );
+		static gio::Fmt Format_2195( "('  |     qpane',i2,' =',F12.5,'        |         keffc',i2,' =',F11.6)" );
+		static gio::Fmt Format_2199( "('  |      qlayer',i2,' =',F12.5,'       |')" );
+		static gio::Fmt Format_2210( "('            qin =',F11.6)" );
+		static gio::Fmt Format_2300( "('            q',i2,' =',F12.5)" );
+		static gio::Fmt Format_2310( "('        qprim',i2,' =',F12.5)" );
+		static gio::Fmt Format_2320( "('           qv',i2,' =',F12.5)" );
+		static gio::Fmt Format_2321( "('       airspd',i2,' =',F12.5,'    keff',i2,' =',F12.5)" );
+		static gio::Fmt Format_2322( "('           qc',i2,' =',F12.5,'      qr',i2,' =',F12.5)" );
+		static gio::Fmt Format_2330( "('  ShadeEmisRatioIn  =',F11.6,'        ShadeEmisRatioOut =',F11.6)" );
+		static gio::Fmt Format_2331( "('  ShadeHcRatioIn    =',F11.6,'        ShadeHcRatioOut   =',F11.6)" );
+		static gio::Fmt Format_2332( "('  HcUnshadedIn      =',F11.6,'        HcUnshadedOut     =',F11.6)" );
+		static gio::Fmt Format_2340( "('  ')" );
+		static gio::Fmt Format_2350( "('Heat Flux Flow and Temperatures of Layer Surfaces:')" );
+		static gio::Fmt Format_2351( "('Basic IGU properties:')" );
+		static gio::Fmt Format_2220( "('  he = ',F8.4,',',3x,'hi = ',F8.4)" );
+		static gio::Fmt Format_2230( "('  hg',I2,' =',E15.6,'      hr',I2,' =',E15.6,'      hs',I2,' =',E15.6)" );
+		static gio::Fmt Format_3333( "('Flux (non-solar pass): ',F12.6,' ; Flux per W7: ',F12.6)" );
+		static gio::Fmt Format_4205( "('  Ebsky =',F11.6,' [W/m2], Gout =',F11.6,' [W/m2]')" );
+		static gio::Fmt Format_4215( "('  Ebroom =',F11.6,' [W/m2], Gin  =',F11.6,' [W/m2]')" );
+		static gio::Fmt Format_4110( "('  Ef',I2,' =',F11.6,' [W/m2], Rf',I2,' =',F11.6,' [W/m2]')" );
+		static gio::Fmt Format_4111( "('  ----------------- ------------------')" );
+		static gio::Fmt Format_4112( "('  Ef',I2,' =',F11.6,' [W/m2], Rf',I2,' =',F11.6,' [W/m2]')" );
+		static gio::Fmt Format_4113( "('  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\')" );
+		static gio::Fmt Format_4114( "('  Ef',I2,' =',F11.6,' [W/m2], Rf',I2,' =',F11.6,' [W/m2]')" );
+		static gio::Fmt Format_4115( "('  +++++++++++++++++ ++++++++++++++++++')" );
+		static gio::Fmt Format_4116( "('  Ef',I2,' =',F11.6,' [W/m2], Rf',I2,' =',F11.6,' [W/m2]')" );
+		static gio::Fmt Format_4117( "('  ooooooooooooooooo oooooooooooooooooo')" );
+		static gio::Fmt Format_4120( "('  Eb',I2,' =',F11.6,' [W/m2], Rb',I2,' =',F11.6,' [W/m2]')" );
+		static gio::Fmt Format_4121( "('  ----------------- ------------------')" );
+		static gio::Fmt Format_4122( "('  Eb',I2,' =',F11.6,' [W/m2], Rb',I2,' =',F11.6,' [W/m2]')" );
+		static gio::Fmt Format_4123( "('  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\')" );
+		static gio::Fmt Format_4124( "('  Eb',I2,' =',F11.6,' [W/m2], Rb',I2,' =',F11.6,' [W/m2]')" );
+		static gio::Fmt Format_4125( "('  +++++++++++++++++ ++++++++++++++++++')" );
+		static gio::Fmt Format_4126( "('  Eb',I2,' =',F11.6,' [W/m2], Rb',I2,' =',F11.6,' [W/m2]')" );
+		static gio::Fmt Format_4127( "('  ooooooooooooooooo oooooooooooooooooo')" );
+		static gio::Fmt Format_4190( "('  |                     |')" );
+		static gio::Fmt Format_4350( "('Energy balances on Layer Surfaces:')" );
 
 		//open(unit=OutArgumentsFile,  file=TRIM(DBGD)//DebugOutputFileName,  status='unknown', access=FileMode, &
 		//      position=FilePosition, form='formatted', iostat=nperr)
 		//if (nperr.ne.0)  open(unit=OutArgumentsFile,  file=DebugOutputFileName,  status='unknown', access=FileMode, &
 		//      position=FilePosition, form='formatted', iostat=nperr)
 		date_and_time_string( real_CLOCK( 1 ), real_CLOCK( 2 ), real_CLOCK( 3 ), DATE_TIME );
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		gio::write( OutArgumentsFile, Format_2000 ) << DATE_TIME( 1 ) << DATE_TIME( 2 ) << DATE_TIME( 3 ) << DATE_TIME( 5 ) << DATE_TIME( 6 ) << DATE_TIME( 7 );
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		gio::write( OutArgumentsFile, Format_2350 );
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		gio::write( OutArgumentsFile, Format_2105 ) << tamb << tamb - KelvinConv;
 		gio::write( OutArgumentsFile, Format_2180 ) << q( 1 );
 
@@ -830,13 +832,13 @@ namespace TARCOGOutput {
 
 		gio::write( OutArgumentsFile, Format_2115 ) << troom << troom - KelvinConv;
 
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 
 		//Simon: Write energy balances on layer surfaces
 		gio::write( OutArgumentsFile, Format_4350 );
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		gio::write( OutArgumentsFile, Format_4205 ) << ebsky << Gout;
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 
 		for ( i = 1; i <= nlayer; ++i ) {
 			{ auto const SELECT_CASE_var( LayerType( i ) );
@@ -871,43 +873,43 @@ namespace TARCOGOutput {
 				gio::write( OutArgumentsFile, Format_4121 );
 				gio::write( OutArgumentsFile, Format_4120 ) << i << Ebb( i ) << i << Rb( i );
 			}}
-			gio::write( OutArgumentsFile, "*" );
+			gio::write( OutArgumentsFile, fmtLD );
 		}
 
 		gio::write( OutArgumentsFile, Format_4215 ) << ebroom << Gin;
 
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		gio::write( OutArgumentsFile, Format_2351 );
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		gio::write( OutArgumentsFile, Format_2120 ) << ufactor;
 		gio::write( OutArgumentsFile, Format_2130 ) << shgc;
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		gio::write( OutArgumentsFile, Format_2132 ) << sc;
 		gio::write( OutArgumentsFile, Format_2170 ) << hflux;
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		gio::write( OutArgumentsFile, Format_2131 ) << shgct;
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		gio::write( OutArgumentsFile, Format_2140 ) << hcin << hrin << hcin + hrin;
 		gio::write( OutArgumentsFile, Format_2150 ) << hcout << hrout << hcout + hrout;
 
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		for ( i = 1; i <= nlayer - 1; ++i ) {
 			gio::write( OutArgumentsFile, Format_2155 ) << i << Ra( i ) << i << Nu( i );
 		}
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		gio::write( OutArgumentsFile, Format_2330 ) << ShadeEmisRatioIn << ShadeEmisRatioOut;
 		gio::write( OutArgumentsFile, Format_2331 ) << ShadeHcRatioIn << ShadeHcRatioOut;
 		gio::write( OutArgumentsFile, Format_2332 ) << HcUnshadedIn << HcUnshadedOut;
 
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		for ( i = 2; i <= nlayer; ++i ) {
 			gio::write( OutArgumentsFile, Format_2160 ) << i << hcgas( i ) << i << hrgas( i );
 		}
 
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		gio::write( OutArgumentsFile, "('  Error Tolerance = ', e12.6)" ) << AchievedErrorTolerance;
 
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		gio::write( OutArgumentsFile, "('  Number of Iterations = ', i6)" ) << NumOfIter;
 
 		//  write(OutArgumentsFile, *)
@@ -971,33 +973,33 @@ namespace TARCOGOutput {
 		int i;
 
 		// Formats
-		static gio::Fmt const Format_2000( "('TARCOG calculation results - ',I4,'-',I2.2,'-',I2.2,', ',I2.2,':',I2.2,':',I2.2)" );
-		static gio::Fmt const Format_2351( "('Basic IGU properties:')" );
-		static gio::Fmt const Format_2120( "('  Ufactor  = ',F12.6)" );
-		static gio::Fmt const Format_2220( "('  he = ',F8.4,',',3x,'hi = ',F8.4)" );
-		static gio::Fmt const Format_2155( "('  Ra(',I1,') =',F15.6,'        Nu(',I1,') =',F12.6)" );
-		static gio::Fmt const Format_2230( "('  hg',I2,' =',E15.6,'      hr',I2,' =',E15.6,'      hs',I2,' =',E15.6)" );
+		static gio::Fmt Format_2000( "('TARCOG calculation results - ',I4,'-',I2.2,'-',I2.2,', ',I2.2,':',I2.2,':',I2.2)" );
+		static gio::Fmt Format_2351( "('Basic IGU properties:')" );
+		static gio::Fmt Format_2120( "('  Ufactor  = ',F12.6)" );
+		static gio::Fmt Format_2220( "('  he = ',F8.4,',',3x,'hi = ',F8.4)" );
+		static gio::Fmt Format_2155( "('  Ra(',I1,') =',F15.6,'        Nu(',I1,') =',F12.6)" );
+		static gio::Fmt Format_2230( "('  hg',I2,' =',E15.6,'      hr',I2,' =',E15.6,'      hs',I2,' =',E15.6)" );
 
 		//open(unit=OutArgumentsFile,  file=TRIM(DBGD)//DebugOutputFileName,  status='unknown', access=FileMode,  &
 		//      position=FilePosition, form='formatted', iostat=nperr)
 		//if (nperr.ne.0)  open(unit=OutArgumentsFile,  file=DebugOutputFileName,  status='unknown', access=FileMode,  &
 		//      position=FilePosition, form='formatted', iostat=nperr)
 		date_and_time_string( real_CLOCK( 1 ), real_CLOCK( 2 ), real_CLOCK( 3 ), DATE_TIME );
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		gio::write( OutArgumentsFile, Format_2000 ) << DATE_TIME( 1 ) << DATE_TIME( 2 ) << DATE_TIME( 3 ) << DATE_TIME( 5 ) << DATE_TIME( 6 ) << DATE_TIME( 7 );
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		gio::write( OutArgumentsFile, Format_2351 );
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		gio::write( OutArgumentsFile, Format_2120 ) << ufactor;
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		gio::write( OutArgumentsFile, Format_2220 ) << hout << hin;
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		for ( i = 1; i <= nlayer - 1; ++i ) {
 			gio::write( OutArgumentsFile, Format_2155 ) << i << Ra( i ) << i << Nu( i );
 		}
-		gio::write( OutArgumentsFile, "*" );
+		gio::write( OutArgumentsFile, fmtLD );
 		for ( i = 1; i <= nlayer - 1; ++i ) {
 			gio::write( OutArgumentsFile, Format_2230 ) << i << hg( i ) << i << hr( i ) << i << hs( i );
 		}
@@ -1142,62 +1144,62 @@ namespace TARCOGOutput {
 		static std::string dynFormat;
 
 		// Formats
-		static gio::Fmt const Format_111( "('*')" );
-		static gio::Fmt const Format_112( "('* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *')" );
-		static gio::Fmt const Format_113( "('*------------------------------------------------------------')" );
-		static gio::Fmt const Format_200( "('* General options:')" );
-		static gio::Fmt const Format_210( "('* <nlayer, debug, standard, ThermalMod, CalcDeflection, SDScalar, VacuumPressure, VacuumMaxGapThickness>')" );
-		static gio::Fmt const Format_300( "('* Environmental settings:')" );
-		static gio::Fmt const Format_310( "('* <tout, tind, wso, iwd, wsi, dir, outir, isky, tsky, esky, fclr, trmin, Pa, Pini, Tini>')" );
-		static gio::Fmt const Format_400( "('* Overall IGU properties:')" );
-		static gio::Fmt const Format_410( "('* <totsol, tilt, height, heightt, width>')" );
-		static gio::Fmt const Format_600( "('* Outdoor environment:')" );
-		static gio::Fmt const Format_610( "('* <ibc(1), hout, presure(1), 1, 1, 1.0, vvent(1), tvent(1)>')" );
-		static gio::Fmt const Format_700( "('* IGU definition:')" );
-		static gio::Fmt const Format_800( "('* Indoor environment:')" );
-		static gio::Fmt const Format_810( "('* <ibc(2), hin, presure(nlayer+1), 1, 1, 1.0, vvent(nlayer+1), tvent(nlayer+1)>')" );
-		static gio::Fmt const Format_900( "('* End file')" );
-		static gio::Fmt const Format_10001( "('* created by TARCOG v. ',A)" );
-		static gio::Fmt const Format_1001( "('* TARCOG debug output for WinCOG, ',I4,'-',I2.2,'-',I2.2,', ',I2.2,':',I2.2,':',I2.2)" );
-		static gio::Fmt const Format_1002( "('*     WindowID:   ',I8,'  - Not specified')" );
-		static gio::Fmt const Format_1003( "('*     WindowID:   ',I8,' ')" );
-		static gio::Fmt const Format_1006( "('*     IGUID:      ',I8,'  - Not specified')" );
-		static gio::Fmt const Format_1007( "('*     IGUID:      ',I8,' ')" );
-		static gio::Fmt const Format_1008( "('*     Num Layers: ',I8,' ')" );
-		static gio::Fmt const Format_1010( "('    ',I1,', ',I1,', ',I1,', ',I1,', ',I1,', ',F24.12,', ',F24.12,', ',F24.12)" );
-		static gio::Fmt const Format_1020( "('    ',F24.12,', ',F24.12,', ',F24.12,', ',I1,', ',F24.12,', ',F24.12,', ',F24.12,', ',I1,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12)" );
-		static gio::Fmt const Format_1030( "('    ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12)" );
-		static gio::Fmt const Format_1031( "('    ',F24.12,', ',F24.12,', ',I3,', ',F24.12,', ',I3,', ',I3,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',I2,', ',I2,', ',I2,', ',I2)" );
-		static gio::Fmt const Format_1034( "('* <PillarSpacing(i), PillarRadius(i)')" );
-		static gio::Fmt const Format_1035( "('    ',F24.12,', ',F24.12)" );
-		static gio::Fmt const Format_1040( "('    ',I1,', ',F24.12,', ',F24.12,', ',I1,', ',I1,', ',F24.12,', ',F24.12,', ',F24.12)" );
-		static gio::Fmt const Format_1048( "('* <gap(i), GapDef(i), presure(i+1), nmix(i+1), (iprop(i+1, j), j=1,nmix(i+1)), (frct(i+1, j), ',/,/,'j=1,nmix(i+1)), vvent(i), tvent(i), SupportPillar(i)>')" );
-		static gio::Fmt const Format_1049( "('* Gap ',I1,':')" );
-		static gio::Fmt const Format_1041( "('    ',F24.12,', ',F24.12,', ',I1,', ',I1,', ',F24.12,', ',F24.12,', ',F24.12)" );
-		static gio::Fmt const Format_1042( "('    ',F24.12,', ',F24.12,', ',I1,', ',I1,', ',I1,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12)" );
-		static gio::Fmt const Format_1043( "('    ',F24.12,', ',F24.12,', ',I1,', ',I1,', ',I1,', ',I1,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12)" );
-		static gio::Fmt const Format_1050( "('* <scon(i), asol(i), thick(i), emis(2*i-1), emis(2*i), tir(2*i-1), YoungsMod(i),',/,/,' PoissonsRat(i), LayerType(i), nslice(i)>')" );
-		static gio::Fmt const Format_1051( "('    ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',I1,', ',I1)" );
-		static gio::Fmt const Format_1052( "('* <Atop(i), Abot(i), Al(i), Ar(i), Ah(i)>')" );
-		static gio::Fmt const Format_1053( "('    ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12)" );
-		static gio::Fmt const Format_1054( "('* <SlatThick(i), SlatWidth(i), SlatAngle(i), SlatCond(i), SlatSpacing(i), SlatCurve(i)>')" );
-		static gio::Fmt const Format_1055( "('    ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12)" );
-		static gio::Fmt const Format_1060( "('* Layer ',I1,' - specular-glass:')" );
-		static gio::Fmt const Format_1061( "('* Layer ',I1,' - venetian blind:')" );
-		static gio::Fmt const Format_1062( "('* Layer ',I1,' - woven shade:')" );
-		static gio::Fmt const Format_1063( "('* Layer ',I1,' - diffuse shade:')" );
-		static gio::Fmt const Format_1064( "('* Layer ',I1,' - ???:')" );
-		static gio::Fmt const Format_2000( "('* Gas coefficients information')" );
-		static gio::Fmt const Format_2010( "('    ',I2)" );
-		static gio::Fmt const Format_2011( "('* <NumberOfGasses>')" );
-		static gio::Fmt const Format_2020( "('    ',ES12.6)" );
-		static gio::Fmt const Format_2021( "('* <MolecularWeight>')" );
-		static gio::Fmt const Format_2030( "(', ',ES12.6,$)" );
-		static gio::Fmt const Format_2031( "('* <gconA, gconB, gconC>')" );
-		static gio::Fmt const Format_2032( "('* <gvisA, gvisB, gvisC>')" );
-		static gio::Fmt const Format_2033( "('* <gcpA, gcpB, gcpC>')" );
-		static gio::Fmt const Format_2034( "('* <Gamma>')" );
-		static gio::Fmt const Format_1198( "(' *************************************************')" );
+		static gio::Fmt Format_111( "('*')" );
+		static gio::Fmt Format_112( "('* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *')" );
+		static gio::Fmt Format_113( "('*------------------------------------------------------------')" );
+		static gio::Fmt Format_200( "('* General options:')" );
+		static gio::Fmt Format_210( "('* <nlayer, debug, standard, ThermalMod, CalcDeflection, SDScalar, VacuumPressure, VacuumMaxGapThickness>')" );
+		static gio::Fmt Format_300( "('* Environmental settings:')" );
+		static gio::Fmt Format_310( "('* <tout, tind, wso, iwd, wsi, dir, outir, isky, tsky, esky, fclr, trmin, Pa, Pini, Tini>')" );
+		static gio::Fmt Format_400( "('* Overall IGU properties:')" );
+		static gio::Fmt Format_410( "('* <totsol, tilt, height, heightt, width>')" );
+		static gio::Fmt Format_600( "('* Outdoor environment:')" );
+		static gio::Fmt Format_610( "('* <ibc(1), hout, presure(1), 1, 1, 1.0, vvent(1), tvent(1)>')" );
+		static gio::Fmt Format_700( "('* IGU definition:')" );
+		static gio::Fmt Format_800( "('* Indoor environment:')" );
+		static gio::Fmt Format_810( "('* <ibc(2), hin, presure(nlayer+1), 1, 1, 1.0, vvent(nlayer+1), tvent(nlayer+1)>')" );
+		static gio::Fmt Format_900( "('* End file')" );
+		static gio::Fmt Format_10001( "('* created by TARCOG v. ',A)" );
+		static gio::Fmt Format_1001( "('* TARCOG debug output for WinCOG, ',I4,'-',I2.2,'-',I2.2,', ',I2.2,':',I2.2,':',I2.2)" );
+		static gio::Fmt Format_1002( "('*     WindowID:   ',I8,'  - Not specified')" );
+		static gio::Fmt Format_1003( "('*     WindowID:   ',I8,' ')" );
+		static gio::Fmt Format_1006( "('*     IGUID:      ',I8,'  - Not specified')" );
+		static gio::Fmt Format_1007( "('*     IGUID:      ',I8,' ')" );
+		static gio::Fmt Format_1008( "('*     Num Layers: ',I8,' ')" );
+		static gio::Fmt Format_1010( "('    ',I1,', ',I1,', ',I1,', ',I1,', ',I1,', ',F24.12,', ',F24.12,', ',F24.12)" );
+		static gio::Fmt Format_1020( "('    ',F24.12,', ',F24.12,', ',F24.12,', ',I1,', ',F24.12,', ',F24.12,', ',F24.12,', ',I1,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12)" );
+		static gio::Fmt Format_1030( "('    ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12)" );
+		static gio::Fmt Format_1031( "('    ',F24.12,', ',F24.12,', ',I3,', ',F24.12,', ',I3,', ',I3,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',I2,', ',I2,', ',I2,', ',I2)" );
+		static gio::Fmt Format_1034( "('* <PillarSpacing(i), PillarRadius(i)')" );
+		static gio::Fmt Format_1035( "('    ',F24.12,', ',F24.12)" );
+		static gio::Fmt Format_1040( "('    ',I1,', ',F24.12,', ',F24.12,', ',I1,', ',I1,', ',F24.12,', ',F24.12,', ',F24.12)" );
+		static gio::Fmt Format_1048( "('* <gap(i), GapDef(i), presure(i+1), nmix(i+1), (iprop(i+1, j), j=1,nmix(i+1)), (frct(i+1, j), ',/,/,'j=1,nmix(i+1)), vvent(i), tvent(i), SupportPillar(i)>')" );
+		static gio::Fmt Format_1049( "('* Gap ',I1,':')" );
+		static gio::Fmt Format_1041( "('    ',F24.12,', ',F24.12,', ',I1,', ',I1,', ',F24.12,', ',F24.12,', ',F24.12)" );
+		static gio::Fmt Format_1042( "('    ',F24.12,', ',F24.12,', ',I1,', ',I1,', ',I1,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12)" );
+		static gio::Fmt Format_1043( "('    ',F24.12,', ',F24.12,', ',I1,', ',I1,', ',I1,', ',I1,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12)" );
+		static gio::Fmt Format_1050( "('* <scon(i), asol(i), thick(i), emis(2*i-1), emis(2*i), tir(2*i-1), YoungsMod(i),',/,/,' PoissonsRat(i), LayerType(i), nslice(i)>')" );
+		static gio::Fmt Format_1051( "('    ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',I1,', ',I1)" );
+		static gio::Fmt Format_1052( "('* <Atop(i), Abot(i), Al(i), Ar(i), Ah(i)>')" );
+		static gio::Fmt Format_1053( "('    ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12)" );
+		static gio::Fmt Format_1054( "('* <SlatThick(i), SlatWidth(i), SlatAngle(i), SlatCond(i), SlatSpacing(i), SlatCurve(i)>')" );
+		static gio::Fmt Format_1055( "('    ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12,', ',F24.12)" );
+		static gio::Fmt Format_1060( "('* Layer ',I1,' - specular-glass:')" );
+		static gio::Fmt Format_1061( "('* Layer ',I1,' - venetian blind:')" );
+		static gio::Fmt Format_1062( "('* Layer ',I1,' - woven shade:')" );
+		static gio::Fmt Format_1063( "('* Layer ',I1,' - diffuse shade:')" );
+		static gio::Fmt Format_1064( "('* Layer ',I1,' - ???:')" );
+		static gio::Fmt Format_2000( "('* Gas coefficients information')" );
+		static gio::Fmt Format_2010( "('    ',I2)" );
+		static gio::Fmt Format_2011( "('* <NumberOfGasses>')" );
+		static gio::Fmt Format_2020( "('    ',ES12.6)" );
+		static gio::Fmt Format_2021( "('* <MolecularWeight>')" );
+		static gio::Fmt Format_2030( "(', ',ES12.6,$)" );
+		static gio::Fmt Format_2031( "('* <gconA, gconB, gconC>')" );
+		static gio::Fmt Format_2032( "('* <gvisA, gvisB, gvisC>')" );
+		static gio::Fmt Format_2033( "('* <gcpA, gcpB, gcpC>')" );
+		static gio::Fmt Format_2034( "('* <Gamma>')" );
+		static gio::Fmt Format_1198( "(' *************************************************')" );
 
 		//open(unit=WINCogFile,  file=TRIM(DBGD)//TRIM(WinCogFileName),  status='unknown', access=FileMode, &
 		//       position=FilePosition, form='formatted', iostat=nperr)
@@ -1373,7 +1375,7 @@ namespace TARCOGOutput {
 		gio::write( WINCogFile, Format_900 );
 		gio::write( WINCogFile, Format_113 );
 		//  write(WINCogFile, 1198)
-		gio::write( WINCogFile, "*" );
+		gio::write( WINCogFile, fmtLD );
 
 		//close(WINCogFile)
 
@@ -1401,10 +1403,10 @@ namespace TARCOGOutput {
 		int ferr;
 
 		// Formats
-		static gio::Fmt const Format_2360( "('TARCOG status: ',I3,' - Normal termination.')" );
-		static gio::Fmt const Format_2361( "('TARCOG status: ',I3,' - Warning!')" );
-		static gio::Fmt const Format_2362( "('TARCOG status: ',I3,' - Error!')" );
-		static gio::Fmt const Format_1199( "('#####  #####  #####  #####  #####  #####  #####  #####  #####  #####  #####')" );
+		static gio::Fmt Format_2360( "('TARCOG status: ',I3,' - Normal termination.')" );
+		static gio::Fmt Format_2361( "('TARCOG status: ',I3,' - Warning!')" );
+		static gio::Fmt Format_2362( "('TARCOG status: ',I3,' - Error!')" );
+		static gio::Fmt Format_1199( "('#####  #####  #####  #####  #####  #####  #####  #####  #####  #####  #####')" );
 
 		if ( WriteDebugOutput ) {
 			//open(unit=OutArgumentsFile,  file=TRIM(DBGD)//DebugOutputFileName,  status='unknown', position='APPEND',  &
@@ -1412,7 +1414,7 @@ namespace TARCOGOutput {
 			//if (ferr.ne.0) open(unit=OutArgumentsFile,  file=DebugOutputFileName,  status='unknown', position='APPEND',  &
 			//      &  form='formatted', iostat=ferr)
 
-			gio::write( OutArgumentsFile, "*" );
+			gio::write( OutArgumentsFile, fmtLD );
 			if ( ( nperr > 0 ) && ( nperr < 1000 ) ) {
 				gio::write( OutArgumentsFile, Format_2362 ) << nperr;
 			} else if ( ( nperr >= 1000 ) ) {
@@ -1421,7 +1423,7 @@ namespace TARCOGOutput {
 				gio::write( OutArgumentsFile, Format_2360 ) << nperr;
 			}
 
-			gio::write( OutArgumentsFile, "*" );
+			gio::write( OutArgumentsFile, fmtLD );
 			gio::write( OutArgumentsFile, Format_1199 );
 			gio::write( OutArgumentsFile, Format_1199 );
 
@@ -1554,7 +1556,7 @@ namespace TARCOGOutput {
 	//     Portions of the EnergyPlus software package have been developed and copyrighted
 	//     by other individuals, companies and institutions.  These portions have been
 	//     incorporated into the EnergyPlus software package under license.   For a complete
-	//     list of contributors, see "Notice" located in EnergyPlus.f90.
+	//     list of contributors, see "Notice" located in main.cc.
 
 	//     NOTICE: The U.S. Government is granted for itself and others acting on its
 	//     behalf a paid-up, nonexclusive, irrevocable, worldwide license in this data to

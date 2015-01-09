@@ -15,6 +15,7 @@
 
 // ObjexxFCL Headers
 #include <ObjexxFCL/CArray.hh>
+#include "ObjexxFCL.unit.hh"
 
 using namespace ObjexxFCL;
 
@@ -95,6 +96,15 @@ TEST( CArrayTest, Subscripting )
 	EXPECT_EQ( 44, v( 5 ) );
 }
 
+TEST( CArrayTest, Functions )
+{
+	CArray_int u{ 1, 2, 3 };
+	CArray_int v{ 2, 3, 4 };
+	EXPECT_EQ( 14, magnitude_squared( u ) );
+	EXPECT_EQ( 3, distance_squared( u, v ) );
+	EXPECT_EQ( 20, dot( u, v ) );
+}
+
 TEST( CArrayTest, Swap )
 {
 	CArray_int a( 10u, 22 ), A( a );
@@ -108,7 +118,4 @@ TEST( CArrayTest, Swap )
 	swap( a, b );
 	EXPECT_EQ( B, a );
 	EXPECT_EQ( A, b );
-	std::swap( a, b );
-	EXPECT_EQ( A, a );
-	EXPECT_EQ( B, b );
 }

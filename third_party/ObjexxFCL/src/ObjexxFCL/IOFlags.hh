@@ -40,30 +40,30 @@ public: // Creation
 	// Default Constructor
 	inline
 	IOFlags() :
-		unit_( 0 ),
-		exists_( false ),
-		new_( false ),
-		old_( false ),
-		scratch_( false ),
-		unknown_( false ),
-		open_( false ),
-		read_( false ),
-		write_( false ),
-		binary_( false ),
-		append_( false ),
-		truncate_( false ),
-		asis_( true ),
-		bz_( false ),
-		nad_( false ),
-		del_( false ),
-		her_( false ),
-		size_( 0 ),
-		pos_( 0 ),
-		ter_( default_ter() ),
-		err_( false ),
-		end_( false ),
-		eor_( false ),
-		ios_( 0 )
+	 unit_( 0 ),
+	 exists_( false ),
+	 new_( false ),
+	 old_( false ),
+	 scratch_( false ),
+	 unknown_( false ),
+	 open_( false ),
+	 read_( false ),
+	 write_( false ),
+	 binary_( false ),
+	 append_( false ),
+	 truncate_( false ),
+	 asis_( true ),
+	 bz_( false ),
+	 nad_( false ),
+	 del_( false ),
+	 her_( false ),
+	 size_( 0 ),
+	 pos_( 0 ),
+	 ter_( default_ter() ),
+	 err_( false ),
+	 end_( false ),
+	 eor_( false ),
+	 ios_( 0 )
 	{}
 
 	// Handle Errors Named Constructor
@@ -1196,6 +1196,7 @@ public: // Properties
 
 public: // Methods
 
+	// Clear State
 	inline
 	IOFlags &
 	clear()
@@ -1229,6 +1230,7 @@ public: // Methods
 		return *this;
 	}
 
+	// Clear Status
 	inline
 	IOFlags &
 	clear_status()
@@ -1246,18 +1248,16 @@ public: // Methods
 	void
 	set_status( std::ios const & stream )
 	{
-		if ( ! stream ) {
-			if ( stream.eof() ) {
-				end_ = true; // Assume fail due to reading past end of file
-				ios_ = -1; // Negative => End of File
-				msg_ = "I/O Error: End of file";
-				if ( her_ ) error();
-			} else {
-				err_ = true;
-				ios_ = 1; // Positive => Error other than End of File
-				msg_ = "I/O Error";
-				if ( her_ ) error();
-			}
+		if ( stream.eof() ) {
+			end_ = true; // Assume fail due to reading past end of file
+			ios_ = -1; // Negative => End of File
+			msg_ = "I/O Error: End of file";
+			if ( her_ ) error();
+		} else if ( ! stream ) {
+			err_ = true;
+			ios_ = 1; // Positive => Error other than End of File
+			msg_ = "I/O Error";
+			if ( her_ ) error();
 		}
 	}
 

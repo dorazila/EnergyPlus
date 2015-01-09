@@ -52,7 +52,7 @@ namespace PhotovoltaicThermalCollectors {
 
 	// METHODOLOGY EMPLOYED:
 	// The approach is to have one PVT structure that works with different models.
-	//  the PVT modle reuses photovoltaic modeling in Photovoltaics.f90 for electricity generation.
+	//  the PVT modle reuses photovoltaic modeling in Photovoltaics.cc for electricity generation.
 	//  the electric load center and "generator" is all accessed thru PV objects and models.
 	//  this module is for the thermal portion of PVT.
 	//  the first model is a "simple" or "ideal" model useful for sizing, early design, or policy analyses
@@ -90,6 +90,8 @@ namespace PhotovoltaicThermalCollectors {
 	int const CalledFromOutsideAirSystem( 102 );
 
 	Real64 const SimplePVTWaterSizeFactor( 1.905e-5 ); // [ m3/s/m2 ] average of collectors in SolarCollectors.idf
+
+	static std::string const BlankString;
 
 	// DERIVED TYPE DEFINITIONS:
 
@@ -247,7 +249,7 @@ namespace PhotovoltaicThermalCollectors {
 		// na
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		static std::string const Blank;
+		// na
 
 		// INTERFACE BLOCK SPECIFICATIONS:
 		// na
@@ -314,8 +316,7 @@ namespace PhotovoltaicThermalCollectors {
 		cCurrentModuleObject = "SolarCollector:FlatPlate:PhotovoltaicThermal";
 		NumPVT = GetNumObjectsFound( cCurrentModuleObject );
 		PVT.allocate( NumPVT );
-		CheckEquipName.allocate( NumPVT );
-		CheckEquipName = true;
+		CheckEquipName.dimension( NumPVT, true );
 
 		for ( Item = 1; Item <= NumPVT; ++Item ) {
 			GetObjectItem( cCurrentModuleObject, Item, cAlphaArgs, NumAlphas, rNumericArgs, NumNumbers, IOStatus, _, lAlphaFieldBlanks, cAlphaFieldNames, cNumericFieldNames );
@@ -522,7 +523,7 @@ namespace PhotovoltaicThermalCollectors {
 		// SUBROUTINE ARGUMENT DEFINITIONS:
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		// na
+		static std::string const RoutineName( "InitPVTcollectors" );
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -545,8 +546,7 @@ namespace PhotovoltaicThermalCollectors {
 
 		// Do the one time initializations
 		if ( MyOneTimeFlag ) {
-			SetLoopIndexFlag.allocate( NumPVT );
-			SetLoopIndexFlag = true;
+			SetLoopIndexFlag.dimension( NumPVT, true );
 			MyOneTimeFlag = false;
 		}
 
@@ -640,7 +640,7 @@ namespace PhotovoltaicThermalCollectors {
 
 			if ( SELECT_CASE_var == LiquidWorkingFluid ) {
 
-				rho = GetDensityGlycol( PlantLoop( PVT( PVTnum ).WLoopNum ).FluidName, 60., PlantLoop( PVT( PVTnum ).WLoopNum ).FluidIndex, "InitPVTcollectors" );
+				rho = GetDensityGlycol( PlantLoop( PVT( PVTnum ).WLoopNum ).FluidName, 60.0, PlantLoop( PVT( PVTnum ).WLoopNum ).FluidIndex, RoutineName );
 
 				PVT( PVTnum ).MaxMassFlowRate = PVT( PVTnum ).DesignVolFlowRate * rho;
 
@@ -1034,7 +1034,7 @@ namespace PhotovoltaicThermalCollectors {
 		// SUBROUTINE ARGUMENT DEFINITIONS:
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		// na
+		static std::string const RoutineName( "CalcPVTcollectors" );
 
 		// INTERFACE BLOCK SPECIFICATIONS:
 		// na
@@ -1098,7 +1098,7 @@ namespace PhotovoltaicThermalCollectors {
 
 				if ( PVT( PVTnum ).WorkingFluidType == AirWorkingFluid ) {
 					Winlet = Node( InletNode ).HumRat;
-					CpInlet = PsyCpAirFnWTdb( Winlet, Tinlet, "CalcPVTcollectors" );
+					CpInlet = PsyCpAirFnWTdb( Winlet, Tinlet );
 					if ( mdot * CpInlet > 0.0 ) {
 						PotentialOutletTemp = Tinlet + PotentialHeatGain / ( mdot * CpInlet );
 					} else {
@@ -1113,7 +1113,7 @@ namespace PhotovoltaicThermalCollectors {
 						}
 						BypassFraction = max( 0.0, BypassFraction );
 						PotentialOutletTemp = Node( PVT( PVTnum ).HVACOutletNodeNum ).TempSetPoint;
-						PotentialHeatGain = mdot * PsyCpAirFnWTdb( Winlet, Tinlet, "CalcPVTcollectors" ) * ( PotentialOutletTemp - Tinlet );
+						PotentialHeatGain = mdot * PsyCpAirFnWTdb( Winlet, Tinlet ) * ( PotentialOutletTemp - Tinlet );
 
 					} else {
 						BypassFraction = 0.0;
@@ -1146,9 +1146,9 @@ namespace PhotovoltaicThermalCollectors {
 
 				if ( PVT( PVTnum ).WorkingFluidType == AirWorkingFluid ) {
 					Winlet = Node( InletNode ).HumRat;
-					CpInlet = PsyCpAirFnWTdb( Winlet, Tinlet, "CalcPVTcollectors" );
-					WetBulbInlet = PsyTwbFnTdbWPb( Tinlet, Winlet, OutBaroPress, "CalcPVTcollectors" );
-					DewPointInlet = PsyTdpFnTdbTwbPb( Tinlet, WetBulbInlet, OutBaroPress, "CalcPVTcollectors" );
+					CpInlet = PsyCpAirFnWTdb( Winlet, Tinlet );
+					WetBulbInlet = PsyTwbFnTdbWPb( Tinlet, Winlet, OutBaroPress, RoutineName );
+					DewPointInlet = PsyTdpFnTdbTwbPb( Tinlet, WetBulbInlet, OutBaroPress, RoutineName );
 				} else if ( PVT( PVTnum ).WorkingFluidType == LiquidWorkingFluid ) {
 					CpInlet = CPHW( Tinlet );
 				}
@@ -1350,7 +1350,7 @@ namespace PhotovoltaicThermalCollectors {
 	//     Portions of the EnergyPlus software package have been developed and copyrighted
 	//     by other individuals, companies and institutions.  These portions have been
 	//     incorporated into the EnergyPlus software package under license.   For a complete
-	//     list of contributors, see "Notice" located in EnergyPlus.f90.
+	//     list of contributors, see "Notice" located in main.cc.
 
 	//     NOTICE: The U.S. Government is granted for itself and others acting on its
 	//     behalf a paid-up, nonexclusive, irrevocable, worldwide license in this data to

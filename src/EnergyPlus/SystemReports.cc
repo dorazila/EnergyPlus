@@ -1,6 +1,9 @@
 // C++ Headers
+#include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <string>
+#include <vector>
 
 // ObjexxFCL Headers
 #include <ObjexxFCL/FArray.functions.hh>
@@ -81,6 +84,8 @@ namespace SystemReports {
 	int const HeatingOnly( 2 );
 	int const HeatAndCool( 3 );
 	int const MaxSetBackCount( 3 );
+
+	static std::string const BlankString;
 
 	// DERIVED TYPE DEFINITIONS:
 
@@ -179,6 +184,9 @@ namespace SystemReports {
 	FArray1D_bool NoLoadFlag;
 	FArray1D_bool UnmetLoadFlag;
 
+	static gio::Fmt fmtLD( "*" );
+	static gio::Fmt fmtA( "(A)" );
+
 	// SUBROUTINE SPECIFICATIONS FOR MODULE SystemReports
 
 	//Reporting Initialization
@@ -256,7 +264,6 @@ namespace SystemReports {
 		int CtrlZoneNum;
 		int NodeIndex;
 		int Idx;
-		int TempIndex;
 		int ListNum;
 		int SAPNum;
 		int SAPOutNode;
@@ -284,7 +291,6 @@ namespace SystemReports {
 		std::string CompName;
 		bool MatchFound;
 		static bool OneTimeFlag( true ); // Flag set to make sure you initialize reports one time
-		bool Duplicate;
 		bool ConnectionFlag;
 
 		if ( ! VentReportStructureCreated ) return;
@@ -473,319 +479,292 @@ namespace SystemReports {
 
 					//Eliminate duplicates in the connection arrays
 					if ( allocated( ZoneCompToPlant ) ) {
-						EquipNum = size( ZoneCompToPlant );
+						EquipNum = isize( ZoneCompToPlant );
 					} else {
 						EquipNum = 0;
 					}
 					if ( allocated( ZoneSubCompToPlant ) ) {
-						SubEquipNum = size( ZoneSubCompToPlant );
+						SubEquipNum = isize( ZoneSubCompToPlant );
 					} else {
 						SubEquipNum = 0;
 					}
 					if ( allocated( ZoneSubSubCompToPlant ) ) {
-						SubSubEquipNum = size( ZoneSubSubCompToPlant );
+						SubSubEquipNum = isize( ZoneSubSubCompToPlant );
 					} else {
 						SubSubEquipNum = 0;
 					}
 					if ( allocated( AirSysCompToPlant ) ) {
-						CompNum = size( AirSysCompToPlant );
+						CompNum = isize( AirSysCompToPlant );
 					} else {
 						CompNum = 0;
 					}
 					if ( allocated( AirSysSubCompToPlant ) ) {
-						SubCompNum = size( AirSysSubCompToPlant );
+						SubCompNum = isize( AirSysSubCompToPlant );
 					} else {
 						SubCompNum = 0;
 					}
 					if ( allocated( AirSysSubSubCompToPlant ) ) {
-						SubSubCompNum = size( AirSysSubSubCompToPlant );
+						SubSubCompNum = isize( AirSysSubSubCompToPlant );
 					} else {
 						SubSubCompNum = 0;
 					}
 
 					if ( EquipNum > 0 ) {
-						TempZoneCompToPlant.ZoneEqListNum() = 0;
-						TempZoneCompToPlant.ZoneEqCompNum() = 0;
-						TempZoneCompToPlant.PlantLoopType() = 0;
-						TempZoneCompToPlant.PlantLoopNum() = 0;
-						TempZoneCompToPlant.PlantLoopBranch() = 0;
-						TempZoneCompToPlant.PlantLoopComp() = 0;
-						TempZoneCompToPlant.FirstDemandSidePtr() = 0;
-						TempZoneCompToPlant.LastDemandSidePtr() = 0;
-
 						ArrayCount = 0;
-						for ( Idx = 1; Idx <= EquipNum; ++Idx ) {
-							Duplicate = false;
-							for ( TempIndex = 1; TempIndex <= EquipNum; ++TempIndex ) {
-								if ( ZoneCompToPlant( Idx ).ZoneEqListNum == TempZoneCompToPlant( TempIndex ).ZoneEqListNum && ZoneCompToPlant( Idx ).ZoneEqCompNum == ZoneCompToPlant( TempIndex ).ZoneEqCompNum ) {
-									Duplicate = true;
+						for ( int i = 1; i <= EquipNum; ++i ) {
+							auto const & zi( ZoneCompToPlant( i ) );
+							bool duplicate( false );
+							for ( int j = 1; j <= ArrayCount; ++j ) {
+								auto const & zj( ZoneCompToPlant( j ) );
+								if ( ( zi.ZoneEqListNum == zj.ZoneEqListNum ) && ( zi.ZoneEqCompNum == zj.ZoneEqCompNum ) ) { // Duplicate
+									duplicate = true;
 									break;
 								}
 							}
-							if ( ! Duplicate ) {
+							if ( ! duplicate ) {
 								++ArrayCount;
-								TempZoneCompToPlant( ArrayCount ).ZoneEqListNum = ZoneCompToPlant( Idx ).ZoneEqListNum;
-								TempZoneCompToPlant( ArrayCount ).ZoneEqCompNum = ZoneCompToPlant( Idx ).ZoneEqCompNum;
-								TempZoneCompToPlant( ArrayCount ).PlantLoopType = ZoneCompToPlant( Idx ).PlantLoopType;
-								TempZoneCompToPlant( ArrayCount ).PlantLoopNum = ZoneCompToPlant( Idx ).PlantLoopNum;
-								TempZoneCompToPlant( ArrayCount ).PlantLoopBranch = ZoneCompToPlant( Idx ).PlantLoopBranch;
-								TempZoneCompToPlant( ArrayCount ).PlantLoopComp = ZoneCompToPlant( Idx ).PlantLoopComp;
-								TempZoneCompToPlant( ArrayCount ).FirstDemandSidePtr = ZoneCompToPlant( Idx ).FirstDemandSidePtr;
-								TempZoneCompToPlant( ArrayCount ).LastDemandSidePtr = ZoneCompToPlant( Idx ).LastDemandSidePtr;
+								if ( i > ArrayCount ) { // Copy to lower position
+									auto & za( ZoneCompToPlant( ArrayCount ) );
+									za.ZoneEqListNum = zi.ZoneEqListNum;
+									za.ZoneEqCompNum = zi.ZoneEqCompNum;
+									za.PlantLoopType = zi.PlantLoopType;
+									za.PlantLoopNum = zi.PlantLoopNum;
+									za.PlantLoopBranch = zi.PlantLoopBranch;
+									za.PlantLoopComp = zi.PlantLoopComp;
+									za.FirstDemandSidePtr = zi.FirstDemandSidePtr;
+									za.LastDemandSidePtr = zi.LastDemandSidePtr;
+								}
 							}
 						}
-
-						ZoneCompToPlant.ZoneEqListNum() = TempZoneCompToPlant.ZoneEqListNum();
-						ZoneCompToPlant.ZoneEqCompNum() = TempZoneCompToPlant.ZoneEqCompNum();
-						ZoneCompToPlant.PlantLoopType() = TempZoneCompToPlant.PlantLoopType();
-						ZoneCompToPlant.PlantLoopNum() = TempZoneCompToPlant.PlantLoopNum();
-						ZoneCompToPlant.PlantLoopBranch() = TempZoneCompToPlant.PlantLoopBranch();
-						ZoneCompToPlant.PlantLoopComp() = TempZoneCompToPlant.PlantLoopComp();
-						ZoneCompToPlant.FirstDemandSidePtr() = TempZoneCompToPlant.FirstDemandSidePtr();
-						ZoneCompToPlant.LastDemandSidePtr() = TempZoneCompToPlant.LastDemandSidePtr();
-
+						for ( int i = ArrayCount + 1; i <= EquipNum; ++i ) { // Zero the now-unused entries
+							auto & zi( ZoneCompToPlant( i ) );
+							zi.ZoneEqListNum = 0;
+							zi.ZoneEqCompNum = 0;
+							zi.PlantLoopType = 0;
+							zi.PlantLoopNum = 0;
+							zi.PlantLoopBranch = 0;
+							zi.PlantLoopComp = 0;
+							zi.FirstDemandSidePtr = 0;
+							zi.LastDemandSidePtr = 0;
+						}
 					}
 
 					if ( SubEquipNum > 0 ) {
-						TempZoneSubCompToPlant.ZoneEqListNum() = 0;
-						TempZoneSubCompToPlant.ZoneEqCompNum() = 0;
-						TempZoneSubCompToPlant.ZoneEqSubCompNum() = 0;
-						TempZoneSubCompToPlant.PlantLoopType() = 0;
-						TempZoneSubCompToPlant.PlantLoopNum() = 0;
-						TempZoneSubCompToPlant.PlantLoopBranch() = 0;
-						TempZoneSubCompToPlant.PlantLoopComp() = 0;
-						TempZoneSubCompToPlant.FirstDemandSidePtr() = 0;
-						TempZoneSubCompToPlant.LastDemandSidePtr() = 0;
-
 						ArrayCount = 0;
-						for ( Idx = 1; Idx <= SubEquipNum; ++Idx ) {
-							Duplicate = false;
-							for ( TempIndex = 1; TempIndex <= SubEquipNum; ++TempIndex ) {
-								if ( ZoneSubCompToPlant( Idx ).ZoneEqListNum == TempZoneSubCompToPlant( TempIndex ).ZoneEqListNum && ZoneSubCompToPlant( Idx ).ZoneEqCompNum == TempZoneSubCompToPlant( TempIndex ).ZoneEqCompNum && ZoneSubCompToPlant( Idx ).ZoneEqSubCompNum == TempZoneSubCompToPlant( TempIndex ).ZoneEqSubCompNum ) {
-									Duplicate = true;
+						for ( int i = 1; i <= SubEquipNum; ++i ) {
+							auto const & zi( ZoneSubCompToPlant( i ) );
+							bool duplicate( false );
+							for ( int j = 1; j <= ArrayCount; ++j ) {
+								auto const & zj( ZoneSubCompToPlant( j ) );
+								if ( ( zi.ZoneEqListNum == zj.ZoneEqListNum ) && ( zi.ZoneEqCompNum == zj.ZoneEqCompNum ) && ( zi.ZoneEqSubCompNum == zj.ZoneEqSubCompNum ) ) { // Duplicate
+									duplicate = true;
 									break;
 								}
 							}
-							if ( ! Duplicate ) {
+							if ( ! duplicate ) {
 								++ArrayCount;
-								TempZoneSubCompToPlant( ArrayCount ).ZoneEqListNum = ZoneSubCompToPlant( Idx ).ZoneEqListNum;
-								TempZoneSubCompToPlant( ArrayCount ).ZoneEqCompNum = ZoneSubCompToPlant( Idx ).ZoneEqCompNum;
-								TempZoneSubCompToPlant( ArrayCount ).ZoneEqSubCompNum = ZoneSubCompToPlant( Idx ).ZoneEqSubCompNum;
-								TempZoneSubCompToPlant( ArrayCount ).PlantLoopType = ZoneSubCompToPlant( Idx ).PlantLoopType;
-								TempZoneSubCompToPlant( ArrayCount ).PlantLoopNum = ZoneSubCompToPlant( Idx ).PlantLoopNum;
-								TempZoneSubCompToPlant( ArrayCount ).PlantLoopBranch = ZoneSubCompToPlant( Idx ).PlantLoopBranch;
-								TempZoneSubCompToPlant( ArrayCount ).PlantLoopComp = ZoneSubCompToPlant( Idx ).PlantLoopComp;
-								TempZoneSubCompToPlant( ArrayCount ).FirstDemandSidePtr = ZoneSubCompToPlant( Idx ).FirstDemandSidePtr;
-								TempZoneSubCompToPlant( ArrayCount ).LastDemandSidePtr = ZoneSubCompToPlant( Idx ).LastDemandSidePtr;
+								if ( i > ArrayCount ) { // Copy to lower position
+									auto & za( ZoneSubCompToPlant( ArrayCount ) );
+									za.ZoneEqListNum = zi.ZoneEqListNum;
+									za.ZoneEqCompNum = zi.ZoneEqCompNum;
+									za.ZoneEqSubCompNum = zi.ZoneEqSubCompNum;
+									za.PlantLoopType = zi.PlantLoopType;
+									za.PlantLoopNum = zi.PlantLoopNum;
+									za.PlantLoopBranch = zi.PlantLoopBranch;
+									za.PlantLoopComp = zi.PlantLoopComp;
+									za.FirstDemandSidePtr = zi.FirstDemandSidePtr;
+									za.LastDemandSidePtr = zi.LastDemandSidePtr;
+								}
 							}
 						}
-
-						ZoneSubCompToPlant.ZoneEqListNum() = TempZoneSubCompToPlant.ZoneEqListNum();
-						ZoneSubCompToPlant.ZoneEqCompNum() = TempZoneSubCompToPlant.ZoneEqCompNum();
-						ZoneSubCompToPlant.ZoneEqSubCompNum() = TempZoneSubCompToPlant.ZoneEqSubCompNum();
-						ZoneSubCompToPlant.PlantLoopType() = TempZoneSubCompToPlant.PlantLoopType();
-						ZoneSubCompToPlant.PlantLoopNum() = TempZoneSubCompToPlant.PlantLoopNum();
-						ZoneSubCompToPlant.PlantLoopBranch() = TempZoneSubCompToPlant.PlantLoopBranch();
-						ZoneSubCompToPlant.PlantLoopComp() = TempZoneSubCompToPlant.PlantLoopComp();
-						ZoneSubCompToPlant.FirstDemandSidePtr() = TempZoneSubCompToPlant.FirstDemandSidePtr();
-						ZoneSubCompToPlant.LastDemandSidePtr() = TempZoneSubCompToPlant.LastDemandSidePtr();
-
+						for ( int i = ArrayCount + 1; i <= SubEquipNum; ++i ) { // Zero the now-unused entries
+							auto & zi( ZoneSubCompToPlant( i ) );
+							zi.ZoneEqListNum = 0;
+							zi.ZoneEqCompNum = 0;
+							zi.ZoneEqSubCompNum = 0;
+							zi.PlantLoopType = 0;
+							zi.PlantLoopNum = 0;
+							zi.PlantLoopBranch = 0;
+							zi.PlantLoopComp = 0;
+							zi.FirstDemandSidePtr = 0;
+							zi.LastDemandSidePtr = 0;
+						}
 					}
 
 					if ( SubSubEquipNum > 0 ) {
-						TempZoneSubSubCompToPlant.ZoneEqListNum() = 0;
-						TempZoneSubSubCompToPlant.ZoneEqCompNum() = 0;
-						TempZoneSubSubCompToPlant.ZoneEqSubCompNum() = 0;
-						TempZoneSubSubCompToPlant.ZoneEqSubSubCompNum() = 0;
-						TempZoneSubSubCompToPlant.PlantLoopType() = 0;
-						TempZoneSubSubCompToPlant.PlantLoopNum() = 0;
-						TempZoneSubSubCompToPlant.PlantLoopBranch() = 0;
-						TempZoneSubSubCompToPlant.PlantLoopComp() = 0;
-						TempZoneSubSubCompToPlant.FirstDemandSidePtr() = 0;
-						TempZoneSubSubCompToPlant.LastDemandSidePtr() = 0;
-
 						ArrayCount = 0;
-						for ( Idx = 1; Idx <= SubSubEquipNum; ++Idx ) {
-							Duplicate = false;
-							for ( TempIndex = 1; TempIndex <= SubSubEquipNum; ++TempIndex ) {
-								if ( ZoneSubSubCompToPlant( Idx ).ZoneEqListNum == TempZoneSubSubCompToPlant( TempIndex ).ZoneEqListNum && ZoneSubSubCompToPlant( Idx ).ZoneEqCompNum == TempZoneSubSubCompToPlant( TempIndex ).ZoneEqCompNum && ZoneSubSubCompToPlant( Idx ).ZoneEqSubCompNum == TempZoneSubSubCompToPlant( TempIndex ).ZoneEqSubCompNum && ZoneSubSubCompToPlant( Idx ).ZoneEqSubSubCompNum == TempZoneSubSubCompToPlant( TempIndex ).ZoneEqSubSubCompNum ) {
-									Duplicate = true;
+						for ( int i = 1; i <= SubSubEquipNum; ++i ) {
+							auto const & zi( ZoneSubSubCompToPlant( i ) );
+							bool duplicate( false );
+							for ( int j = 1; j <= ArrayCount; ++j ) {
+								auto const & zj( ZoneSubSubCompToPlant( j ) );
+								if ( ( zi.ZoneEqListNum == zj.ZoneEqListNum ) && ( zi.ZoneEqCompNum == zj.ZoneEqCompNum ) && ( zi.ZoneEqSubCompNum == zj.ZoneEqSubCompNum ) && ( zi.ZoneEqSubSubCompNum == zj.ZoneEqSubSubCompNum ) ) { // Duplicate
+									duplicate = true;
 									break;
 								}
 							}
-							if ( ! Duplicate ) {
+							if ( ! duplicate ) {
 								++ArrayCount;
-								TempZoneSubSubCompToPlant( ArrayCount ).ZoneEqListNum = ZoneSubSubCompToPlant( Idx ).ZoneEqListNum;
-								TempZoneSubSubCompToPlant( ArrayCount ).ZoneEqCompNum = ZoneSubSubCompToPlant( Idx ).ZoneEqCompNum;
-								TempZoneSubSubCompToPlant( ArrayCount ).ZoneEqSubCompNum = ZoneSubSubCompToPlant( Idx ).ZoneEqSubCompNum;
-								TempZoneSubSubCompToPlant( ArrayCount ).ZoneEqSubSubCompNum = ZoneSubSubCompToPlant( Idx ).ZoneEqSubSubCompNum;
-								TempZoneSubSubCompToPlant( ArrayCount ).PlantLoopType = ZoneSubSubCompToPlant( Idx ).PlantLoopType;
-								TempZoneSubSubCompToPlant( ArrayCount ).PlantLoopNum = ZoneSubSubCompToPlant( Idx ).PlantLoopNum;
-								TempZoneSubSubCompToPlant( ArrayCount ).PlantLoopBranch = ZoneSubSubCompToPlant( Idx ).PlantLoopBranch;
-								TempZoneSubSubCompToPlant( ArrayCount ).PlantLoopComp = ZoneSubSubCompToPlant( Idx ).PlantLoopComp;
-								TempZoneSubSubCompToPlant( ArrayCount ).FirstDemandSidePtr = ZoneSubSubCompToPlant( Idx ).FirstDemandSidePtr;
-								TempZoneSubSubCompToPlant( ArrayCount ).LastDemandSidePtr = ZoneSubSubCompToPlant( Idx ).LastDemandSidePtr;
+								if ( i > ArrayCount ) { // Copy to lower position
+									auto & za( ZoneSubSubCompToPlant( ArrayCount ) );
+									za.ZoneEqListNum = zi.ZoneEqListNum;
+									za.ZoneEqCompNum = zi.ZoneEqCompNum;
+									za.ZoneEqSubCompNum = zi.ZoneEqSubCompNum;
+									za.ZoneEqSubSubCompNum = zi.ZoneEqSubSubCompNum;
+									za.PlantLoopType = zi.PlantLoopType;
+									za.PlantLoopNum = zi.PlantLoopNum;
+									za.PlantLoopBranch = zi.PlantLoopBranch;
+									za.PlantLoopComp = zi.PlantLoopComp;
+									za.FirstDemandSidePtr = zi.FirstDemandSidePtr;
+									za.LastDemandSidePtr = zi.LastDemandSidePtr;
+								}
 							}
 						}
-
-						ZoneSubSubCompToPlant.ZoneEqListNum() = TempZoneSubSubCompToPlant.ZoneEqListNum();
-						ZoneSubSubCompToPlant.ZoneEqCompNum() = TempZoneSubSubCompToPlant.ZoneEqCompNum();
-						ZoneSubSubCompToPlant.ZoneEqSubCompNum() = TempZoneSubSubCompToPlant.ZoneEqSubCompNum();
-						ZoneSubSubCompToPlant.ZoneEqSubSubCompNum() = TempZoneSubSubCompToPlant.ZoneEqSubSubCompNum();
-						ZoneSubSubCompToPlant.PlantLoopType() = TempZoneSubSubCompToPlant.PlantLoopType();
-						ZoneSubSubCompToPlant.PlantLoopNum() = TempZoneSubSubCompToPlant.PlantLoopNum();
-						ZoneSubSubCompToPlant.PlantLoopBranch() = TempZoneSubSubCompToPlant.PlantLoopBranch();
-						ZoneSubSubCompToPlant.PlantLoopComp() = TempZoneSubSubCompToPlant.PlantLoopComp();
-						ZoneSubSubCompToPlant.FirstDemandSidePtr() = TempZoneSubSubCompToPlant.FirstDemandSidePtr();
-						ZoneSubSubCompToPlant.LastDemandSidePtr() = TempZoneSubSubCompToPlant.LastDemandSidePtr();
-
+						for ( int i = ArrayCount + 1; i <= SubSubEquipNum; ++i ) { // Zero the now-unused entries
+							auto & zi( ZoneSubSubCompToPlant( i ) );
+							zi.ZoneEqListNum = 0;
+							zi.ZoneEqCompNum = 0;
+							zi.ZoneEqSubCompNum = 0;
+							zi.ZoneEqSubSubCompNum = 0;
+							zi.PlantLoopType = 0;
+							zi.PlantLoopNum = 0;
+							zi.PlantLoopBranch = 0;
+							zi.PlantLoopComp = 0;
+							zi.FirstDemandSidePtr = 0;
+							zi.LastDemandSidePtr = 0;
+						}
 					}
 
 					if ( CompNum > 0 ) {
-						TempAirSysCompToPlant.AirLoopNum() = 0;
-						TempAirSysCompToPlant.AirLoopBranch() = 0;
-						TempAirSysCompToPlant.AirLoopComp() = 0;
-						TempAirSysCompToPlant.PlantLoopType() = 0;
-						TempAirSysCompToPlant.PlantLoopNum() = 0;
-						TempAirSysCompToPlant.PlantLoopBranch() = 0;
-						TempAirSysCompToPlant.PlantLoopComp() = 0;
-						TempAirSysCompToPlant.FirstDemandSidePtr() = 0;
-						TempAirSysCompToPlant.LastDemandSidePtr() = 0;
-
 						ArrayCount = 0;
-						for ( Idx = 1; Idx <= CompNum; ++Idx ) {
-							Duplicate = false;
-							for ( TempIndex = 1; TempIndex <= CompNum; ++TempIndex ) {
-								if ( AirSysCompToPlant( Idx ).AirLoopNum == TempAirSysCompToPlant( TempIndex ).AirLoopNum && AirSysCompToPlant( Idx ).AirLoopBranch == TempAirSysCompToPlant( TempIndex ).AirLoopBranch && AirSysCompToPlant( Idx ).AirLoopComp == TempAirSysCompToPlant( TempIndex ).AirLoopComp ) {
-									Duplicate = true;
+						for ( int i = 1; i <= CompNum; ++i ) {
+							auto const & ai( AirSysCompToPlant( i ) );
+							bool duplicate( false );
+							for ( int j = 1; j <= ArrayCount; ++j ) {
+								auto const & aj( AirSysCompToPlant( j ) );
+								if ( ( ai.AirLoopNum == aj.AirLoopNum ) && ( ai.AirLoopBranch == aj.AirLoopBranch ) && ( ai.AirLoopComp == aj.AirLoopComp ) ) { // Duplicate
+									duplicate = true;
 									break;
 								}
 							}
-							if ( ! Duplicate ) {
+							if ( ! duplicate ) {
 								++ArrayCount;
-								TempAirSysCompToPlant( ArrayCount ).AirLoopNum = AirSysCompToPlant( Idx ).AirLoopNum;
-								TempAirSysCompToPlant( ArrayCount ).AirLoopBranch = AirSysCompToPlant( Idx ).AirLoopBranch;
-								TempAirSysCompToPlant( ArrayCount ).AirLoopComp = AirSysCompToPlant( Idx ).AirLoopComp;
-								TempAirSysCompToPlant( ArrayCount ).PlantLoopType = AirSysCompToPlant( Idx ).PlantLoopType;
-								TempAirSysCompToPlant( ArrayCount ).PlantLoopNum = AirSysCompToPlant( Idx ).PlantLoopNum;
-								TempAirSysCompToPlant( ArrayCount ).PlantLoopBranch = AirSysCompToPlant( Idx ).PlantLoopBranch;
-								TempAirSysCompToPlant( ArrayCount ).PlantLoopComp = AirSysCompToPlant( Idx ).PlantLoopComp;
-								TempAirSysCompToPlant( ArrayCount ).FirstDemandSidePtr = AirSysCompToPlant( Idx ).FirstDemandSidePtr;
-								TempAirSysCompToPlant( ArrayCount ).LastDemandSidePtr = AirSysCompToPlant( Idx ).LastDemandSidePtr;
+								if ( i > ArrayCount ) { // Copy to lower position
+									auto & aa( AirSysCompToPlant( ArrayCount ) );
+									aa.AirLoopNum = ai.AirLoopNum;
+									aa.AirLoopBranch = ai.AirLoopBranch;
+									aa.AirLoopComp = ai.AirLoopComp;
+									aa.PlantLoopType = ai.PlantLoopType;
+									aa.PlantLoopNum = ai.PlantLoopNum;
+									aa.PlantLoopBranch = ai.PlantLoopBranch;
+									aa.PlantLoopComp = ai.PlantLoopComp;
+									aa.FirstDemandSidePtr = ai.FirstDemandSidePtr;
+									aa.LastDemandSidePtr = ai.LastDemandSidePtr;
+								}
 							}
 						}
-
-						AirSysCompToPlant.AirLoopNum() = TempAirSysCompToPlant.AirLoopNum();
-						AirSysCompToPlant.AirLoopBranch() = TempAirSysCompToPlant.AirLoopBranch();
-						AirSysCompToPlant.AirLoopComp() = TempAirSysCompToPlant.AirLoopComp();
-						AirSysCompToPlant.PlantLoopType() = TempAirSysCompToPlant.PlantLoopType();
-						AirSysCompToPlant.PlantLoopNum() = TempAirSysCompToPlant.PlantLoopNum();
-						AirSysCompToPlant.PlantLoopBranch() = TempAirSysCompToPlant.PlantLoopBranch();
-						AirSysCompToPlant.PlantLoopComp() = TempAirSysCompToPlant.PlantLoopComp();
-						AirSysCompToPlant.FirstDemandSidePtr() = TempAirSysCompToPlant.FirstDemandSidePtr();
-						AirSysCompToPlant.LastDemandSidePtr() = TempAirSysCompToPlant.LastDemandSidePtr();
-
+						for ( int i = ArrayCount + 1; i <= CompNum; ++i ) { // Zero the now-unused entries
+							auto & ai( AirSysCompToPlant( i ) );
+							ai.AirLoopNum = 0;
+							ai.AirLoopBranch = 0;
+							ai.AirLoopComp = 0;
+							ai.PlantLoopType = 0;
+							ai.PlantLoopNum = 0;
+							ai.PlantLoopBranch = 0;
+							ai.PlantLoopComp = 0;
+							ai.FirstDemandSidePtr = 0;
+							ai.LastDemandSidePtr = 0;
+						}
 					}
 
 					if ( SubCompNum > 0 ) {
-						TempAirSysSubCompToPlant.AirLoopNum() = 0;
-						TempAirSysSubCompToPlant.AirLoopBranch() = 0;
-						TempAirSysSubCompToPlant.AirLoopComp() = 0;
-						TempAirSysSubCompToPlant.AirLoopSubComp() = 0;
-						TempAirSysSubCompToPlant.PlantLoopType() = 0;
-						TempAirSysSubCompToPlant.PlantLoopNum() = 0;
-						TempAirSysSubCompToPlant.PlantLoopBranch() = 0;
-						TempAirSysSubCompToPlant.PlantLoopComp() = 0;
-						TempAirSysSubCompToPlant.FirstDemandSidePtr() = 0;
-						TempAirSysSubCompToPlant.LastDemandSidePtr() = 0;
-
 						ArrayCount = 0;
-						for ( Idx = 1; Idx <= SubCompNum; ++Idx ) {
-							Duplicate = false;
-							for ( TempIndex = 1; TempIndex <= SubCompNum; ++TempIndex ) {
-								if ( AirSysSubCompToPlant( Idx ).AirLoopNum == TempAirSysSubCompToPlant( TempIndex ).AirLoopNum && AirSysSubCompToPlant( Idx ).AirLoopBranch == TempAirSysSubCompToPlant( TempIndex ).AirLoopBranch && AirSysSubCompToPlant( Idx ).AirLoopComp == TempAirSysSubCompToPlant( TempIndex ).AirLoopComp && AirSysSubCompToPlant( Idx ).AirLoopSubComp == TempAirSysSubCompToPlant( TempIndex ).AirLoopSubComp ) {
-									Duplicate = true;
+						for ( int i = 1; i <= SubCompNum; ++i ) {
+							auto const & ai( AirSysSubCompToPlant( i ) );
+							bool duplicate( false );
+							for ( int j = 1; j <= ArrayCount; ++j ) {
+								auto const & aj( AirSysSubCompToPlant( j ) );
+								if ( ( ai.AirLoopNum == aj.AirLoopNum ) && ( ai.AirLoopBranch == aj.AirLoopBranch ) && ( ai.AirLoopComp == aj.AirLoopComp ) && ( ai.AirLoopSubComp == aj.AirLoopSubComp ) ) { // Duplicate
+									duplicate = true;
 									break;
 								}
 							}
-							if ( ! Duplicate ) {
+							if ( ! duplicate ) {
 								++ArrayCount;
-								TempAirSysSubCompToPlant( ArrayCount ).AirLoopNum = AirSysSubCompToPlant( Idx ).AirLoopNum;
-								TempAirSysSubCompToPlant( ArrayCount ).AirLoopBranch = AirSysSubCompToPlant( Idx ).AirLoopBranch;
-								TempAirSysSubCompToPlant( ArrayCount ).AirLoopComp = AirSysSubCompToPlant( Idx ).AirLoopComp;
-								TempAirSysSubCompToPlant( ArrayCount ).AirLoopSubComp = AirSysSubCompToPlant( Idx ).AirLoopSubComp;
-								TempAirSysSubCompToPlant( ArrayCount ).PlantLoopType = AirSysSubCompToPlant( Idx ).PlantLoopType;
-								TempAirSysSubCompToPlant( ArrayCount ).PlantLoopNum = AirSysSubCompToPlant( Idx ).PlantLoopNum;
-								TempAirSysSubCompToPlant( ArrayCount ).PlantLoopBranch = AirSysSubCompToPlant( Idx ).PlantLoopBranch;
-								TempAirSysSubCompToPlant( ArrayCount ).PlantLoopComp = AirSysSubCompToPlant( Idx ).PlantLoopComp;
-								TempAirSysSubCompToPlant( ArrayCount ).FirstDemandSidePtr = AirSysSubCompToPlant( Idx ).FirstDemandSidePtr;
-								TempAirSysSubCompToPlant( ArrayCount ).LastDemandSidePtr = AirSysSubCompToPlant( Idx ).LastDemandSidePtr;
+								if ( i > ArrayCount ) { // Copy to lower position
+									auto & aa( AirSysSubCompToPlant( ArrayCount ) );
+									aa.AirLoopNum = ai.AirLoopNum;
+									aa.AirLoopBranch = ai.AirLoopBranch;
+									aa.AirLoopComp = ai.AirLoopComp;
+									aa.AirLoopSubComp = ai.AirLoopSubComp;
+									aa.PlantLoopType = ai.PlantLoopType;
+									aa.PlantLoopNum = ai.PlantLoopNum;
+									aa.PlantLoopBranch = ai.PlantLoopBranch;
+									aa.PlantLoopComp = ai.PlantLoopComp;
+									aa.FirstDemandSidePtr = ai.FirstDemandSidePtr;
+									aa.LastDemandSidePtr = ai.LastDemandSidePtr;
+								}
 							}
 						}
-
-						AirSysSubCompToPlant.AirLoopNum() = TempAirSysSubCompToPlant.AirLoopNum();
-						AirSysSubCompToPlant.AirLoopBranch() = TempAirSysSubCompToPlant.AirLoopBranch();
-						AirSysSubCompToPlant.AirLoopComp() = TempAirSysSubCompToPlant.AirLoopComp();
-						AirSysSubCompToPlant.AirLoopSubComp() = TempAirSysSubCompToPlant.AirLoopSubComp();
-						AirSysSubCompToPlant.PlantLoopType() = TempAirSysSubCompToPlant.PlantLoopType();
-						AirSysSubCompToPlant.PlantLoopNum() = TempAirSysSubCompToPlant.PlantLoopNum();
-						AirSysSubCompToPlant.PlantLoopBranch() = TempAirSysSubCompToPlant.PlantLoopBranch();
-						AirSysSubCompToPlant.PlantLoopComp() = TempAirSysSubCompToPlant.PlantLoopComp();
-						AirSysSubCompToPlant.FirstDemandSidePtr() = TempAirSysSubCompToPlant.FirstDemandSidePtr();
-						AirSysSubCompToPlant.LastDemandSidePtr() = TempAirSysSubCompToPlant.LastDemandSidePtr();
-
+						for ( int i = ArrayCount + 1; i <= SubCompNum; ++i ) { // Zero the now-unused entries
+							auto & ai( AirSysSubCompToPlant( i ) );
+							ai.AirLoopNum = 0;
+							ai.AirLoopBranch = 0;
+							ai.AirLoopComp = 0;
+							ai.AirLoopSubComp = 0;
+							ai.PlantLoopType = 0;
+							ai.PlantLoopNum = 0;
+							ai.PlantLoopBranch = 0;
+							ai.PlantLoopComp = 0;
+							ai.FirstDemandSidePtr = 0;
+							ai.LastDemandSidePtr = 0;
+						}
 					}
 
 					if ( SubSubCompNum > 0 ) {
-						TempAirSysSubSubCompToPlant.AirLoopNum() = 0;
-						TempAirSysSubSubCompToPlant.AirLoopBranch() = 0;
-						TempAirSysSubSubCompToPlant.AirLoopComp() = 0;
-						TempAirSysSubSubCompToPlant.AirLoopSubComp() = 0;
-						TempAirSysSubSubCompToPlant.AirLoopSubSubComp() = 0;
-						TempAirSysSubSubCompToPlant.PlantLoopType() = 0;
-						TempAirSysSubSubCompToPlant.PlantLoopNum() = 0;
-						TempAirSysSubSubCompToPlant.PlantLoopBranch() = 0;
-						TempAirSysSubSubCompToPlant.PlantLoopComp() = 0;
-						TempAirSysSubSubCompToPlant.FirstDemandSidePtr() = 0;
-						TempAirSysSubSubCompToPlant.LastDemandSidePtr() = 0;
-
 						ArrayCount = 0;
-						for ( Idx = 1; Idx <= SubSubCompNum; ++Idx ) {
-							Duplicate = false;
-							for ( TempIndex = 1; TempIndex <= SubSubCompNum; ++TempIndex ) {
-								if ( AirSysSubSubCompToPlant( Idx ).AirLoopNum == TempAirSysSubSubCompToPlant( TempIndex ).AirLoopNum && AirSysSubSubCompToPlant( Idx ).AirLoopBranch == TempAirSysSubSubCompToPlant( TempIndex ).AirLoopBranch && AirSysSubSubCompToPlant( Idx ).AirLoopComp == TempAirSysSubSubCompToPlant( TempIndex ).AirLoopComp && AirSysSubSubCompToPlant( Idx ).AirLoopSubComp == TempAirSysSubSubCompToPlant( TempIndex ).AirLoopSubComp && AirSysSubSubCompToPlant( Idx ).AirLoopSubSubComp == TempAirSysSubSubCompToPlant( TempIndex ).AirLoopSubSubComp ) {
-									Duplicate = true;
+						for ( int i = 1; i <= SubCompNum; ++i ) {
+							auto const & ai( AirSysSubSubCompToPlant( i ) );
+							bool duplicate( false );
+							for ( int j = 1; j <= ArrayCount; ++j ) {
+								auto const & aj( AirSysSubSubCompToPlant( j ) );
+								if ( ( ai.AirLoopNum == aj.AirLoopNum ) && ( ai.AirLoopBranch == aj.AirLoopBranch ) && ( ai.AirLoopComp == aj.AirLoopComp ) && ( ai.AirLoopSubComp == aj.AirLoopSubComp ) && ( ai.AirLoopSubSubComp == aj.AirLoopSubSubComp ) ) { // Duplicate
+									duplicate = true;
 									break;
 								}
 							}
-							if ( ! Duplicate ) {
+							if ( ! duplicate ) {
 								++ArrayCount;
-								TempAirSysSubSubCompToPlant( ArrayCount ).AirLoopNum = AirSysSubSubCompToPlant( Idx ).AirLoopNum;
-								TempAirSysSubSubCompToPlant( ArrayCount ).AirLoopBranch = AirSysSubSubCompToPlant( Idx ).AirLoopBranch;
-								TempAirSysSubSubCompToPlant( ArrayCount ).AirLoopComp = AirSysSubSubCompToPlant( Idx ).AirLoopComp;
-								TempAirSysSubSubCompToPlant( ArrayCount ).AirLoopSubComp = AirSysSubSubCompToPlant( Idx ).AirLoopSubComp;
-								TempAirSysSubSubCompToPlant( ArrayCount ).AirLoopSubSubComp = AirSysSubSubCompToPlant( Idx ).AirLoopSubSubComp;
-								TempAirSysSubSubCompToPlant( ArrayCount ).PlantLoopType = AirSysSubSubCompToPlant( Idx ).PlantLoopType;
-								TempAirSysSubSubCompToPlant( ArrayCount ).PlantLoopNum = AirSysSubSubCompToPlant( Idx ).PlantLoopNum;
-								TempAirSysSubSubCompToPlant( ArrayCount ).PlantLoopBranch = AirSysSubSubCompToPlant( Idx ).PlantLoopBranch;
-								TempAirSysSubSubCompToPlant( ArrayCount ).PlantLoopComp = AirSysSubSubCompToPlant( Idx ).PlantLoopComp;
-								TempAirSysSubSubCompToPlant( ArrayCount ).FirstDemandSidePtr = AirSysSubSubCompToPlant( Idx ).FirstDemandSidePtr;
-								TempAirSysSubSubCompToPlant( ArrayCount ).LastDemandSidePtr = AirSysSubSubCompToPlant( Idx ).LastDemandSidePtr;
+								if ( i > ArrayCount ) { // Copy to lower position
+									auto & aa( AirSysSubSubCompToPlant( ArrayCount ) );
+									aa.AirLoopNum = ai.AirLoopNum;
+									aa.AirLoopBranch = ai.AirLoopBranch;
+									aa.AirLoopComp = ai.AirLoopComp;
+									aa.AirLoopSubComp = ai.AirLoopSubComp;
+									aa.AirLoopSubSubComp = ai.AirLoopSubSubComp;
+									aa.PlantLoopType = ai.PlantLoopType;
+									aa.PlantLoopNum = ai.PlantLoopNum;
+									aa.PlantLoopBranch = ai.PlantLoopBranch;
+									aa.PlantLoopComp = ai.PlantLoopComp;
+									aa.FirstDemandSidePtr = ai.FirstDemandSidePtr;
+									aa.LastDemandSidePtr = ai.LastDemandSidePtr;
+								}
 							}
 						}
-
-						AirSysSubSubCompToPlant.AirLoopNum() = TempAirSysSubSubCompToPlant.AirLoopNum();
-						AirSysSubSubCompToPlant.AirLoopBranch() = TempAirSysSubSubCompToPlant.AirLoopBranch();
-						AirSysSubSubCompToPlant.AirLoopComp() = TempAirSysSubSubCompToPlant.AirLoopComp();
-						AirSysSubSubCompToPlant.AirLoopSubComp() = TempAirSysSubSubCompToPlant.AirLoopSubComp();
-						AirSysSubSubCompToPlant.AirLoopSubSubComp() = TempAirSysSubSubCompToPlant.AirLoopSubSubComp();
-						AirSysSubSubCompToPlant.PlantLoopType() = TempAirSysSubSubCompToPlant.PlantLoopType();
-						AirSysSubSubCompToPlant.PlantLoopNum() = TempAirSysSubSubCompToPlant.PlantLoopNum();
-						AirSysSubSubCompToPlant.PlantLoopBranch() = TempAirSysSubSubCompToPlant.PlantLoopBranch();
-						AirSysSubSubCompToPlant.PlantLoopComp() = TempAirSysSubSubCompToPlant.PlantLoopComp();
-						AirSysSubSubCompToPlant.FirstDemandSidePtr() = TempAirSysSubSubCompToPlant.FirstDemandSidePtr();
-						AirSysSubSubCompToPlant.LastDemandSidePtr() = TempAirSysSubSubCompToPlant.LastDemandSidePtr();
-
+						for ( int i = ArrayCount + 1; i <= SubCompNum; ++i ) { // Zero the now-unused entries
+							auto & ai( AirSysSubSubCompToPlant( i ) );
+							ai.AirLoopNum = 0;
+							ai.AirLoopBranch = 0;
+							ai.AirLoopComp = 0;
+							ai.AirLoopSubComp = 0;
+							ai.AirLoopSubSubComp = 0;
+							ai.PlantLoopType = 0;
+							ai.PlantLoopNum = 0;
+							ai.PlantLoopBranch = 0;
+							ai.PlantLoopComp = 0;
+							ai.FirstDemandSidePtr = 0;
+							ai.LastDemandSidePtr = 0;
+						}
 					}
 
 					// 2. Find Supply Side loop for every demand side component
@@ -827,32 +806,32 @@ namespace SystemReports {
 			//4.  Now Load all of the plant supply/demand side connections in a single array with pointers from the
 			//    connection arrays (ZoneCompToPlant, ZoneSubCompToPlant, ZoneSubSubCompToPlant, AirSysCompToPlant, etc.)
 			if ( allocated( ZoneCompToPlant ) ) {
-				NumZoneConnectComps = size( ZoneCompToPlant );
+				NumZoneConnectComps = isize( ZoneCompToPlant );
 			} else {
 				NumZoneConnectComps = 0;
 			}
 			if ( allocated( ZoneSubCompToPlant ) ) {
-				NumZoneConnectSubComps = size( ZoneSubCompToPlant );
+				NumZoneConnectSubComps = isize( ZoneSubCompToPlant );
 			} else {
 				NumZoneConnectSubComps = 0;
 			}
 			if ( allocated( ZoneSubSubCompToPlant ) ) {
-				NumZoneConnectSubSubComps = size( ZoneSubSubCompToPlant );
+				NumZoneConnectSubSubComps = isize( ZoneSubSubCompToPlant );
 			} else {
 				NumZoneConnectSubSubComps = 0;
 			}
 			if ( allocated( AirSysCompToPlant ) ) {
-				NumAirSysConnectComps = size( AirSysCompToPlant );
+				NumAirSysConnectComps = isize( AirSysCompToPlant );
 			} else {
 				NumAirSysConnectComps = 0;
 			}
 			if ( allocated( AirSysSubCompToPlant ) ) {
-				NumAirSysConnectSubComps = size( AirSysSubCompToPlant );
+				NumAirSysConnectSubComps = isize( AirSysSubCompToPlant );
 			} else {
 				NumAirSysConnectSubComps = 0;
 			}
 			if ( allocated( AirSysSubSubCompToPlant ) ) {
-				NumAirSysConnectSubSubComps = size( AirSysSubSubCompToPlant );
+				NumAirSysConnectSubSubComps = isize( AirSysSubSubCompToPlant );
 			} else {
 				NumAirSysConnectSubSubComps = 0;
 			}
@@ -1131,7 +1110,7 @@ namespace SystemReports {
 		int DemandSideLoopType;
 		static bool OneTimeFlag( true ); // Flag set to make sure you initialize reports one time
 		bool found;
-		int countloop;
+//		int countloop;
 
 		struct IdentifyLoop
 		{
@@ -1158,23 +1137,18 @@ namespace SystemReports {
 
 		// Object Data
 		static FArray1D< IdentifyLoop > LoopStack;
-		static FArray1D< IdentifyLoop > TempLoopStack;
 
 		return; //Autodesk:? Is this routine now an intentional NOOP?
 
 		if ( OneTimeFlag ) {
 			LoopStack.allocate( MaxLoopArraySize );
-			TempLoopStack.allocate( MaxLoopArraySize );
 			DemandSideConnect.allocate( MaxCompArraySize );
 
 			OneTimeFlag = false;
-
 		}
 		LoopStack.LoopNum() = 0;
 		LoopStack.LoopType() = 0;
 
-		TempLoopStack.LoopNum() = 0;
-		TempLoopStack.LoopType() = 0;
 		ConnectionFlag = false;
 		//    countloop=0
 		//    write(outputfiledebug,*) '1228=lt,lc,lnum,cflag,arrcnt',looptype,loopcount,LoopNum,connectionflag,arraycount
@@ -1198,15 +1172,7 @@ namespace SystemReports {
 							ConnectionFlag = true;
 							++ArrayCount;
 							if ( ArrayCount > MaxCompArraySize ) {
-								//                  ALLOCATE(TempDemandSideConnect(MaxCompArraySize*2))
-								TempDemandSideConnect.allocate( MaxCompArraySize + 100 );
-								TempDemandSideConnect( {1,MaxCompArraySize} ) = DemandSideConnect( {1,MaxCompArraySize} );
-								DemandSideConnect.deallocate();
-								DemandSideConnect.allocate( MaxCompArraySize * 2 );
-								DemandSideConnect( {1,MaxCompArraySize} ) = TempDemandSideConnect( {1,MaxCompArraySize} );
-								TempDemandSideConnect.deallocate();
-								//                  MaxCompArraySize=MaxCompArraySize*2
-								MaxCompArraySize += 100;
+								DemandSideConnect.redimension( MaxCompArraySize += 100 );
 							}
 							DemandSideConnect( ArrayCount ).LoopType = DemandSideLoopType;
 							DemandSideConnect( ArrayCount ).LoopNum = DemandSideLoopNum;
@@ -1214,7 +1180,7 @@ namespace SystemReports {
 							DemandSideConnect( ArrayCount ).CompNum = DemandSideCompNum;
 
 							found = false;
-							gio::write( OutputFileDebug, "*" ) << "1271=lstacksize" << size( LoopStack );
+							gio::write( OutputFileDebug, fmtLD ) << "1271=lstacksize" << size( LoopStack );
 							for ( Idx = 1; Idx <= isize( LoopStack ); ++Idx ) {
 								if ( DemandSideLoopNum == LoopStack( Idx ).LoopNum && DemandSideLoopType == LoopStack( Idx ).LoopType ) {
 									found = true;
@@ -1226,16 +1192,7 @@ namespace SystemReports {
 								//       write(outputfiledebug,*) '1280=lc,mxsize',loopcount,maxlooparraysize
 								//       write(outputfiledebug,*) '1281=dsloopnum,dslooptype',DemandSideLoopNum,DemandSideLoopType
 								if ( LoopCount > MaxLoopArraySize ) {
-									//                    ALLOCATE(TempLoopStack(MaxLoopArraySize*2))
-									TempLoopStack.allocate( MaxLoopArraySize + 100 );
-									TempLoopStack( {1,MaxLoopArraySize} ) = LoopStack( {1,MaxLoopArraySize} );
-									LoopStack.deallocate();
-									//                    ALLOCATE(LoopStack(MaxLoopArraySize*2))
-									LoopStack.allocate( MaxLoopArraySize + 100 );
-									LoopStack( {1,MaxLoopArraySize} ) = TempLoopStack( {1,MaxLoopArraySize} );
-									TempLoopStack.deallocate();
-									//                    MaxLoopArraySize=MaxLoopArraySize*2
-									MaxLoopArraySize += 100;
+									LoopStack.redimension( MaxLoopArraySize += 100 );
 								}
 								//               write(outputfiledebug,*) '1294=lcnt,dsloopnum,dslooptype',loopcount,DemandSideLoopNum,DemandSideLoopType
 								LoopStack( LoopCount ).LoopNum = DemandSideLoopNum;
@@ -1257,16 +1214,7 @@ namespace SystemReports {
 							ConnectionFlag = true;
 							++ArrayCount;
 							if ( ArrayCount > MaxCompArraySize ) {
-								//                  ALLOCATE(TempDemandSideConnect(MaxCompArraySize*2))
-								TempDemandSideConnect.allocate( MaxCompArraySize + 100 );
-								TempDemandSideConnect( {1,MaxCompArraySize} ) = DemandSideConnect( {1,MaxCompArraySize} );
-								DemandSideConnect.deallocate();
-								//                  ALLOCATE(DemandSideConnect(MaxCompArraySize*2))
-								DemandSideConnect.allocate( MaxCompArraySize + 100 );
-								DemandSideConnect( {1,MaxCompArraySize} ) = TempDemandSideConnect( {1,MaxCompArraySize} );
-								TempDemandSideConnect.deallocate();
-								//                  MaxCompArraySize=MaxCompArraySize*2
-								MaxCompArraySize += 100;
+								DemandSideConnect.redimension( MaxCompArraySize += 100 );
 							}
 							DemandSideConnect( ArrayCount ).LoopType = DemandSideLoopType;
 							DemandSideConnect( ArrayCount ).LoopNum = DemandSideLoopNum;
@@ -1285,16 +1233,7 @@ namespace SystemReports {
 								//       write(outputfiledebug,*) '1341=lcnt,arrsize',loopcount,maxlooparraysize
 								//       write(outputfiledebug,*) '1342=lsloopnum,dslooptype',DemandSideLoopNum,DemandSideLoopType
 								if ( LoopCount > MaxLoopArraySize ) {
-									//                    ALLOCATE(TempLoopStack(MaxLoopArraySize*2))
-									TempLoopStack.allocate( MaxLoopArraySize + 100 );
-									TempLoopStack( {1,MaxLoopArraySize} ) = LoopStack( {1,MaxLoopArraySize} );
-									LoopStack.deallocate();
-									//                    ALLOCATE(LoopStack(MaxLoopArraySize*2))
-									LoopStack.allocate( MaxLoopArraySize + 100 );
-									LoopStack( {1,MaxLoopArraySize} ) = TempLoopStack( {1,MaxLoopArraySize} );
-									TempLoopStack.deallocate();
-									//                    MaxLoopArraySize=MaxLoopArraySize*2
-									MaxLoopArraySize += 100;
+									LoopStack.redimension( MaxLoopArraySize += 100 );
 								}
 								LoopStack( LoopCount ).LoopNum = DemandSideLoopNum;
 								LoopStack( LoopCount ).LoopType = DemandSideLoopType;
@@ -1303,7 +1242,7 @@ namespace SystemReports {
 					}
 				}
 			} else {
-				gio::write( OutputFileDebug, "*" ) << "1361=error";
+				gio::write( OutputFileDebug, fmtLD ) << "1361=error";
 				//error
 			}
 
@@ -1354,9 +1293,7 @@ namespace SystemReports {
 		// INTERFACE BLOCK SPECIFICATIONS:
 		// na
 
-		// DERIVED TYPE DEFINITIONS:
 		static bool OneTimeFlag( true );
-		int OldArrayLimit;
 		static int ArrayLimit( 100 );
 		static int ArrayCounter( 1 );
 
@@ -1371,62 +1308,34 @@ namespace SystemReports {
 			ZoneCompToPlant.FirstDemandSidePtr() = 0;
 			ZoneCompToPlant.LastDemandSidePtr() = 0;
 
-			TempZoneCompToPlant.allocate( ArrayLimit );
-			TempZoneCompToPlant.ZoneEqListNum() = 0;
-			TempZoneCompToPlant.ZoneEqCompNum() = 0;
-			TempZoneCompToPlant.PlantLoopType() = 0;
-			TempZoneCompToPlant.PlantLoopNum() = 0;
-			TempZoneCompToPlant.PlantLoopBranch() = 0;
-			TempZoneCompToPlant.PlantLoopComp() = 0;
-			TempZoneCompToPlant.FirstDemandSidePtr() = 0;
-			TempZoneCompToPlant.LastDemandSidePtr() = 0;
 			OneTimeFlag = false;
 		}
 
-		if ( ArrayCounter < ArrayLimit ) {
-			Idx = ArrayCounter;
-			ZoneCompToPlant( Idx ).ZoneEqListNum = ListNum;
-			ZoneCompToPlant( Idx ).ZoneEqCompNum = AirDistUnitNum;
-			ZoneCompToPlant( Idx ).PlantLoopType = PlantLoopType;
-			ZoneCompToPlant( Idx ).PlantLoopNum = PlantLoop;
-			ZoneCompToPlant( Idx ).PlantLoopBranch = PlantBranch;
-			ZoneCompToPlant( Idx ).PlantLoopComp = PlantComp;
-			++ArrayCounter;
-		} else {
-			TempZoneCompToPlant = ZoneCompToPlant;
-			ZoneCompToPlant.deallocate();
-			OldArrayLimit = ArrayLimit;
-			ArrayLimit *= 2;
-			ZoneCompToPlant.allocate( ArrayLimit );
-			ZoneCompToPlant.ZoneEqListNum() = 0;
-			ZoneCompToPlant.ZoneEqCompNum() = 0;
-			ZoneCompToPlant.PlantLoopType() = 0;
-			ZoneCompToPlant.PlantLoopNum() = 0;
-			ZoneCompToPlant.PlantLoopBranch() = 0;
-			ZoneCompToPlant.PlantLoopComp() = 0;
-			ZoneCompToPlant.FirstDemandSidePtr() = 0;
-			ZoneCompToPlant.LastDemandSidePtr() = 0;
-			ZoneCompToPlant( {1,OldArrayLimit} ) = TempZoneCompToPlant( {1,OldArrayLimit} );
-			TempZoneCompToPlant.deallocate();
-			TempZoneCompToPlant.allocate( ArrayLimit );
-			TempZoneCompToPlant.ZoneEqListNum() = 0;
-			TempZoneCompToPlant.ZoneEqCompNum() = 0;
-			TempZoneCompToPlant.PlantLoopType() = 0;
-			TempZoneCompToPlant.PlantLoopNum() = 0;
-			TempZoneCompToPlant.PlantLoopBranch() = 0;
-			TempZoneCompToPlant.PlantLoopComp() = 0;
-			TempZoneCompToPlant.FirstDemandSidePtr() = 0;
-			TempZoneCompToPlant.LastDemandSidePtr() = 0;
-
-			Idx = ArrayCounter;
-			ZoneCompToPlant( Idx ).ZoneEqListNum = ListNum;
-			ZoneCompToPlant( Idx ).ZoneEqCompNum = AirDistUnitNum;
-			ZoneCompToPlant( Idx ).PlantLoopType = PlantLoopType;
-			ZoneCompToPlant( Idx ).PlantLoopNum = PlantLoop;
-			ZoneCompToPlant( Idx ).PlantLoopBranch = PlantBranch;
-			ZoneCompToPlant( Idx ).PlantLoopComp = PlantComp;
-			++ArrayCounter;
+		if ( ArrayCounter >= ArrayLimit ) { // Redimension larger
+			int const OldArrayLimit( ArrayLimit );
+			ZoneCompToPlant.redimension( ArrayLimit *= 2 );
+			for ( int i = OldArrayLimit + 1; i <= ArrayLimit; ++i ) {
+				auto & zctp( ZoneCompToPlant( i ) );
+				zctp.ZoneEqListNum = 0;
+				zctp.ZoneEqCompNum = 0;
+				zctp.PlantLoopType = 0;
+				zctp.PlantLoopNum = 0;
+				zctp.PlantLoopBranch = 0;
+				zctp.PlantLoopComp = 0;
+				zctp.FirstDemandSidePtr = 0;
+				zctp.LastDemandSidePtr = 0;
+			}
 		}
+
+		Idx = ArrayCounter;
+		auto & zctp( ZoneCompToPlant( Idx ) );
+		zctp.ZoneEqListNum = ListNum;
+		zctp.ZoneEqCompNum = AirDistUnitNum;
+		zctp.PlantLoopType = PlantLoopType;
+		zctp.PlantLoopNum = PlantLoop;
+		zctp.PlantLoopBranch = PlantBranch;
+		zctp.PlantLoopComp = PlantComp;
+		++ArrayCounter;
 	}
 
 	void
@@ -1467,9 +1376,7 @@ namespace SystemReports {
 		// INTERFACE BLOCK SPECIFICATIONS:
 		// na
 
-		// DERIVED TYPE DEFINITIONS:
 		static bool OneTimeFlag( true );
-		int OldArrayLimit;
 		static int ArrayLimit( 100 );
 		static int ArrayCounter( 1 );
 
@@ -1484,67 +1391,37 @@ namespace SystemReports {
 			ZoneSubCompToPlant.PlantLoopComp() = 0;
 			ZoneSubCompToPlant.FirstDemandSidePtr() = 0;
 			ZoneSubCompToPlant.LastDemandSidePtr() = 0;
-			TempZoneSubCompToPlant.allocate( ArrayLimit );
-			TempZoneSubCompToPlant.ZoneEqListNum() = 0;
-			TempZoneSubCompToPlant.ZoneEqCompNum() = 0;
-			TempZoneSubCompToPlant.ZoneEqSubCompNum() = 0;
-			TempZoneSubCompToPlant.PlantLoopType() = 0;
-			TempZoneSubCompToPlant.PlantLoopNum() = 0;
-			TempZoneSubCompToPlant.PlantLoopBranch() = 0;
-			TempZoneSubCompToPlant.PlantLoopComp() = 0;
-			TempZoneSubCompToPlant.FirstDemandSidePtr() = 0;
-			TempZoneSubCompToPlant.LastDemandSidePtr() = 0;
+
 			OneTimeFlag = false;
 		}
 
-		if ( ArrayCounter < ArrayLimit ) {
-			Idx = ArrayCounter;
-			ZoneSubCompToPlant( Idx ).ZoneEqListNum = ListNum;
-			ZoneSubCompToPlant( Idx ).ZoneEqCompNum = AirDistUnitNum;
-			ZoneSubCompToPlant( Idx ).ZoneEqSubCompNum = SubCompNum;
-			ZoneSubCompToPlant( Idx ).PlantLoopType = PlantLoopType;
-			ZoneSubCompToPlant( Idx ).PlantLoopNum = PlantLoop;
-			ZoneSubCompToPlant( Idx ).PlantLoopBranch = PlantBranch;
-			ZoneSubCompToPlant( Idx ).PlantLoopComp = PlantComp;
-			++ArrayCounter;
-		} else {
-			TempZoneSubCompToPlant = ZoneSubCompToPlant;
-			ZoneSubCompToPlant.deallocate();
-			OldArrayLimit = ArrayLimit;
-			ArrayLimit *= 2;
-			ZoneSubCompToPlant.allocate( ArrayLimit );
-			ZoneSubCompToPlant.ZoneEqListNum() = 0;
-			ZoneSubCompToPlant.ZoneEqCompNum() = 0;
-			ZoneSubCompToPlant.ZoneEqSubCompNum() = 0;
-			ZoneSubCompToPlant.PlantLoopType() = 0;
-			ZoneSubCompToPlant.PlantLoopNum() = 0;
-			ZoneSubCompToPlant.PlantLoopBranch() = 0;
-			ZoneSubCompToPlant.PlantLoopComp() = 0;
-			ZoneSubCompToPlant.FirstDemandSidePtr() = 0;
-			ZoneSubCompToPlant.LastDemandSidePtr() = 0;
-			ZoneSubCompToPlant( {1,OldArrayLimit} ) = TempZoneSubCompToPlant( {1,OldArrayLimit} );
-			TempZoneSubCompToPlant.deallocate();
-			TempZoneSubCompToPlant.allocate( ArrayLimit );
-			TempZoneSubCompToPlant.ZoneEqListNum() = 0;
-			TempZoneSubCompToPlant.ZoneEqCompNum() = 0;
-			TempZoneSubCompToPlant.ZoneEqSubCompNum() = 0;
-			TempZoneSubCompToPlant.PlantLoopType() = 0;
-			TempZoneSubCompToPlant.PlantLoopNum() = 0;
-			TempZoneSubCompToPlant.PlantLoopBranch() = 0;
-			TempZoneSubCompToPlant.PlantLoopComp() = 0;
-			TempZoneSubCompToPlant.FirstDemandSidePtr() = 0;
-			TempZoneSubCompToPlant.LastDemandSidePtr() = 0;
-
-			Idx = ArrayCounter;
-			ZoneSubCompToPlant( Idx ).ZoneEqListNum = ListNum;
-			ZoneSubCompToPlant( Idx ).ZoneEqCompNum = AirDistUnitNum;
-			ZoneSubCompToPlant( Idx ).ZoneEqSubCompNum = SubCompNum;
-			ZoneSubCompToPlant( Idx ).PlantLoopType = PlantLoopType;
-			ZoneSubCompToPlant( Idx ).PlantLoopNum = PlantLoop;
-			ZoneSubCompToPlant( Idx ).PlantLoopBranch = PlantBranch;
-			ZoneSubCompToPlant( Idx ).PlantLoopComp = PlantComp;
-			++ArrayCounter;
+		if ( ArrayCounter >= ArrayLimit ) { // Redimension larger
+			int const OldArrayLimit( ArrayLimit );
+			ZoneSubCompToPlant.redimension( ArrayLimit *= 2 );
+			for ( int i = OldArrayLimit + 1; i <= ArrayLimit; ++i ) {
+				auto & zctp( ZoneSubCompToPlant( i ) );
+				zctp.ZoneEqListNum = 0;
+				zctp.ZoneEqCompNum = 0;
+				zctp.ZoneEqSubCompNum = 0;
+				zctp.PlantLoopType = 0;
+				zctp.PlantLoopNum = 0;
+				zctp.PlantLoopBranch = 0;
+				zctp.PlantLoopComp = 0;
+				zctp.FirstDemandSidePtr = 0;
+				zctp.LastDemandSidePtr = 0;
+			}
 		}
+
+		Idx = ArrayCounter;
+		auto & zctp( ZoneSubCompToPlant( Idx ) );
+		zctp.ZoneEqListNum = ListNum;
+		zctp.ZoneEqCompNum = AirDistUnitNum;
+		zctp.ZoneEqSubCompNum = SubCompNum;
+		zctp.PlantLoopType = PlantLoopType;
+		zctp.PlantLoopNum = PlantLoop;
+		zctp.PlantLoopBranch = PlantBranch;
+		zctp.PlantLoopComp = PlantComp;
+		++ArrayCounter;
 	}
 
 	void
@@ -1586,9 +1463,7 @@ namespace SystemReports {
 		// INTERFACE BLOCK SPECIFICATIONS:
 		// na
 
-		// DERIVED TYPE DEFINITIONS:
 		static bool OneTimeFlag( true );
-		int OldArrayLimit;
 		static int ArrayLimit( 100 );
 		static int ArrayCounter( 1 );
 
@@ -1604,72 +1479,39 @@ namespace SystemReports {
 			ZoneSubSubCompToPlant.PlantLoopComp() = 0;
 			ZoneSubSubCompToPlant.FirstDemandSidePtr() = 0;
 			ZoneSubSubCompToPlant.LastDemandSidePtr() = 0;
-			TempZoneSubSubCompToPlant.allocate( ArrayLimit );
-			TempZoneSubSubCompToPlant.ZoneEqListNum() = 0;
-			TempZoneSubSubCompToPlant.ZoneEqCompNum() = 0;
-			TempZoneSubSubCompToPlant.ZoneEqSubCompNum() = 0;
-			TempZoneSubSubCompToPlant.ZoneEqSubSubCompNum() = 0;
-			TempZoneSubSubCompToPlant.PlantLoopType() = 0;
-			TempZoneSubSubCompToPlant.PlantLoopNum() = 0;
-			TempZoneSubSubCompToPlant.PlantLoopBranch() = 0;
-			TempZoneSubSubCompToPlant.PlantLoopComp() = 0;
-			TempZoneSubSubCompToPlant.FirstDemandSidePtr() = 0;
-			TempZoneSubSubCompToPlant.LastDemandSidePtr() = 0;
+
 			OneTimeFlag = false;
 		}
 
-		if ( ArrayCounter < ArrayLimit ) {
-			Idx = ArrayCounter;
-			ZoneSubSubCompToPlant( Idx ).ZoneEqListNum = ListNum;
-			ZoneSubSubCompToPlant( Idx ).ZoneEqCompNum = AirDistUnitNum;
-			ZoneSubSubCompToPlant( Idx ).ZoneEqSubCompNum = SubCompNum;
-			ZoneSubSubCompToPlant( Idx ).ZoneEqSubSubCompNum = SubSubCompNum;
-			ZoneSubSubCompToPlant( Idx ).PlantLoopType = PlantLoopType;
-			ZoneSubSubCompToPlant( Idx ).PlantLoopNum = PlantLoop;
-			ZoneSubSubCompToPlant( Idx ).PlantLoopBranch = PlantBranch;
-			ZoneSubSubCompToPlant( Idx ).PlantLoopComp = PlantComp;
-			++ArrayCounter;
-		} else {
-			TempZoneSubSubCompToPlant = ZoneSubSubCompToPlant;
-			ZoneSubSubCompToPlant.deallocate();
-			OldArrayLimit = ArrayLimit;
-			ArrayLimit *= 2;
-			ZoneSubSubCompToPlant.allocate( ArrayLimit );
-			ZoneSubSubCompToPlant.ZoneEqListNum() = 0;
-			ZoneSubSubCompToPlant.ZoneEqCompNum() = 0;
-			ZoneSubSubCompToPlant.ZoneEqSubCompNum() = 0;
-			ZoneSubSubCompToPlant.ZoneEqSubSubCompNum() = 0;
-			ZoneSubSubCompToPlant.PlantLoopType() = 0;
-			ZoneSubSubCompToPlant.PlantLoopNum() = 0;
-			ZoneSubSubCompToPlant.PlantLoopBranch() = 0;
-			ZoneSubSubCompToPlant.PlantLoopComp() = 0;
-			ZoneSubSubCompToPlant.FirstDemandSidePtr() = 0;
-			ZoneSubSubCompToPlant.LastDemandSidePtr() = 0;
-			ZoneSubSubCompToPlant( {1,OldArrayLimit} ) = TempZoneSubSubCompToPlant( {1,OldArrayLimit} );
-			TempZoneSubSubCompToPlant.deallocate();
-			TempZoneSubSubCompToPlant.allocate( ArrayLimit );
-			TempZoneSubSubCompToPlant.ZoneEqListNum() = 0;
-			TempZoneSubSubCompToPlant.ZoneEqCompNum() = 0;
-			TempZoneSubSubCompToPlant.ZoneEqSubCompNum() = 0;
-			TempZoneSubSubCompToPlant.ZoneEqSubSubCompNum() = 0;
-			TempZoneSubSubCompToPlant.PlantLoopType() = 0;
-			TempZoneSubSubCompToPlant.PlantLoopNum() = 0;
-			TempZoneSubSubCompToPlant.PlantLoopBranch() = 0;
-			TempZoneSubSubCompToPlant.PlantLoopComp() = 0;
-			TempZoneSubSubCompToPlant.FirstDemandSidePtr() = 0;
-			TempZoneSubSubCompToPlant.LastDemandSidePtr() = 0;
-
-			Idx = ArrayCounter;
-			ZoneSubSubCompToPlant( Idx ).ZoneEqListNum = ListNum;
-			ZoneSubSubCompToPlant( Idx ).ZoneEqCompNum = AirDistUnitNum;
-			ZoneSubSubCompToPlant( Idx ).ZoneEqSubCompNum = SubCompNum;
-			ZoneSubSubCompToPlant( Idx ).ZoneEqSubSubCompNum = SubSubCompNum;
-			ZoneSubSubCompToPlant( Idx ).PlantLoopType = PlantLoopType;
-			ZoneSubSubCompToPlant( Idx ).PlantLoopNum = PlantLoop;
-			ZoneSubSubCompToPlant( Idx ).PlantLoopBranch = PlantBranch;
-			ZoneSubSubCompToPlant( Idx ).PlantLoopComp = PlantComp;
-			++ArrayCounter;
+		if ( ArrayCounter >= ArrayLimit ) { // Redimension larger
+			int const OldArrayLimit( ArrayLimit );
+			ZoneSubSubCompToPlant.redimension( ArrayLimit *= 2 );
+			for ( int i = OldArrayLimit + 1; i <= ArrayLimit; ++i ) {
+				auto & zctp( ZoneSubSubCompToPlant( i ) );
+				zctp.ZoneEqListNum = 0;
+				zctp.ZoneEqCompNum = 0;
+				zctp.ZoneEqSubCompNum = 0;
+				zctp.ZoneEqSubSubCompNum = 0;
+				zctp.PlantLoopType = 0;
+				zctp.PlantLoopNum = 0;
+				zctp.PlantLoopBranch = 0;
+				zctp.PlantLoopComp = 0;
+				zctp.FirstDemandSidePtr = 0;
+				zctp.LastDemandSidePtr = 0;
+			}
 		}
+
+		Idx = ArrayCounter;
+		auto & zctp( ZoneSubSubCompToPlant( Idx ) );
+		zctp.ZoneEqListNum = ListNum;
+		zctp.ZoneEqCompNum = AirDistUnitNum;
+		zctp.ZoneEqSubCompNum = SubCompNum;
+		zctp.ZoneEqSubSubCompNum = SubSubCompNum;
+		zctp.PlantLoopType = PlantLoopType;
+		zctp.PlantLoopNum = PlantLoop;
+		zctp.PlantLoopBranch = PlantBranch;
+		zctp.PlantLoopComp = PlantComp;
+		++ArrayCounter;
 	}
 
 	void
@@ -1710,15 +1552,12 @@ namespace SystemReports {
 		// INTERFACE BLOCK SPECIFICATIONS:
 		// na
 
-		// DERIVED TYPE DEFINITIONS:
 		static bool OneTimeFlag( true );
 		static int ArrayLimit( 100 );
-		int OldArrayLimit;
 		static int ArrayCounter( 1 );
 
 		if ( OneTimeFlag ) {
 			AirSysCompToPlant.allocate( ArrayLimit );
-			TempAirSysCompToPlant.allocate( ArrayLimit );
 			AirSysCompToPlant.AirLoopNum() = 0;
 			AirSysCompToPlant.AirLoopBranch() = 0;
 			AirSysCompToPlant.AirLoopComp() = 0;
@@ -1728,66 +1567,37 @@ namespace SystemReports {
 			AirSysCompToPlant.PlantLoopComp() = 0;
 			AirSysCompToPlant.FirstDemandSidePtr() = 0;
 			AirSysCompToPlant.LastDemandSidePtr() = 0;
-			TempAirSysCompToPlant.AirLoopNum() = 0;
-			TempAirSysCompToPlant.AirLoopBranch() = 0;
-			TempAirSysCompToPlant.AirLoopComp() = 0;
-			TempAirSysCompToPlant.PlantLoopType() = 0;
-			TempAirSysCompToPlant.PlantLoopNum() = 0;
-			TempAirSysCompToPlant.PlantLoopBranch() = 0;
-			TempAirSysCompToPlant.PlantLoopComp() = 0;
-			TempAirSysCompToPlant.FirstDemandSidePtr() = 0;
-			TempAirSysCompToPlant.LastDemandSidePtr() = 0;
+
 			OneTimeFlag = false;
 		}
 
-		if ( ArrayCounter < ArrayLimit ) {
-			Idx = ArrayCounter;
-			AirSysCompToPlant( Idx ).AirLoopNum = AirLoopNum;
-			AirSysCompToPlant( Idx ).AirLoopBranch = BranchNum;
-			AirSysCompToPlant( Idx ).AirLoopComp = CompNum;
-			AirSysCompToPlant( Idx ).PlantLoopType = PlantLoopType;
-			AirSysCompToPlant( Idx ).PlantLoopNum = PlantLoop;
-			AirSysCompToPlant( Idx ).PlantLoopBranch = PlantBranch;
-			AirSysCompToPlant( Idx ).PlantLoopComp = PlantComp;
-			++ArrayCounter;
-		} else {
-			TempAirSysCompToPlant = AirSysCompToPlant;
-			AirSysCompToPlant.deallocate();
-			OldArrayLimit = ArrayLimit;
-			ArrayLimit *= 2;
-			AirSysCompToPlant.allocate( ArrayLimit );
-			AirSysCompToPlant.AirLoopNum() = 0;
-			AirSysCompToPlant.AirLoopBranch() = 0;
-			AirSysCompToPlant.AirLoopComp() = 0;
-			AirSysCompToPlant.PlantLoopType() = 0;
-			AirSysCompToPlant.PlantLoopNum() = 0;
-			AirSysCompToPlant.PlantLoopBranch() = 0;
-			AirSysCompToPlant.PlantLoopComp() = 0;
-			AirSysCompToPlant.FirstDemandSidePtr() = 0;
-			AirSysCompToPlant.LastDemandSidePtr() = 0;
-			AirSysCompToPlant( {1,OldArrayLimit} ) = TempAirSysCompToPlant( {1,OldArrayLimit} );
-			TempAirSysCompToPlant.deallocate();
-			TempAirSysCompToPlant.allocate( ArrayLimit );
-			TempAirSysCompToPlant.AirLoopNum() = 0;
-			TempAirSysCompToPlant.AirLoopBranch() = 0;
-			TempAirSysCompToPlant.AirLoopComp() = 0;
-			TempAirSysCompToPlant.PlantLoopType() = 0;
-			TempAirSysCompToPlant.PlantLoopNum() = 0;
-			TempAirSysCompToPlant.PlantLoopBranch() = 0;
-			TempAirSysCompToPlant.PlantLoopComp() = 0;
-			TempAirSysCompToPlant.FirstDemandSidePtr() = 0;
-			TempAirSysCompToPlant.LastDemandSidePtr() = 0;
-
-			Idx = ArrayCounter;
-			AirSysCompToPlant( Idx ).AirLoopNum = AirLoopNum;
-			AirSysCompToPlant( Idx ).AirLoopBranch = BranchNum;
-			AirSysCompToPlant( Idx ).AirLoopComp = CompNum;
-			AirSysCompToPlant( Idx ).PlantLoopType = PlantLoopType;
-			AirSysCompToPlant( Idx ).PlantLoopNum = PlantLoop;
-			AirSysCompToPlant( Idx ).PlantLoopBranch = PlantBranch;
-			AirSysCompToPlant( Idx ).PlantLoopComp = PlantComp;
-			++ArrayCounter;
+		if ( ArrayCounter >= ArrayLimit ) { // Redimension larger
+			int const OldArrayLimit( ArrayLimit );
+			AirSysCompToPlant.redimension( ArrayLimit *= 2 );
+			for ( int i = OldArrayLimit + 1; i <= ArrayLimit; ++i ) {
+				auto & actp( AirSysCompToPlant( i ) );
+				actp.AirLoopNum = 0;
+				actp.AirLoopBranch = 0;
+				actp.AirLoopComp = 0;
+				actp.PlantLoopType = 0;
+				actp.PlantLoopNum = 0;
+				actp.PlantLoopBranch = 0;
+				actp.PlantLoopComp = 0;
+				actp.FirstDemandSidePtr = 0;
+				actp.LastDemandSidePtr = 0;
+			}
 		}
+
+		Idx = ArrayCounter;
+		auto & actp( AirSysCompToPlant( Idx ) );
+		actp.AirLoopNum = AirLoopNum;
+		actp.AirLoopBranch = BranchNum;
+		actp.AirLoopComp = CompNum;
+		actp.PlantLoopType = PlantLoopType;
+		actp.PlantLoopNum = PlantLoop;
+		actp.PlantLoopBranch = PlantBranch;
+		actp.PlantLoopComp = PlantComp;
+		++ArrayCounter;
 	}
 
 	void
@@ -1829,15 +1639,12 @@ namespace SystemReports {
 		// INTERFACE BLOCK SPECIFICATIONS:
 		// na
 
-		// DERIVED TYPE DEFINITIONS:
 		static bool OneTimeFlag( true );
-		int OldArrayLimit;
 		static int ArrayLimit( 100 );
 		static int ArrayCounter( 1 );
 
 		if ( OneTimeFlag ) {
 			AirSysSubCompToPlant.allocate( ArrayLimit );
-			TempAirSysSubCompToPlant.allocate( ArrayLimit );
 			AirSysSubCompToPlant.AirLoopNum() = 0;
 			AirSysSubCompToPlant.AirLoopBranch() = 0;
 			AirSysSubCompToPlant.AirLoopComp() = 0;
@@ -1848,71 +1655,39 @@ namespace SystemReports {
 			AirSysSubCompToPlant.PlantLoopComp() = 0;
 			AirSysSubCompToPlant.FirstDemandSidePtr() = 0;
 			AirSysSubCompToPlant.LastDemandSidePtr() = 0;
-			TempAirSysSubCompToPlant.AirLoopNum() = 0;
-			TempAirSysSubCompToPlant.AirLoopBranch() = 0;
-			TempAirSysSubCompToPlant.AirLoopComp() = 0;
-			TempAirSysSubCompToPlant.AirLoopSubComp() = 0;
-			TempAirSysSubCompToPlant.PlantLoopType() = 0;
-			TempAirSysSubCompToPlant.PlantLoopNum() = 0;
-			TempAirSysSubCompToPlant.PlantLoopBranch() = 0;
-			TempAirSysSubCompToPlant.PlantLoopComp() = 0;
-			TempAirSysSubCompToPlant.FirstDemandSidePtr() = 0;
-			TempAirSysSubCompToPlant.LastDemandSidePtr() = 0;
+
 			OneTimeFlag = false;
 		}
 
-		if ( ArrayCounter < ArrayLimit ) {
-			Idx = ArrayCounter;
-			AirSysSubCompToPlant( Idx ).AirLoopNum = AirLoopNum;
-			AirSysSubCompToPlant( Idx ).AirLoopBranch = BranchNum;
-			AirSysSubCompToPlant( Idx ).AirLoopComp = CompNum;
-			AirSysSubCompToPlant( Idx ).AirLoopSubComp = SubCompNum;
-			AirSysSubCompToPlant( Idx ).PlantLoopType = PlantLoopType;
-			AirSysSubCompToPlant( Idx ).PlantLoopNum = PlantLoop;
-			AirSysSubCompToPlant( Idx ).PlantLoopBranch = PlantBranch;
-			AirSysSubCompToPlant( Idx ).PlantLoopComp = PlantComp;
-			++ArrayCounter;
-		} else {
-			TempAirSysSubCompToPlant = AirSysSubCompToPlant;
-			AirSysSubCompToPlant.deallocate();
-			OldArrayLimit = ArrayLimit;
-			ArrayLimit *= 2;
-			AirSysSubCompToPlant.allocate( ArrayLimit );
-			AirSysSubCompToPlant.AirLoopNum() = 0;
-			AirSysSubCompToPlant.AirLoopBranch() = 0;
-			AirSysSubCompToPlant.AirLoopComp() = 0;
-			AirSysSubCompToPlant.AirLoopSubComp() = 0;
-			AirSysSubCompToPlant.PlantLoopType() = 0;
-			AirSysSubCompToPlant.PlantLoopNum() = 0;
-			AirSysSubCompToPlant.PlantLoopBranch() = 0;
-			AirSysSubCompToPlant.PlantLoopComp() = 0;
-			AirSysSubCompToPlant.FirstDemandSidePtr() = 0;
-			AirSysSubCompToPlant.LastDemandSidePtr() = 0;
-			AirSysSubCompToPlant( {1,OldArrayLimit} ) = TempAirSysSubCompToPlant( {1,OldArrayLimit} );
-			TempAirSysSubCompToPlant.deallocate();
-			TempAirSysSubCompToPlant.allocate( ArrayLimit );
-			TempAirSysSubCompToPlant.AirLoopNum() = 0;
-			TempAirSysSubCompToPlant.AirLoopBranch() = 0;
-			TempAirSysSubCompToPlant.AirLoopComp() = 0;
-			TempAirSysSubCompToPlant.AirLoopSubComp() = 0;
-			TempAirSysSubCompToPlant.PlantLoopType() = 0;
-			TempAirSysSubCompToPlant.PlantLoopNum() = 0;
-			TempAirSysSubCompToPlant.PlantLoopBranch() = 0;
-			TempAirSysSubCompToPlant.PlantLoopComp() = 0;
-			TempAirSysSubCompToPlant.FirstDemandSidePtr() = 0;
-			TempAirSysSubCompToPlant.LastDemandSidePtr() = 0;
-
-			Idx = ArrayCounter;
-			AirSysSubCompToPlant( Idx ).AirLoopNum = AirLoopNum;
-			AirSysSubCompToPlant( Idx ).AirLoopBranch = BranchNum;
-			AirSysSubCompToPlant( Idx ).AirLoopComp = CompNum;
-			AirSysSubCompToPlant( Idx ).AirLoopSubComp = SubCompNum;
-			AirSysSubCompToPlant( Idx ).PlantLoopType = PlantLoopType;
-			AirSysSubCompToPlant( Idx ).PlantLoopNum = PlantLoop;
-			AirSysSubCompToPlant( Idx ).PlantLoopBranch = PlantBranch;
-			AirSysSubCompToPlant( Idx ).PlantLoopComp = PlantComp;
-			++ArrayCounter;
+		if ( ArrayCounter >= ArrayLimit ) { // Redimension larger
+			int const OldArrayLimit( ArrayLimit );
+			AirSysSubCompToPlant.redimension( ArrayLimit *= 2 );
+			for ( int i = OldArrayLimit + 1; i <= ArrayLimit; ++i ) {
+				auto & actp( AirSysSubCompToPlant( i ) );
+				actp.AirLoopNum = 0;
+				actp.AirLoopBranch = 0;
+				actp.AirLoopComp = 0;
+				actp.AirLoopSubComp = 0;
+				actp.PlantLoopType = 0;
+				actp.PlantLoopNum = 0;
+				actp.PlantLoopBranch = 0;
+				actp.PlantLoopComp = 0;
+				actp.FirstDemandSidePtr = 0;
+				actp.LastDemandSidePtr = 0;
+			}
 		}
+
+		Idx = ArrayCounter;
+		auto & actp( AirSysSubCompToPlant( Idx ) );
+		actp.AirLoopNum = AirLoopNum;
+		actp.AirLoopBranch = BranchNum;
+		actp.AirLoopComp = CompNum;
+		actp.AirLoopSubComp = SubCompNum;
+		actp.PlantLoopType = PlantLoopType;
+		actp.PlantLoopNum = PlantLoop;
+		actp.PlantLoopBranch = PlantBranch;
+		actp.PlantLoopComp = PlantComp;
+		++ArrayCounter;
 	}
 
 	void
@@ -1955,15 +1730,12 @@ namespace SystemReports {
 		// INTERFACE BLOCK SPECIFICATIONS:
 		// na
 
-		// DERIVED TYPE DEFINITIONS:
 		static bool OneTimeFlag( true );
 		static int ArrayLimit( 100 );
-		int OldArrayLimit;
 		static int ArrayCounter( 1 );
 
 		if ( OneTimeFlag ) {
 			AirSysSubSubCompToPlant.allocate( ArrayLimit );
-			TempAirSysSubSubCompToPlant.allocate( ArrayLimit );
 			AirSysSubSubCompToPlant.AirLoopNum() = 0;
 			AirSysSubSubCompToPlant.AirLoopBranch() = 0;
 			AirSysSubSubCompToPlant.AirLoopComp() = 0;
@@ -1975,76 +1747,41 @@ namespace SystemReports {
 			AirSysSubSubCompToPlant.PlantLoopComp() = 0;
 			AirSysSubSubCompToPlant.FirstDemandSidePtr() = 0;
 			AirSysSubSubCompToPlant.LastDemandSidePtr() = 0;
-			TempAirSysSubSubCompToPlant.AirLoopNum() = 0;
-			TempAirSysSubSubCompToPlant.AirLoopBranch() = 0;
-			TempAirSysSubSubCompToPlant.AirLoopComp() = 0;
-			TempAirSysSubSubCompToPlant.AirLoopSubComp() = 0;
-			TempAirSysSubSubCompToPlant.AirLoopSubSubComp() = 0;
-			TempAirSysSubSubCompToPlant.PlantLoopType() = 0;
-			TempAirSysSubSubCompToPlant.PlantLoopNum() = 0;
-			TempAirSysSubSubCompToPlant.PlantLoopBranch() = 0;
-			TempAirSysSubSubCompToPlant.PlantLoopComp() = 0;
-			TempAirSysSubSubCompToPlant.FirstDemandSidePtr() = 0;
-			TempAirSysSubSubCompToPlant.LastDemandSidePtr() = 0;
+
 			OneTimeFlag = false;
 		}
 
-		if ( ArrayCounter < ArrayLimit ) {
-			Idx = ArrayCounter;
-			AirSysSubSubCompToPlant( Idx ).AirLoopNum = AirLoopNum;
-			AirSysSubSubCompToPlant( Idx ).AirLoopBranch = BranchNum;
-			AirSysSubSubCompToPlant( Idx ).AirLoopComp = CompNum;
-			AirSysSubSubCompToPlant( Idx ).AirLoopSubComp = SubCompNum;
-			AirSysSubSubCompToPlant( Idx ).AirLoopSubSubComp = SubSubCompNum;
-			AirSysSubSubCompToPlant( Idx ).PlantLoopType = PlantLoopType;
-			AirSysSubSubCompToPlant( Idx ).PlantLoopNum = PlantLoop;
-			AirSysSubSubCompToPlant( Idx ).PlantLoopBranch = PlantBranch;
-			AirSysSubSubCompToPlant( Idx ).PlantLoopComp = PlantComp;
-			++ArrayCounter;
-		} else {
-			TempAirSysSubSubCompToPlant = AirSysSubSubCompToPlant;
-			AirSysSubSubCompToPlant.deallocate();
-			OldArrayLimit = ArrayLimit;
-			ArrayLimit *= 2;
-			AirSysSubSubCompToPlant.allocate( ArrayLimit );
-			AirSysSubSubCompToPlant.AirLoopNum() = 0;
-			AirSysSubSubCompToPlant.AirLoopBranch() = 0;
-			AirSysSubSubCompToPlant.AirLoopComp() = 0;
-			AirSysSubSubCompToPlant.AirLoopSubComp() = 0;
-			AirSysSubSubCompToPlant.AirLoopSubSubComp() = 0;
-			AirSysSubSubCompToPlant.PlantLoopType() = 0;
-			AirSysSubSubCompToPlant.PlantLoopNum() = 0;
-			AirSysSubSubCompToPlant.PlantLoopBranch() = 0;
-			AirSysSubSubCompToPlant.PlantLoopComp() = 0;
-			AirSysSubSubCompToPlant.FirstDemandSidePtr() = 0;
-			AirSysSubSubCompToPlant.LastDemandSidePtr() = 0;
-			AirSysSubSubCompToPlant( {1,OldArrayLimit} ) = TempAirSysSubSubCompToPlant( {1,OldArrayLimit} );
-			TempAirSysSubSubCompToPlant.deallocate();
-			TempAirSysSubSubCompToPlant.allocate( ArrayLimit );
-			TempAirSysSubSubCompToPlant.AirLoopNum() = 0;
-			TempAirSysSubSubCompToPlant.AirLoopBranch() = 0;
-			TempAirSysSubSubCompToPlant.AirLoopComp() = 0;
-			TempAirSysSubSubCompToPlant.AirLoopSubComp() = 0;
-			TempAirSysSubSubCompToPlant.AirLoopSubSubComp() = 0;
-			TempAirSysSubSubCompToPlant.PlantLoopType() = 0;
-			TempAirSysSubSubCompToPlant.PlantLoopNum() = 0;
-			TempAirSysSubSubCompToPlant.PlantLoopBranch() = 0;
-			TempAirSysSubSubCompToPlant.PlantLoopComp() = 0;
-			TempAirSysSubSubCompToPlant.FirstDemandSidePtr() = 0;
-			TempAirSysSubSubCompToPlant.LastDemandSidePtr() = 0;
-
-			Idx = ArrayCounter;
-			AirSysSubSubCompToPlant( Idx ).AirLoopNum = AirLoopNum;
-			AirSysSubSubCompToPlant( Idx ).AirLoopBranch = BranchNum;
-			AirSysSubSubCompToPlant( Idx ).AirLoopComp = CompNum;
-			AirSysSubSubCompToPlant( Idx ).AirLoopSubComp = SubCompNum;
-			AirSysSubSubCompToPlant( Idx ).AirLoopSubSubComp = SubSubCompNum;
-			AirSysSubSubCompToPlant( Idx ).PlantLoopType = PlantLoopType;
-			AirSysSubSubCompToPlant( Idx ).PlantLoopNum = PlantLoop;
-			AirSysSubSubCompToPlant( Idx ).PlantLoopBranch = PlantBranch;
-			AirSysSubSubCompToPlant( Idx ).PlantLoopComp = PlantComp;
-			++ArrayCounter;
+		if ( ArrayCounter >= ArrayLimit ) { // Redimension larger
+			int const OldArrayLimit( ArrayLimit );
+			AirSysSubSubCompToPlant.redimension( ArrayLimit *= 2 );
+			for ( int i = OldArrayLimit + 1; i <= ArrayLimit; ++i ) {
+				auto & actp( AirSysSubSubCompToPlant( i ) );
+				actp.AirLoopNum = 0;
+				actp.AirLoopBranch = 0;
+				actp.AirLoopComp = 0;
+				actp.AirLoopSubComp = 0;
+				actp.AirLoopSubSubComp = 0;
+				actp.PlantLoopType = 0;
+				actp.PlantLoopNum = 0;
+				actp.PlantLoopBranch = 0;
+				actp.PlantLoopComp = 0;
+				actp.FirstDemandSidePtr = 0;
+				actp.LastDemandSidePtr = 0;
+			}
 		}
+
+		Idx = ArrayCounter;
+		auto & actp( AirSysSubSubCompToPlant( Idx ) );
+		actp.AirLoopNum = AirLoopNum;
+		actp.AirLoopBranch = BranchNum;
+		actp.AirLoopComp = CompNum;
+		actp.AirLoopSubComp = SubCompNum;
+		actp.AirLoopSubSubComp = SubSubCompNum;
+		actp.PlantLoopType = PlantLoopType;
+		actp.PlantLoopNum = PlantLoop;
+		actp.PlantLoopBranch = PlantBranch;
+		actp.PlantLoopComp = PlantComp;
+		++ArrayCounter;
 	}
 
 	void
@@ -2929,7 +2666,7 @@ namespace SystemReports {
 			for ( LoopSideNum = DemandSide; LoopSideNum <= SupplySide; ++LoopSideNum ) {
 
 				// Report selection
-				ReportLoopData * select_ThisReportData;
+				ReportLoopData * select_ThisReportData( nullptr );
 
 				if ( PlantLoopNum <= NumPlantLoops ) {
 					{ auto const SELECT_CASE_var( LoopSideNum );
@@ -2937,6 +2674,8 @@ namespace SystemReports {
 						select_ThisReportData = &VentRepPlantDemandSide( PlantLoopNum );
 					} else if ( SELECT_CASE_var == SupplySide ) {
 						select_ThisReportData = &VentRepPlantSupplySide( PlantLoopNum );
+					} else {
+						assert( false );
 					}}
 				} else { // CondLoop
 					{ auto const SELECT_CASE_var( LoopSideNum );
@@ -2944,6 +2683,8 @@ namespace SystemReports {
 						select_ThisReportData = &VentRepCondDemandSide( PlantLoopNum - NumPlantLoops );
 					} else if ( SELECT_CASE_var == SupplySide ) {
 						select_ThisReportData = &VentRepCondSupplySide( PlantLoopNum - NumPlantLoops );
+					} else {
+						assert( false );
 					}}
 				}
 
@@ -3041,7 +2782,7 @@ namespace SystemReports {
 			for ( LoopSideNum = DemandSide; LoopSideNum <= SupplySide; ++LoopSideNum ) {
 
 				// Report selection
-				ReportLoopData * select_ThisReportData;
+				ReportLoopData * select_ThisReportData( nullptr );
 
 				if ( PlantLoopNum <= NumPlantLoops ) {
 					{ auto const SELECT_CASE_var( LoopSideNum );
@@ -3049,6 +2790,8 @@ namespace SystemReports {
 						select_ThisReportData = &VentRepPlantDemandSide( PlantLoopNum );
 					} else if ( SELECT_CASE_var == SupplySide ) {
 						select_ThisReportData = &VentRepPlantSupplySide( PlantLoopNum );
+					} else {
+						assert( false );
 					}}
 				} else { // CondLoop
 					{ auto const SELECT_CASE_var( LoopSideNum );
@@ -3056,6 +2799,8 @@ namespace SystemReports {
 						select_ThisReportData = &VentRepCondDemandSide( PlantLoopNum - NumPlantLoops );
 					} else if ( SELECT_CASE_var == SupplySide ) {
 						select_ThisReportData = &VentRepCondSupplySide( PlantLoopNum - NumPlantLoops );
+					} else {
+						assert( false );
 					}}
 				}
 
@@ -3496,6 +3241,54 @@ namespace SystemReports {
 
 	}
 
+	bool
+	index_in_sorted_string_vector(
+		std::vector< std::string > const & v,
+		std::string const & s,
+		std::vector< std::string >::size_type & i
+	)
+	{
+		// FUNCTION INFORMATION:
+		//       AUTHOR         Stuart Mentzer
+		//       DATE WRITTEN   June 2014
+		//       MODIFIED
+		//       RE-ENGINEERED
+
+		// PURPOSE OF THIS FUNCTION:
+		// Find a string in a sorted vector of strings
+		// std::lower_bound can do this but is slower
+
+		// METHODOLOGY EMPLOYED:
+		// Binary search
+
+		assert( std::is_sorted( v.begin(), v.end() ) );
+		typedef  std::vector< std::string >::size_type  size_type;
+		size_type const v_size( v.size() );
+		if ( v_size == 0 ) { // Empty
+			i = 1u;
+			return false;
+		} else if ( s < v[ 0 ] ) { // Less than all
+			i = v_size;
+			return false;
+		} else if ( s > v[ v_size - 1 ] ) { // Greater than all
+			i = v_size;
+			return false;
+		} else {
+			size_type beg( 0 ), mid, end( v_size );
+			while ( beg + 1 < end ) {
+				mid = ( ( beg + end ) >> 1 ); // bit shifting is faster than /2
+				( s >= v[ mid ] ? beg : end ) = mid;
+			} // Invariant: v[beg] <= s < v[end] (if end < v.size())
+			if ( s == v[ beg ] ) {
+				i = beg;
+				return true;
+			} else {
+				i = v_size;
+				return false;
+			}
+		}
+	}
+
 	void
 	CalcSystemEnergyUse(
 		bool const CompLoadFlag,
@@ -3525,11 +3318,183 @@ namespace SystemReports {
 		using namespace DataZoneEnergyDemands;
 		using namespace DataGlobalConstants;
 		using InputProcessor::FindItemInList;
+		using InputProcessor::SameString;
 
 		// Locals
 		// SUBROUTINE ARGUMENT DEFINITIONS:
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
+
+		//Tuned String comparisons were a big performance hit
+		// ComponentTypes and component_strings must remain in sync and sorted
+		enum ComponentTypes : std::vector< std::string >::size_type { // Using older enum style to avoid the name scoping cruft
+			AIRLOOPHVAC_OUTDOORAIRSYSTEM,
+			AIRLOOPHVAC_UNITARY_FURNACE_HEATCOOL,
+			AIRLOOPHVAC_UNITARY_FURNACE_HEATONLY,
+			AIRLOOPHVAC_UNITARYHEATCOOL,
+			AIRLOOPHVAC_UNITARYHEATCOOL_VAVCHANGEOVERBYPASS,
+			AIRLOOPHVAC_UNITARYHEATONLY,
+			AIRLOOPHVAC_UNITARYHEATPUMP_AIRTOAIR,
+			AIRLOOPHVAC_UNITARYHEATPUMP_AIRTOAIR_MULTISPEED,
+			AIRLOOPHVAC_UNITARYHEATPUMP_WATERTOAIR,
+			AIRLOOPHVAC_UNITARYSYSTEM,
+			AIRTERMINAL_DUALDUCT_CONSTANTVOLUME_COOL,
+			AIRTERMINAL_DUALDUCT_CONSTANTVOLUME_HEAT,
+			AIRTERMINAL_DUALDUCT_VAV_COOL,
+			AIRTERMINAL_DUALDUCT_VAV_HEAT,
+			AIRTERMINAL_DUALDUCT_VAV_OUTDOORAIR_OUTDOORAIR,
+			AIRTERMINAL_DUALDUCT_VAV_OUTDOORAIR_RECIRCULATEDAIR,
+			AIRTERMINAL_SINGLEDUCT_CONSTANTVOLUME_COOLEDBEAM,
+			AIRTERMINAL_SINGLEDUCT_CONSTANTVOLUME_FOURPIPEINDUCTION,
+			AIRTERMINAL_SINGLEDUCT_CONSTANTVOLUME_REHEAT,
+			AIRTERMINAL_SINGLEDUCT_INLETSIDEMIXER,
+			AIRTERMINAL_SINGLEDUCT_PARALLELPIU_REHEAT,
+			AIRTERMINAL_SINGLEDUCT_SERIESPIU_REHEAT,
+			AIRTERMINAL_SINGLEDUCT_SUPPLYSIDEMIXER,
+			AIRTERMINAL_SINGLEDUCT_UNCONTROLLED,
+			AIRTERMINAL_SINGLEDUCT_USERDEFINED,
+			AIRTERMINAL_SINGLEDUCT_VAV_HEATANDCOOL_NOREHEAT,
+			AIRTERMINAL_SINGLEDUCT_VAV_HEATANDCOOL_REHEAT,
+			AIRTERMINAL_SINGLEDUCT_VAV_NOREHEAT,
+			AIRTERMINAL_SINGLEDUCT_VAV_REHEAT,
+			AIRTERMINAL_SINGLEDUCT_VAV_REHEAT_VARIABLESPEEDFAN,
+			COIL_COOLING_DX_MULTISPEED,
+			COIL_COOLING_DX_SINGLESPEED,
+			COIL_COOLING_DX_SINGLESPEED_THERMALSTORAGE,
+			COIL_COOLING_DX_TWOSPEED,
+			COIL_COOLING_DX_TWOSTAGEWITHHUMIDITYCONTROLMODE,
+			COIL_COOLING_DX_VARIABLESPEED,
+			COIL_COOLING_WATER,
+			COIL_COOLING_WATER_DETAILEDGEOMETRY,
+			COIL_COOLING_WATERTOAIRHEATPUMP_EQUATIONFIT,
+			COIL_COOLING_WATERTOAIRHEATPUMP_PARAMETERESTIMATION,
+			COIL_COOLING_WATERTOAIRHEATPUMP_VARIABLESPEEDEQUATIONFIT,
+			COIL_HEATING_DESUPERHEATER,
+			COIL_HEATING_DX_MULTISPEED,
+			COIL_HEATING_DX_SINGLESPEED,
+			COIL_HEATING_DX_VARIABLESPEED,
+			COIL_HEATING_ELECTRIC,
+			COIL_HEATING_ELECTRIC_MULTISTAGE,
+			COIL_HEATING_GAS,
+			COIL_HEATING_GAS_MULTISTAGE,
+			COIL_HEATING_STEAM,
+			COIL_HEATING_WATER,
+			COIL_HEATING_WATERTOAIRHEATPUMP_EQUATIONFIT,
+			COIL_HEATING_WATERTOAIRHEATPUMP_PARAMETERESTIMATION,
+			COIL_HEATING_WATERTOAIRHEATPUMP_VARIABLESPEEDEQUATIONFIT,
+			COIL_USERDEFINED,
+			COILSYSTEM_COOLING_DX,
+			COILSYSTEM_COOLING_DX_HEATEXCHANGERASSISTED,
+			COILSYSTEM_COOLING_WATER_HEATEXCHANGERASSISTED,
+			COILSYSTEM_HEATING_DX,
+			DEHUMIDIFIER_DESICCANT_NOFANS,
+			DEHUMIDIFIER_DESICCANT_SYSTEM,
+			DUCT,
+			EVAPORATIVECOOLER_DIRECT_CELDEKPAD,
+			EVAPORATIVECOOLER_DIRECT_RESEARCHSPECIAL,
+			EVAPORATIVECOOLER_INDIRECT_CELDEKPAD,
+			EVAPORATIVECOOLER_INDIRECT_RESEARCHSPECIAL,
+			EVAPORATIVECOOLER_INDIRECT_WETCOIL,
+			FAN_COMPONENTMODEL,
+			FAN_CONSTANTVOLUME,
+			FAN_ONOFF,
+			FAN_VARIABLEVOLUME,
+			HEATEXCHANGER_AIRTOAIR_FLATPLATE,
+			HEATEXCHANGER_AIRTOAIR_SENSIBLEANDLATENT,
+			HEATEXCHANGER_DESICCANT_BALANCEDFLOW,
+			HUMIDIFIER_STEAM_ELECTRIC,
+			OUTDOORAIR_MIXER,
+			SOLARCOLLECTOR_FLATPLATE_PHOTOVOLTAICTHERMAL,
+			SOLARCOLLECTOR_UNGLAZEDTRANSPIRED,
+			ZONEHVAC_AIRDISTRIBUTIONUNIT,
+			n_ComponentTypes,
+			Unknown_ComponentType
+		};
+
+		static std::vector< std::string > const component_strings = { // Must be sorted!
+			"AIRLOOPHVAC:OUTDOORAIRSYSTEM",
+			"AIRLOOPHVAC:UNITARY:FURNACE:HEATCOOL",
+			"AIRLOOPHVAC:UNITARY:FURNACE:HEATONLY",
+			"AIRLOOPHVAC:UNITARYHEATCOOL",
+			"AIRLOOPHVAC:UNITARYHEATCOOL:VAVCHANGEOVERBYPASS",
+			"AIRLOOPHVAC:UNITARYHEATONLY",
+			"AIRLOOPHVAC:UNITARYHEATPUMP:AIRTOAIR",
+			"AIRLOOPHVAC:UNITARYHEATPUMP:AIRTOAIR:MULTISPEED",
+			"AIRLOOPHVAC:UNITARYHEATPUMP:WATERTOAIR",
+			"AIRLOOPHVAC:UNITARYSYSTEM",
+			"AIRTERMINAL:DUALDUCT:CONSTANTVOLUME:COOL",
+			"AIRTERMINAL:DUALDUCT:CONSTANTVOLUME:HEAT",
+			"AIRTERMINAL:DUALDUCT:VAV:COOL",
+			"AIRTERMINAL:DUALDUCT:VAV:HEAT",
+			"AIRTERMINAL:DUALDUCT:VAV:OUTDOORAIR:OUTDOORAIR",
+			"AIRTERMINAL:DUALDUCT:VAV:OUTDOORAIR:RECIRCULATEDAIR",
+			"AIRTERMINAL:SINGLEDUCT:CONSTANTVOLUME:COOLEDBEAM",
+			"AIRTERMINAL:SINGLEDUCT:CONSTANTVOLUME:FOURPIPEINDUCTION",
+			"AIRTERMINAL:SINGLEDUCT:CONSTANTVOLUME:REHEAT",
+			"AIRTERMINAL:SINGLEDUCT:INLETSIDEMIXER",
+			"AIRTERMINAL:SINGLEDUCT:PARALLELPIU:REHEAT",
+			"AIRTERMINAL:SINGLEDUCT:SERIESPIU:REHEAT",
+			"AIRTERMINAL:SINGLEDUCT:SUPPLYSIDEMIXER",
+			"AIRTERMINAL:SINGLEDUCT:UNCONTROLLED",
+			"AIRTERMINAL:SINGLEDUCT:USERDEFINED",
+			"AIRTERMINAL:SINGLEDUCT:VAV:HEATANDCOOL:NOREHEAT",
+			"AIRTERMINAL:SINGLEDUCT:VAV:HEATANDCOOL:REHEAT",
+			"AIRTERMINAL:SINGLEDUCT:VAV:NOREHEAT",
+			"AIRTERMINAL:SINGLEDUCT:VAV:REHEAT",
+			"AIRTERMINAL:SINGLEDUCT:VAV:REHEAT:VARIABLESPEEDFAN",
+			"COIL:COOLING:DX:MULTISPEED",
+			"COIL:COOLING:DX:SINGLESPEED",
+			"COIL:COOLING:DX:SINGLESPEED:THERMALSTORAGE",
+			"COIL:COOLING:DX:TWOSPEED",
+			"COIL:COOLING:DX:TWOSTAGEWITHHUMIDITYCONTROLMODE",
+			"COIL:COOLING:DX:VARIABLESPEED",
+			"COIL:COOLING:WATER",
+			"COIL:COOLING:WATER:DETAILEDGEOMETRY",
+			"COIL:COOLING:WATERTOAIRHEATPUMP:EQUATIONFIT",
+			"COIL:COOLING:WATERTOAIRHEATPUMP:PARAMETERESTIMATION",
+			"COIL:COOLING:WATERTOAIRHEATPUMP:VARIABLESPEEDEQUATIONFIT",
+			"COIL:HEATING:DESUPERHEATER",
+			"COIL:HEATING:DX:MULTISPEED",
+			"COIL:HEATING:DX:SINGLESPEED",
+			"COIL:HEATING:DX:VARIABLESPEED",
+			"COIL:HEATING:ELECTRIC",
+			"COIL:HEATING:ELECTRIC:MULTISTAGE",
+			"COIL:HEATING:GAS",
+			"COIL:HEATING:GAS:MULTISTAGE",
+			"COIL:HEATING:STEAM",
+			"COIL:HEATING:WATER",
+			"COIL:HEATING:WATERTOAIRHEATPUMP:EQUATIONFIT",
+			"COIL:HEATING:WATERTOAIRHEATPUMP:PARAMETERESTIMATION",
+			"COIL:HEATING:WATERTOAIRHEATPUMP:VARIABLESPEEDEQUATIONFIT",
+			"COIL:USERDEFINED",
+			"COILSYSTEM:COOLING:DX",
+			"COILSYSTEM:COOLING:DX:HEATEXCHANGERASSISTED",
+			"COILSYSTEM:COOLING:WATER:HEATEXCHANGERASSISTED",
+			"COILSYSTEM:HEATING:DX",
+			"DEHUMIDIFIER:DESICCANT:NOFANS",
+			"DEHUMIDIFIER:DESICCANT:SYSTEM",
+			"DUCT",
+			"EVAPORATIVECOOLER:DIRECT:CELDEKPAD",
+			"EVAPORATIVECOOLER:DIRECT:RESEARCHSPECIAL",
+			"EVAPORATIVECOOLER:INDIRECT:CELDEKPAD",
+			"EVAPORATIVECOOLER:INDIRECT:RESEARCHSPECIAL",
+			"EVAPORATIVECOOLER:INDIRECT:WETCOIL",
+			"FAN:COMPONENTMODEL",
+			"FAN:CONSTANTVOLUME",
+			"FAN:ONOFF",
+			"FAN:VARIABLEVOLUME",
+			"HEATEXCHANGER:AIRTOAIR:FLATPLATE",
+			"HEATEXCHANGER:AIRTOAIR:SENSIBLEANDLATENT",
+			"HEATEXCHANGER:DESICCANT:BALANCEDFLOW",
+			"HUMIDIFIER:STEAM:ELECTRIC",
+			"OUTDOORAIR:MIXER",
+			"SOLARCOLLECTOR:FLATPLATE:PHOTOVOLTAICTHERMAL",
+			"SOLARCOLLECTOR:UNGLAZEDTRANSPIRED",
+			"ZONEHVAC:AIRDISTRIBUTIONUNIT"
+		};
+		assert( std::is_sorted( component_strings.begin(), component_strings.end() ) );
+		assert( component_strings.size() == n_ComponentTypes );
+
 		Real64 const SmallLoad( 0.1 ); // (W)
 		Real64 const KJperJ( 0.001 ); // kilojoules per joules
 
@@ -3540,7 +3505,6 @@ namespace SystemReports {
 
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 		static int NumCompTypes( 0 );
-		static bool firstTime( true );
 		int found;
 
 		struct CompTypeError
@@ -3566,7 +3530,7 @@ namespace SystemReports {
 		};
 
 		// Object Data
-		static FArray1D< CompTypeError > CompTypeErrors;
+		static FArray1D< CompTypeError > CompTypeErrors( 100 );
 
 		if ( ! AirLoopLoadsReportEnabled ) return;
 
@@ -3575,15 +3539,15 @@ namespace SystemReports {
 
 		//    cEnergyType=cRT_ValidTypes(EnergyType-ResourceTypeInitialOffset)
 
-		if ( firstTime ) {
-			CompTypeErrors.allocate( 100 );
-			firstTime = false;
+		// Find enum for the component type string
+		std::vector< std::string >::size_type iCompType;
+		ComponentTypes comp_type( Unknown_ComponentType );
+		if ( index_in_sorted_string_vector( component_strings, CompType, iCompType ) ) {
+			comp_type = static_cast< ComponentTypes >( iCompType );
 		}
 
-		{ auto const SELECT_CASE_var( CompType );
-
-		// Outside Air System
-		if ( SELECT_CASE_var == "AIRLOOPHVAC:OUTDOORAIRSYSTEM" ) {
+		switch( comp_type ) {
+		case AIRLOOPHVAC_OUTDOORAIRSYSTEM: // Outside Air System
 			if ( CompLoadFlag ) {
 				if ( CompLoad > 0.0 ) {
 					SysOALoadCLNG( AirLoopNum ) += std::abs( CompLoad );
@@ -3591,58 +3555,87 @@ namespace SystemReports {
 					SysOALoadHTNG( AirLoopNum ) += std::abs( CompLoad );
 				}
 			}
-			// Outdoor Air Mixer
-		} else if ( SELECT_CASE_var == "OUTDOORAIR:MIXER" ) {
+			break;
+		case OUTDOORAIR_MIXER: // Outdoor Air Mixer
+			//No energy transfers to account for
+			break;
+		case AIRTERMINAL_SINGLEDUCT_INLETSIDEMIXER:
 			//No energy transfers to account for
 
-		} else if ( SELECT_CASE_var == "AIRTERMINAL:SINGLEDUCT:INLETSIDEMIXER" ) {
-			//No energy transfers to account for
-
-		} else if ( SELECT_CASE_var == "AIRTERMINAL:SINGLEDUCT:SUPPLYSIDEMIXER" ) {
+			break;
+		case AIRTERMINAL_SINGLEDUCT_SUPPLYSIDEMIXER:
 			//No energy transfers to account for
 
 			// Fan Types for the air sys simulation
-		} else if ( ( SELECT_CASE_var == "FAN:CONSTANTVOLUME" ) || ( SELECT_CASE_var == "FAN:VARIABLEVOLUME" ) || ( SELECT_CASE_var == "FAN:ONOFF" ) || ( SELECT_CASE_var == "FAN:COMPONENTMODEL" ) ) { //cpw22Aug2010 Add 'FAN:COMPONENTMODEL')
+			break;
+		case FAN_CONSTANTVOLUME:
+		case FAN_VARIABLEVOLUME:
+		case FAN_ONOFF:
+		case FAN_COMPONENTMODEL : //cpw22Aug2010 Add 'FAN_COMPONENTMODEL')
 
 			if ( CompLoadFlag ) SysFANCompHTNG( AirLoopNum ) += std::abs( CompLoad );
 			SysFANCompElec( AirLoopNum ) += CompEnergy;
 
 			// Cooling Coil Types for the air sys simulation
-		} else if ( ( SELECT_CASE_var == "COILSYSTEM:COOLING:DX:HEATEXCHANGERASSISTED" ) || ( SELECT_CASE_var == "COIL:COOLING:DX:SINGLESPEED" ) || ( SELECT_CASE_var == "COIL:COOLING:DX:TWOSPEED" ) || ( SELECT_CASE_var == "COIL:COOLING:DX:TWOSTAGEWITHHUMIDITYCONTROLMODE" ) || ( SELECT_CASE_var == "COIL:COOLING:DX:MULTISPEED" ) || ( SELECT_CASE_var == "COIL:COOLING:WATERTOAIRHEATPUMP:EQUATIONFIT" ) || ( SELECT_CASE_var == "COIL:COOLING:WATERTOAIRHEATPUMP:PARAMETERESTIMATION" ) || ( SELECT_CASE_var == "COIL:COOLING:WATERTOAIRHEATPUMP:VARIABLESPEEDEQUATIONFIT" ) || ( SELECT_CASE_var == "COIL:COOLING:DX:VARIABLESPEED" ) || ( SELECT_CASE_var == "COILSYSTEM:COOLING:WATER:HEATEXCHANGERASSISTED" ) || ( SELECT_CASE_var == "COIL:COOLING:WATER:DETAILEDGEOMETRY" ) || ( SELECT_CASE_var == "COIL:COOLING:WATER" ) || ( SELECT_CASE_var == "COIL:COOLING:DX:SINGLESPEED:THERMALSTORAGE" ) ) {
+			break;
+		case COILSYSTEM_COOLING_DX_HEATEXCHANGERASSISTED:
+		case COIL_COOLING_DX_SINGLESPEED:
+		case COIL_COOLING_DX_TWOSPEED:
+		case COIL_COOLING_DX_TWOSTAGEWITHHUMIDITYCONTROLMODE:
+		case COIL_COOLING_DX_MULTISPEED:
+		case COIL_COOLING_WATERTOAIRHEATPUMP_EQUATIONFIT:
+		case COIL_COOLING_WATERTOAIRHEATPUMP_PARAMETERESTIMATION:
+		case COIL_COOLING_WATERTOAIRHEATPUMP_VARIABLESPEEDEQUATIONFIT:
+		case COIL_COOLING_DX_VARIABLESPEED:
+		case COILSYSTEM_COOLING_WATER_HEATEXCHANGERASSISTED:
+		case COIL_COOLING_WATER_DETAILEDGEOMETRY:
+		case COIL_COOLING_WATER:
+		case COIL_COOLING_DX_SINGLESPEED_THERMALSTORAGE:
 
 			if ( CompLoadFlag ) SysCCCompCLNG( AirLoopNum ) += std::abs( CompLoad );
-			{ auto const SELECT_CASE_var1( EnergyType );
-			if ( ( SELECT_CASE_var1 == iRT_PlantLoopCoolingDemand ) || ( SELECT_CASE_var1 == iRT_DistrictCooling ) ) {
+			if ( ( EnergyType == iRT_PlantLoopCoolingDemand ) || ( EnergyType == iRT_DistrictCooling ) ) {
 				SysCCCompH2OCOLD( AirLoopNum ) += CompEnergy;
-			} else if ( SELECT_CASE_var1 == iRT_Electricity ) {
+			} else if ( EnergyType == iRT_Electricity ) {
 				SysCCCompElec( AirLoopNum ) += CompEnergy;
-			}}
+			}
 
 			// Heating Coil Types for the air sys simulation
-		} else if ( ( SELECT_CASE_var == "COIL:HEATING:WATER" ) || ( SELECT_CASE_var == "COIL:HEATING:DX:SINGLESPEED" ) || ( SELECT_CASE_var == "COIL:HEATING:DX:MULTISPEED" ) || ( SELECT_CASE_var == "COIL:HEATING:WATERTOAIRHEATPUMP:EQUATIONFIT" ) || ( SELECT_CASE_var == "COIL:HEATING:WATERTOAIRHEATPUMP:PARAMETERESTIMATION" ) || ( SELECT_CASE_var == "COIL:HEATING:WATERTOAIRHEATPUMP:VARIABLESPEEDEQUATIONFIT" ) || ( SELECT_CASE_var == "COIL:HEATING:DX:VARIABLESPEED" ) || ( SELECT_CASE_var == "COIL:HEATING:STEAM" ) || ( SELECT_CASE_var == "COIL:HEATING:GAS" ) || ( SELECT_CASE_var == "COIL:HEATING:GAS:MULTISTAGE" ) || ( SELECT_CASE_var == "COIL:HEATING:DESUPERHEATER" ) ) {
+			break;
+		case COIL_HEATING_WATER:
+		case COIL_HEATING_DX_SINGLESPEED:
+		case COIL_HEATING_DX_MULTISPEED:
+		case COIL_HEATING_WATERTOAIRHEATPUMP_EQUATIONFIT:
+		case COIL_HEATING_WATERTOAIRHEATPUMP_PARAMETERESTIMATION:
+		case COIL_HEATING_WATERTOAIRHEATPUMP_VARIABLESPEEDEQUATIONFIT:
+		case COIL_HEATING_DX_VARIABLESPEED:
+		case COIL_HEATING_STEAM:
+		case COIL_HEATING_GAS:
+		case COIL_HEATING_GAS_MULTISTAGE:
+		case COIL_HEATING_DESUPERHEATER:
 
 			if ( CompLoadFlag ) SysHCCompHTNG( AirLoopNum ) += std::abs( CompLoad );
-			{ auto const SELECT_CASE_var1( EnergyType );
-			if ( ( SELECT_CASE_var1 == iRT_PlantLoopHeatingDemand ) || ( SELECT_CASE_var1 == iRT_DistrictHeating ) ) {
+			if ( ( EnergyType == iRT_PlantLoopHeatingDemand ) || ( EnergyType == iRT_DistrictHeating ) ) {
 				SysHCCompH2OHOT( AirLoopNum ) += CompEnergy;
-			} else if ( SELECT_CASE_var1 == iRT_Steam ) {
+			} else if ( EnergyType == iRT_Steam ) {
 				SysHCCompSteam( AirLoopNum ) += CompEnergy;
-			} else if ( SELECT_CASE_var1 == iRT_Electricity ) {
+			} else if ( EnergyType == iRT_Electricity ) {
 				SysHCCompElec( AirLoopNum ) += CompEnergy;
-			} else if ( ( SELECT_CASE_var1 == iRT_Natural_Gas ) || ( SELECT_CASE_var1 == iRT_Propane ) ) {
+			} else if ( ( EnergyType == iRT_Natural_Gas ) || ( EnergyType == iRT_Propane ) ) {
 				SysHCCompGas( AirLoopNum ) += CompEnergy;
-			}}
+			}
 
-		} else if ( ( SELECT_CASE_var == "COIL:HEATING:ELECTRIC" ) || ( SELECT_CASE_var == "COIL:HEATING:ELECTRIC:MULTISTAGE" ) ) {
+			break;
+		case COIL_HEATING_ELECTRIC:
+		case COIL_HEATING_ELECTRIC_MULTISTAGE:
 
 			if ( CompLoadFlag ) SysHCCompHTNG( AirLoopNum ) += std::abs( CompLoad );
-			{ auto const SELECT_CASE_var1( EnergyType );
-			if ( SELECT_CASE_var1 == iRT_Electricity ) {
+			if ( EnergyType == iRT_Electricity ) {
 				SysHCCompElecRes( AirLoopNum ) += CompEnergy;
 			} else {
-			}}
+			}
 
-		} else if ( SELECT_CASE_var == "COIL:USERDEFINED" ) {
+			break;
+		case COIL_USERDEFINED:
 
 			if ( CompLoadFlag ) {
 				if ( CompLoad > 0.0 ) {
@@ -3651,77 +3644,95 @@ namespace SystemReports {
 					SysHCCompHTNG( AirLoopNum ) += std::abs( CompLoad );
 				}
 			}
-			{ auto const SELECT_CASE_var1( EnergyType );
-			if ( ( SELECT_CASE_var1 == iRT_PlantLoopHeatingDemand ) || ( SELECT_CASE_var1 == iRT_DistrictHeating ) ) {
+			if ( ( EnergyType == iRT_PlantLoopHeatingDemand ) || ( EnergyType == iRT_DistrictHeating ) ) {
 				SysHCCompH2OHOT( AirLoopNum ) += CompEnergy;
-			} else if ( ( SELECT_CASE_var1 == iRT_PlantLoopCoolingDemand ) || ( SELECT_CASE_var1 == iRT_DistrictCooling ) ) {
+			} else if ( ( EnergyType == iRT_PlantLoopCoolingDemand ) || ( EnergyType == iRT_DistrictCooling ) ) {
 				SysCCCompH2OCOLD( AirLoopNum ) += CompEnergy;
-			} else if ( SELECT_CASE_var1 == iRT_Steam ) {
+			} else if ( EnergyType == iRT_Steam ) {
 				SysHCCompSteam( AirLoopNum ) += CompEnergy;
-			} else if ( SELECT_CASE_var1 == iRT_Electricity ) {
+			} else if ( EnergyType == iRT_Electricity ) {
 				if ( CompLoad > 0.0 ) {
 					SysCCCompElec( AirLoopNum ) += CompEnergy;
 				} else {
 					SysHCCompElec( AirLoopNum ) += CompEnergy;
 				}
-			} else if ( ( SELECT_CASE_var1 == iRT_Natural_Gas ) || ( SELECT_CASE_var1 == iRT_Propane ) ) {
+			} else if ( ( EnergyType == iRT_Natural_Gas ) || ( EnergyType == iRT_Propane ) ) {
 				SysHCCompGas( AirLoopNum ) += CompEnergy;
-			}}
+			}
 
 			//DX Systems
-		} else if ( SELECT_CASE_var == "AIRLOOPHVAC:UNITARYSYSTEM" ) {
+			break;
+		case AIRLOOPHVAC_UNITARYSYSTEM:
 			//All energy transfers accounted for in subcomponent models
-		} else if ( SELECT_CASE_var == "AIRLOOPHVAC:UNITARYHEATPUMP:AIRTOAIR" ) {
+			break;
+		case AIRLOOPHVAC_UNITARYHEATPUMP_AIRTOAIR:
 			//All energy transfers accounted for in subcomponent models
-		} else if ( SELECT_CASE_var == "AIRLOOPHVAC:UNITARYHEATPUMP:WATERTOAIR" ) {
+			break;
+		case AIRLOOPHVAC_UNITARYHEATPUMP_WATERTOAIR:
 			//All energy transfers accounted for in subcomponent models
-		} else if ( SELECT_CASE_var == "COILSYSTEM:COOLING:DX" ) {
+			break;
+		case COILSYSTEM_COOLING_DX:
 			//All energy transfers accounted for in subcomponent models
-		} else if ( SELECT_CASE_var == "COILSYSTEM:HEATING:DX" ) {
+			break;
+		case COILSYSTEM_HEATING_DX:
 			//All energy transfers accounted for in subcomponent models
-		} else if ( SELECT_CASE_var == "AIRLOOPHVAC:UNITARY:FURNACE:HEATONLY" ) {
+			break;
+		case AIRLOOPHVAC_UNITARY_FURNACE_HEATONLY:
 			//All energy transfers accounted for in subcomponent models
-		} else if ( SELECT_CASE_var == "AIRLOOPHVAC:UNITARY:FURNACE:HEATCOOL" ) {
+			break;
+		case AIRLOOPHVAC_UNITARY_FURNACE_HEATCOOL:
 			//All energy transfers accounted for in subcomponent models
-		} else if ( SELECT_CASE_var == "AIRLOOPHVAC:UNITARYHEATONLY" ) {
+			break;
+		case AIRLOOPHVAC_UNITARYHEATONLY:
 			//All energy transfers accounted for in subcomponent models
-		} else if ( SELECT_CASE_var == "AIRLOOPHVAC:UNITARYHEATCOOL" ) {
+			break;
+		case AIRLOOPHVAC_UNITARYHEATCOOL:
 			//All energy transfers accounted for in subcomponent models
-		} else if ( SELECT_CASE_var == "AIRLOOPHVAC:UNITARYHEATCOOL:VAVCHANGEOVERBYPASS" ) {
+			break;
+		case AIRLOOPHVAC_UNITARYHEATCOOL_VAVCHANGEOVERBYPASS:
 			//All energy transfers accounted for in subcomponent models
-		} else if ( SELECT_CASE_var == "AIRLOOPHVAC:UNITARYHEATPUMP:AIRTOAIR:MULTISPEED" ) {
+			break;
+		case AIRLOOPHVAC_UNITARYHEATPUMP_AIRTOAIR_MULTISPEED:
 			//All energy transfers accounted for in subcomponent models
 
 			// Humidifier Types for the air system simulation
-		} else if ( SELECT_CASE_var == "HUMIDIFIER:STEAM:ELECTRIC" ) {
+			break;
+		case HUMIDIFIER_STEAM_ELECTRIC:
 			if ( CompLoadFlag ) SysHumidHTNG( AirLoopNum ) += std::abs( CompLoad );
-			{ auto const SELECT_CASE_var1( EnergyType );
-			if ( SELECT_CASE_var1 == iRT_Water ) {
+			if ( EnergyType == iRT_Water ) {
 				SysDomesticH20( AirLoopNum ) += std::abs( CompEnergy );
-			} else if ( SELECT_CASE_var1 == iRT_Electricity ) {
+			} else if ( EnergyType == iRT_Electricity ) {
 				SysHumidElec( AirLoopNum ) += CompEnergy;
-			}}
+			}
 
 			// Evap Cooler Types for the air system simulation
-		} else if ( ( SELECT_CASE_var == "EVAPORATIVECOOLER:DIRECT:CELDEKPAD" ) || ( SELECT_CASE_var == "EVAPORATIVECOOLER:INDIRECT:CELDEKPAD" ) || ( SELECT_CASE_var == "EVAPORATIVECOOLER:INDIRECT:WETCOIL" ) || ( SELECT_CASE_var == "EVAPORATIVECOOLER:DIRECT:RESEARCHSPECIAL" ) || ( SELECT_CASE_var == "EVAPORATIVECOOLER:INDIRECT:RESEARCHSPECIAL" ) ) {
+			break;
+		case EVAPORATIVECOOLER_DIRECT_CELDEKPAD:
+		case EVAPORATIVECOOLER_INDIRECT_CELDEKPAD:
+		case EVAPORATIVECOOLER_INDIRECT_WETCOIL:
+		case EVAPORATIVECOOLER_DIRECT_RESEARCHSPECIAL:
+		case EVAPORATIVECOOLER_INDIRECT_RESEARCHSPECIAL:
 			if ( CompLoadFlag ) SysEvapCLNG( AirLoopNum ) += std::abs( CompLoad );
-			{ auto const SELECT_CASE_var1( EnergyType );
-			if ( SELECT_CASE_var1 == iRT_Water ) {
+			if ( EnergyType == iRT_Water ) {
 				SysDomesticH20( AirLoopNum ) += std::abs( CompEnergy );
-			} else if ( SELECT_CASE_var1 == iRT_Electricity ) {
+			} else if ( EnergyType == iRT_Electricity ) {
 				SysEvapElec( AirLoopNum ) += CompEnergy;
-			}}
+			}
 
 			// Desiccant Dehumidifier Types for the air system simulation
-		} else if ( ( SELECT_CASE_var == "DEHUMIDIFIER:DESICCANT:NOFANS" ) || ( SELECT_CASE_var == "DEHUMIDIFIER:DESICCANT:SYSTEM" ) ) {
+			break;
+		case DEHUMIDIFIER_DESICCANT_NOFANS:
+		case DEHUMIDIFIER_DESICCANT_SYSTEM:
 			if ( CompLoadFlag ) DesDehumidCLNG( AirLoopNum ) += std::abs( CompLoad );
-			{ auto const SELECT_CASE_var1( EnergyType );
-			if ( SELECT_CASE_var1 == iRT_Electricity ) {
+			if ( EnergyType == iRT_Electricity ) {
 				DesDehumidElec( AirLoopNum ) += CompEnergy;
-			}}
+			}
 
 			// Heat Exchanger Types
-		} else if ( ( SELECT_CASE_var == "HEATEXCHANGER:AIRTOAIR:FLATPLATE" ) || ( SELECT_CASE_var == "HEATEXCHANGER:AIRTOAIR:SENSIBLEANDLATENT" ) || ( SELECT_CASE_var == "HEATEXCHANGER:DESICCANT:BALANCEDFLOW" ) ) {
+			break;
+		case HEATEXCHANGER_AIRTOAIR_FLATPLATE:
+		case HEATEXCHANGER_AIRTOAIR_SENSIBLEANDLATENT:
+		case HEATEXCHANGER_DESICCANT_BALANCEDFLOW:
 			if ( CompLoadFlag ) {
 				if ( CompLoad > 0.0 ) {
 					SysHeatExCLNG( AirLoopNum ) += std::abs( CompLoad );
@@ -3731,11 +3742,30 @@ namespace SystemReports {
 			}
 
 			// Air Terminal Types
-		} else if ( ( SELECT_CASE_var == "AIRTERMINAL:DUALDUCT:CONSTANTVOLUME:COOL" ) || ( SELECT_CASE_var == "AIRTERMINAL:DUALDUCT:CONSTANTVOLUME:HEAT" ) || ( SELECT_CASE_var == "AIRTERMINAL:DUALDUCT:VAV:COOL" ) || ( SELECT_CASE_var == "AIRTERMINAL:DUALDUCT:VAV:HEAT" ) || ( SELECT_CASE_var == "AIRTERMINAL:DUALDUCT:VAV:OUTDOORAIR:OUTDOORAIR" ) || ( SELECT_CASE_var == "AIRTERMINAL:DUALDUCT:VAV:OUTDOORAIR:RECIRCULATEDAIR" ) || ( SELECT_CASE_var == "AIRTERMINAL:SINGLEDUCT:CONSTANTVOLUME:FOURPIPEINDUCTION" ) || ( SELECT_CASE_var == "AIRTERMINAL:SINGLEDUCT:CONSTANTVOLUME:REHEAT" ) || ( SELECT_CASE_var == "AIRTERMINAL:SINGLEDUCT:PARALLELPIU:REHEAT" ) || ( SELECT_CASE_var == "AIRTERMINAL:SINGLEDUCT:SERIESPIU:REHEAT" ) || ( SELECT_CASE_var == "AIRTERMINAL:SINGLEDUCT:UNCONTROLLED" ) || ( SELECT_CASE_var == "AIRTERMINAL:SINGLEDUCT:VAV:HEATANDCOOL:NOREHEAT" ) || ( SELECT_CASE_var == "AIRTERMINAL:SINGLEDUCT:VAV:HEATANDCOOL:REHEAT" ) || ( SELECT_CASE_var == "AIRTERMINAL:SINGLEDUCT:VAV:NOREHEAT" ) || ( SELECT_CASE_var == "AIRTERMINAL:SINGLEDUCT:VAV:REHEAT" ) || ( SELECT_CASE_var == "AIRTERMINAL:SINGLEDUCT:VAV:REHEAT:VARIABLESPEEDFAN" ) || ( SELECT_CASE_var == "AIRTERMINAL:SINGLEDUCT:CONSTANTVOLUME:COOLEDBEAM" ) || ( SELECT_CASE_var == "ZONEHVAC:AIRDISTRIBUTIONUNIT" ) ) {
+			break;
+		case AIRTERMINAL_DUALDUCT_CONSTANTVOLUME_COOL:
+		case AIRTERMINAL_DUALDUCT_CONSTANTVOLUME_HEAT:
+		case AIRTERMINAL_DUALDUCT_VAV_COOL:
+		case AIRTERMINAL_DUALDUCT_VAV_HEAT:
+		case AIRTERMINAL_DUALDUCT_VAV_OUTDOORAIR_OUTDOORAIR:
+		case AIRTERMINAL_DUALDUCT_VAV_OUTDOORAIR_RECIRCULATEDAIR:
+		case AIRTERMINAL_SINGLEDUCT_CONSTANTVOLUME_FOURPIPEINDUCTION:
+		case AIRTERMINAL_SINGLEDUCT_CONSTANTVOLUME_REHEAT:
+		case AIRTERMINAL_SINGLEDUCT_PARALLELPIU_REHEAT:
+		case AIRTERMINAL_SINGLEDUCT_SERIESPIU_REHEAT:
+		case AIRTERMINAL_SINGLEDUCT_UNCONTROLLED:
+		case AIRTERMINAL_SINGLEDUCT_VAV_HEATANDCOOL_NOREHEAT:
+		case AIRTERMINAL_SINGLEDUCT_VAV_HEATANDCOOL_REHEAT:
+		case AIRTERMINAL_SINGLEDUCT_VAV_NOREHEAT:
+		case AIRTERMINAL_SINGLEDUCT_VAV_REHEAT:
+		case AIRTERMINAL_SINGLEDUCT_VAV_REHEAT_VARIABLESPEEDFAN:
+		case AIRTERMINAL_SINGLEDUCT_CONSTANTVOLUME_COOLEDBEAM:
+		case ZONEHVAC_AIRDISTRIBUTIONUNIT:
 			//All energy transfers accounted for in component models
 
 			// Duct Types
-		} else if ( SELECT_CASE_var == "DUCT" ) {
+			break;
+		case DUCT:
 			// duct losses should be accounted for here ???
 			// requires addition of a new variable to sum duct losses
 			// Example:
@@ -3746,7 +3776,9 @@ namespace SystemReports {
 			//      ENDIF
 
 			// Solar Collector Types
-		} else if ( ( SELECT_CASE_var == "SOLARCOLLECTOR:FLATPLATE:PHOTOVOLTAICTHERMAL" ) || ( SELECT_CASE_var == "SOLARCOLLECTOR:UNGLAZEDTRANSPIRED" ) ) {
+			break;
+		case SOLARCOLLECTOR_FLATPLATE_PHOTOVOLTAICTHERMAL:
+		case SOLARCOLLECTOR_UNGLAZEDTRANSPIRED:
 			if ( CompLoadFlag ) {
 				if ( CompLoad > 0.0 ) {
 					SysSolarCollectCooling( AirLoopNum ) += std::abs( CompLoad );
@@ -3755,7 +3787,8 @@ namespace SystemReports {
 				}
 			}
 
-		} else if ( SELECT_CASE_var == "AIRTERMINAL:SINGLEDUCT:USERDEFINED" ) {
+			break;
+		case AIRTERMINAL_SINGLEDUCT_USERDEFINED:
 			// User component model energy use should be accounted for here
 			if ( CompLoadFlag ) {
 				if ( CompLoad > 0.0 ) {
@@ -3764,37 +3797,36 @@ namespace SystemReports {
 					SysUserDefinedTerminalHeating( AirLoopNum ) += std::abs( CompLoad );
 				}
 			}
-			{ auto const SELECT_CASE_var1( EnergyType );
-			if ( ( SELECT_CASE_var1 == iRT_PlantLoopHeatingDemand ) || ( SELECT_CASE_var1 == iRT_DistrictHeating ) ) {
+			if ( ( EnergyType == iRT_PlantLoopHeatingDemand ) || ( EnergyType == iRT_DistrictHeating ) ) {
 				SysHCCompH2OHOT( AirLoopNum ) += CompEnergy;
-			} else if ( ( SELECT_CASE_var1 == iRT_PlantLoopCoolingDemand ) || ( SELECT_CASE_var1 == iRT_DistrictCooling ) ) {
+			} else if ( ( EnergyType == iRT_PlantLoopCoolingDemand ) || ( EnergyType == iRT_DistrictCooling ) ) {
 				SysCCCompH2OCOLD( AirLoopNum ) += CompEnergy;
-			} else if ( SELECT_CASE_var1 == iRT_Steam ) {
+			} else if ( EnergyType == iRT_Steam ) {
 				SysHCCompSteam( AirLoopNum ) += CompEnergy;
-			} else if ( SELECT_CASE_var1 == iRT_Electricity ) {
+			} else if ( EnergyType == iRT_Electricity ) {
 				if ( CompLoad > 0.0 ) {
 					SysCCCompElec( AirLoopNum ) += CompEnergy;
 				} else {
 					SysHCCompElec( AirLoopNum ) += CompEnergy;
 				}
-			} else if ( ( SELECT_CASE_var1 == iRT_Natural_Gas ) || ( SELECT_CASE_var1 == iRT_Propane ) ) {
+			} else if ( ( EnergyType == iRT_Natural_Gas ) || ( EnergyType == iRT_Propane ) ) {
 				SysHCCompGas( AirLoopNum ) += CompEnergy;
-			}}
+			}
 			// Recurring warning for unaccounted equipment types
 			// (should never happen, when this does happen enter appropriate equipment CASE statement above)
-		} else {
+			break;
+		default:
 			found = 0;
 			if ( NumCompTypes > 0 ) {
 				found = FindItemInList( CompType, CompTypeErrors.CompType(), NumCompTypes );
 			}
 			if ( found == 0 ) {
-				++NumCompTypes;
-				CompTypeErrors( NumCompTypes ).CompType = CompType;
+				CompTypeErrors( ++NumCompTypes ).CompType = CompType;
 				found = NumCompTypes;
 			}
 			ShowRecurringSevereErrorAtEnd( "CalcSystemEnergyUse: Component Type=" + CompType + " not logged as one of allowable Component Types.", CompTypeErrors( found ).CompErrIndex );
-
-		}}
+			break;
+		} // switch
 
 	}
 
@@ -4459,20 +4491,20 @@ namespace SystemReports {
 		std::string ChrOut5;
 
 		// Formats
-		static gio::Fmt const Format_701( "(A)" );
-		static gio::Fmt const Format_706( "('! <#AirLoopHVACs>,<Number of AirLoopHVACs>')" );
-		static gio::Fmt const Format_707( "(1X,A)" );
-		static gio::Fmt const Format_708( "('! <AirLoopHVAC>,<Air Loop Name>,<# Return Nodes>,<# Supply Nodes>,','<# Zones Cooled>,<# Zones Heated>,<Outdoor Air Used>')" );
-		static gio::Fmt const Format_709( "('! <AirLoop Return Connections>,<Connection Count>,<AirLoopHVAC Name>,','<Zn Eqp Return Node #>,<Zn Eqp Return Node Name>,','<AirLoop Return Node #>,<Air Loop Return Node Name>')" );
-		static gio::Fmt const Format_710( "('! <AirLoop Supply Connections>,<Connection Count>,<AirLoopHVAC Name>,','<Zn Eqp Supply Node #>,<Zn Eqp Supply Node Name>,','<AirLoop Supply Node #>,<Air Loop Supply Node Name>')" );
-		static gio::Fmt const Format_711( "('! <Cooled Zone Info>,<Cooled Zone Count>,<Cooled Zone Name>,','<Cooled Zone Inlet Node #>,<Cooled Zone Inlet Node Name>,<AirLoopHVAC Name>')" );
-		static gio::Fmt const Format_712( "('! <Heated Zone Info>,<Heated Zone Count>,<Heated Zone Name>,','<Heated Zone Inlet Node #>,<Heated Zone Inlet Node Name>,<AirLoopHVAC Name>')" );
-		static gio::Fmt const Format_714( "('! <Outdoor Air Connections>,<OA Inlet Node #>,<OA Return Air Inlet Node Name>,','<OA Outlet Node #>,<OA Mixed Air Outlet Node Name>,<AirLoopHVAC Name>'s)" );
-		static gio::Fmt const Format_713( "(A)" );
+		static gio::Fmt Format_701( "(A)" );
+		static gio::Fmt Format_706( "('! <#AirLoopHVACs>,<Number of AirLoopHVACs>')" );
+		static gio::Fmt Format_707( "(1X,A)" );
+		static gio::Fmt Format_708( "('! <AirLoopHVAC>,<Air Loop Name>,<# Return Nodes>,<# Supply Nodes>,','<# Zones Cooled>,<# Zones Heated>,<Outdoor Air Used>')" );
+		static gio::Fmt Format_709( "('! <AirLoop Return Connections>,<Connection Count>,<AirLoopHVAC Name>,','<Zn Eqp Return Node #>,<Zn Eqp Return Node Name>,','<AirLoop Return Node #>,<Air Loop Return Node Name>')" );
+		static gio::Fmt Format_710( "('! <AirLoop Supply Connections>,<Connection Count>,<AirLoopHVAC Name>,','<Zn Eqp Supply Node #>,<Zn Eqp Supply Node Name>,','<AirLoop Supply Node #>,<Air Loop Supply Node Name>')" );
+		static gio::Fmt Format_711( "('! <Cooled Zone Info>,<Cooled Zone Count>,<Cooled Zone Name>,','<Cooled Zone Inlet Node #>,<Cooled Zone Inlet Node Name>,<AirLoopHVAC Name>')" );
+		static gio::Fmt Format_712( "('! <Heated Zone Info>,<Heated Zone Count>,<Heated Zone Name>,','<Heated Zone Inlet Node #>,<Heated Zone Inlet Node Name>,<AirLoopHVAC Name>')" );
+		static gio::Fmt Format_714( "('! <Outdoor Air Connections>,<OA Inlet Node #>,<OA Return Air Inlet Node Name>,','<OA Outlet Node #>,<OA Mixed Air Outlet Node Name>,<AirLoopHVAC Name>'s)" );
+		static gio::Fmt Format_713( "(A)" );
 
 		gio::write( OutputFileBNDetails, Format_701 ) << "! ===============================================================";
 		gio::write( OutputFileBNDetails, Format_706 );
-		gio::write( ChrOut, "*" ) << NumPrimaryAirSys;
+		gio::write( ChrOut, fmtLD ) << NumPrimaryAirSys;
 		gio::write( OutputFileBNDetails, Format_707 ) << "#AirLoopHVACs," + stripped( ChrOut );
 		gio::write( OutputFileBNDetails, Format_708 );
 		gio::write( OutputFileBNDetails, Format_709 );
@@ -4484,10 +4516,10 @@ namespace SystemReports {
 		gio::write( OutputFileBNDetails, Format_713 ) << "! <AirLoopHVAC Connector Branches>,<Connector Node Count>,<Connector Type>," "<Connector Name>,<Inlet Branch>,<Outlet Branch>," "<Loop Name>,<Loop Type>";
 		gio::write( OutputFileBNDetails, Format_713 ) << "! <AirLoopHVAC Connector Nodes>,<Connector Node Count>,<Connector Type>," "<Connector Name>,<Inlet Node>,<Outlet Node>," "<Loop Name>,<Loop Type>";
 		for ( Count = 1; Count <= NumPrimaryAirSys; ++Count ) {
-			gio::write( ChrOut, "*" ) << AirToZoneNodeInfo( Count ).NumReturnNodes;
-			gio::write( ChrOut2, "*" ) << AirToZoneNodeInfo( Count ).NumSupplyNodes;
-			gio::write( ChrOut3, "*" ) << AirToZoneNodeInfo( Count ).NumZonesCooled;
-			gio::write( ChrOut4, "*" ) << AirToZoneNodeInfo( Count ).NumZonesHeated;
+			gio::write( ChrOut, fmtLD ) << AirToZoneNodeInfo( Count ).NumReturnNodes;
+			gio::write( ChrOut2, fmtLD ) << AirToZoneNodeInfo( Count ).NumSupplyNodes;
+			gio::write( ChrOut3, fmtLD ) << AirToZoneNodeInfo( Count ).NumZonesCooled;
+			gio::write( ChrOut4, fmtLD ) << AirToZoneNodeInfo( Count ).NumZonesHeated;
 			strip( ChrOut );
 			strip( ChrOut2 );
 			strip( ChrOut3 );
@@ -4499,14 +4531,14 @@ namespace SystemReports {
 			}
 			gio::write( OutputFileBNDetails, Format_701 ) << " AirLoopHVAC," + AirToZoneNodeInfo( Count ).AirLoopName + ',' + ChrOut + ',' + ChrOut2 + ',' + ChrOut3 + ',' + ChrOut4 + ',' + ChrOut5;
 			for ( Count1 = 1; Count1 <= AirToZoneNodeInfo( Count ).NumReturnNodes; ++Count1 ) {
-				gio::write( ChrOut, "*" ) << Count1;
+				gio::write( ChrOut, fmtLD ) << Count1;
 				if ( AirToZoneNodeInfo( Count ).ZoneEquipReturnNodeNum( Count1 ) > 0 ) {
-					gio::write( ChrOut2, "*" ) << AirToZoneNodeInfo( Count ).ZoneEquipReturnNodeNum( Count1 );
+					gio::write( ChrOut2, fmtLD ) << AirToZoneNodeInfo( Count ).ZoneEquipReturnNodeNum( Count1 );
 				} else {
 					ChrOut2 = errstring;
 				}
 				if ( AirToZoneNodeInfo( Count ).AirLoopReturnNodeNum( Count1 ) > 0 ) {
-					gio::write( ChrOut3, "*" ) << AirToZoneNodeInfo( Count ).AirLoopReturnNodeNum( Count1 );
+					gio::write( ChrOut3, fmtLD ) << AirToZoneNodeInfo( Count ).AirLoopReturnNodeNum( Count1 );
 				} else {
 					ChrOut3 = errstring;
 				}
@@ -4526,14 +4558,14 @@ namespace SystemReports {
 				}
 			}
 			for ( Count1 = 1; Count1 <= AirToZoneNodeInfo( Count ).NumSupplyNodes; ++Count1 ) {
-				gio::write( ChrOut, "*" ) << Count1;
+				gio::write( ChrOut, fmtLD ) << Count1;
 				if ( AirToZoneNodeInfo( Count ).ZoneEquipSupplyNodeNum( Count1 ) > 0 ) {
-					gio::write( ChrOut2, "*" ) << AirToZoneNodeInfo( Count ).ZoneEquipSupplyNodeNum( Count1 );
+					gio::write( ChrOut2, fmtLD ) << AirToZoneNodeInfo( Count ).ZoneEquipSupplyNodeNum( Count1 );
 				} else {
 					ChrOut2 = errstring;
 				}
 				if ( AirToZoneNodeInfo( Count ).AirLoopSupplyNodeNum( Count1 ) > 0 ) {
-					gio::write( ChrOut3, "*" ) << AirToZoneNodeInfo( Count ).AirLoopSupplyNodeNum( Count1 );
+					gio::write( ChrOut3, fmtLD ) << AirToZoneNodeInfo( Count ).AirLoopSupplyNodeNum( Count1 );
 				} else {
 					ChrOut3 = errstring;
 				}
@@ -4554,9 +4586,9 @@ namespace SystemReports {
 			}
 
 			for ( Count1 = 1; Count1 <= AirToZoneNodeInfo( Count ).NumZonesCooled; ++Count1 ) {
-				gio::write( ChrOut, "*" ) << Count1;
+				gio::write( ChrOut, fmtLD ) << Count1;
 				if ( AirToZoneNodeInfo( Count ).CoolZoneInletNodes( Count1 ) > 0 ) {
-					gio::write( ChrOut2, "*" ) << AirToZoneNodeInfo( Count ).CoolZoneInletNodes( Count1 );
+					gio::write( ChrOut2, fmtLD ) << AirToZoneNodeInfo( Count ).CoolZoneInletNodes( Count1 );
 				} else {
 					ChrOut2 = errstring;
 				}
@@ -4572,9 +4604,9 @@ namespace SystemReports {
 				}
 			}
 			for ( Count1 = 1; Count1 <= AirToZoneNodeInfo( Count ).NumZonesHeated; ++Count1 ) {
-				gio::write( ChrOut, "*" ) << Count1;
+				gio::write( ChrOut, fmtLD ) << Count1;
 				if ( AirToZoneNodeInfo( Count ).HeatZoneInletNodes( Count1 ) > 0 ) {
-					gio::write( ChrOut2, "*" ) << AirToZoneNodeInfo( Count ).HeatZoneInletNodes( Count1 );
+					gio::write( ChrOut2, fmtLD ) << AirToZoneNodeInfo( Count ).HeatZoneInletNodes( Count1 );
 				} else {
 					ChrOut2 = errstring;
 				}
@@ -4591,12 +4623,12 @@ namespace SystemReports {
 			}
 			if ( AirToOANodeInfo( Count ).OASysExists ) {
 				if ( AirToOANodeInfo( Count ).OASysInletNodeNum > 0 ) {
-					gio::write( ChrOut, "*" ) << AirToOANodeInfo( Count ).OASysInletNodeNum;
+					gio::write( ChrOut, fmtLD ) << AirToOANodeInfo( Count ).OASysInletNodeNum;
 				} else {
 					ChrOut = errstring;
 				}
 				if ( AirToOANodeInfo( Count ).OASysOutletNodeNum > 0 ) {
-					gio::write( ChrOut2, "*" ) << AirToOANodeInfo( Count ).OASysOutletNodeNum;
+					gio::write( ChrOut2, fmtLD ) << AirToOANodeInfo( Count ).OASysOutletNodeNum;
 				} else {
 					ChrOut2 = errstring;
 				}
@@ -4616,10 +4648,10 @@ namespace SystemReports {
 			}
 			//  Report HVAC Air Loop Splitter to BND file
 			if ( PrimaryAirSystem( Count ).Splitter.Exists ) {
-				gio::write( ChrOut, "*" ) << PrimaryAirSystem( Count ).Splitter.TotalOutletNodes;
+				gio::write( ChrOut, fmtLD ) << PrimaryAirSystem( Count ).Splitter.TotalOutletNodes;
 				gio::write( OutputFileBNDetails, Format_701 ) << "   AirLoopHVAC Connector,Splitter," + PrimaryAirSystem( Count ).Splitter.Name + ',' + PrimaryAirSystem( Count ).Name + ",Air," + stripped( ChrOut );
 				for ( Count1 = 1; Count1 <= PrimaryAirSystem( Count ).Splitter.TotalOutletNodes; ++Count1 ) {
-					gio::write( ChrOut, "*" ) << Count1;
+					gio::write( ChrOut, fmtLD ) << Count1;
 					if ( PrimaryAirSystem( Count ).Splitter.BranchNumIn <= 0 ) {
 						ChrOut2 = errstring;
 					}
@@ -4656,7 +4688,7 @@ namespace SystemReports {
 	//     Portions of the EnergyPlus software package have been developed and copyrighted
 	//     by other individuals, companies and institutions.  These portions have been
 	//     incorporated into the EnergyPlus software package under license.   For a complete
-	//     list of contributors, see "Notice" located in EnergyPlus.f90.
+	//     list of contributors, see "Notice" located in main.cc.
 
 	//     NOTICE: The U.S. Government is granted for itself and others acting on its
 	//     behalf a paid-up, nonexclusive, irrevocable, worldwide license in this data to

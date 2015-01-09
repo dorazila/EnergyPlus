@@ -1,6 +1,9 @@
 #ifndef SolarShading_hh_INCLUDED
 #define SolarShading_hh_INCLUDED
 
+// C++ Headers
+#include <fstream>
+
 // ObjexxFCL Headers
 #include <ObjexxFCL/FArray1A.hh>
 #include <ObjexxFCL/FArray1S.hh>
@@ -80,7 +83,7 @@ namespace SolarShading {
 	extern int ShadowingCalcFrequency; // Frequency for Shadowing Calculations
 	extern int ShadowingDaysLeft; // Days left in current shadowing period
 	extern bool debugging;
-	extern int OutputFileShading;
+	extern std::ofstream shd_stream; // Shading file stream
 	extern FArray1D_int HCNS; // Surface number of back surface HC figures
 	extern FArray1D_int HCNV; // Number of vertices of each HC figure
 	extern FArray2D< Int64 > HCA; // 'A' homogeneous coordinates of sides
@@ -155,7 +158,6 @@ namespace SolarShading {
 	extern FArray1D< SurfaceErrorTracking > TrackTooManyFigures;
 	extern FArray1D< SurfaceErrorTracking > TrackTooManyVertices;
 	extern FArray1D< SurfaceErrorTracking > TrackBaseSubSurround;
-	extern FArray1D< SurfaceErrorTracking > TempSurfErrorTracking;
 
 	// Functions
 
@@ -208,9 +210,9 @@ namespace SolarShading {
 	void
 	CLIP(
 		int const NVT,
-		FArray1S< Real64 > XVT,
-		FArray1S< Real64 > YVT,
-		FArray1S< Real64 > ZVT
+		FArray1< Real64 > & XVT,
+		FArray1< Real64 > & YVT,
+		FArray1< Real64 > & ZVT
 	);
 
 	void
@@ -218,9 +220,9 @@ namespace SolarShading {
 		int const NS, // Surface number whose vertex coordinates are being transformed
 		int const NGRS, // Base surface number for surface NS
 		int & NVT, // Number of vertices for surface NS
-		FArray1S< Real64 > XVT, // XYZ coordinates of vertices of NS in plane of NGRS
-		FArray1S< Real64 > YVT,
-		FArray1S< Real64 > ZVT
+		FArray1< Real64 > & XVT, // XYZ coordinates of vertices of NS in plane of NGRS
+		FArray1< Real64 > & YVT,
+		FArray1< Real64 > & ZVT
 	);
 
 	void
@@ -435,9 +437,9 @@ namespace SolarShading {
 
 	void
 	CalcInteriorWinTransDifSolInitialDistribution(
-		int & ZoneNum, // Zone index number
-		int & IntWinSurfNum, // Interior Window Surface number in Zone ZoneNum
-		Real64 & IntWinDifSolarTransW // Diffuse Solar transmitted through Interior Window IntWinSurfNum from adjacent zone [W]
+		int const ZoneNum, // Zone index number
+		int const IntWinSurfNum, // Interior Window Surface number in Zone ZoneNum
+		Real64 const IntWinDifSolarTransW // Diffuse Solar transmitted through Interior Window IntWinSurfNum from adjacent zone [W]
 	);
 
 	void
@@ -459,7 +461,7 @@ namespace SolarShading {
 	//     Portions of the EnergyPlus software package have been developed and copyrighted
 	//     by other individuals, companies and institutions.  These portions have been
 	//     incorporated into the EnergyPlus software package under license.   For a complete
-	//     list of contributors, see "Notice" located in EnergyPlus.f90.
+	//     list of contributors, see "Notice" located in main.cc.
 
 	//     NOTICE: The U.S. Government is granted for itself and others acting on its
 	//     behalf a paid-up, nonexclusive, irrevocable, worldwide license in this data to
