@@ -904,7 +904,7 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 			if ( Seconds < 0.0 ) Seconds = 0.0;
 			gio::write( Elapsed, ETimeFmt ) << Hours << Minutes << Seconds;
 
-			gio::write( "(1X,A)" ) << ( "EnergyPlus ASHRAE 1588-RP Window Construction Generated Successfully-- Elapsed Time=" + Elapsed );
+			gio::write( "(A)" ) << ( "EnergyPlus ASHRAE 1588-RP Window Construction Generated Successfully-- Elapsed Time=" + Elapsed );
 			exit (EXIT_SUCCESS);
 		}
 
