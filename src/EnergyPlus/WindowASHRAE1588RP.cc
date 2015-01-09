@@ -205,13 +205,13 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 			target_vt = ConstructNumerics( 3 );
 		}
 
+		// Fenestration Type
 		std::string fenestration_type;
 		bool fenestration_type_lock;
 
 		if ( lAlphaFieldBlanks( 2 ) )
 		{
 			fenestration_type_lock = false;
-			fenestration_type = "HORIZONTALSLIDER";
 		}
 		else
 		{
@@ -219,27 +219,67 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 			fenestration_type = ConstructAlphas( 2 );
 		}
 
+		if ( ! fenestration_type_lock )
+		{
+
+			fenestration_type = "HORIZONTALSLIDER";
+		}
+
+		// Number of Panes
 		int number_of_panes;
 		bool number_of_panes_lock;
+		//std::set<int> number_of_panes_options;
 
 		if ( lNumericFieldBlanks( 4 ) )
 		{
 			number_of_panes_lock = false;
-			number_of_panes = 2;
 		}
 		else
 		{
 			number_of_panes_lock = true;
 			number_of_panes = ConstructNumerics( 4 );
 		}
+		if ( ! number_of_panes_lock )
+		{
+			if (u_factor_set)
+			{
+				// For now use Arasteh method
+				if (target_u_factor < (1.4 + 1.7)/2.0) // use average for now since we can't interpolate
+				{
+					if (shgc_set)
+					{
+						if ( target_shgc < (0.35 + 0.45)/2 )
+						{
+							number_of_panes = 3;
+						}
+						else
+						{
+							number_of_panes = 2; // vacuum glazings
+						}
+					}
+				}
+				else if (target_u_factor < (3.4 + 4.5)/2.0)
+				{
+					number_of_panes = 2;
+				}
+				else
+				{
+					number_of_panes = 1;
+				}
+			}
+			else
+			{
+				number_of_panes = 2;
+			}
+		}
 
+		// Glazing Type
 		std::string glazing_type;
 		bool glazing_type_lock;
 
 		if ( lAlphaFieldBlanks( 3 ) )
 		{
 			glazing_type_lock = false;
-			glazing_type = "CLEAR";
 		}
 		else
 		{
@@ -247,13 +287,18 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 			glazing_type = ConstructAlphas( 3 );
 		}
 
+		if (! glazing_type_lock )
+		{
+			glazing_type = "CLEAR";
+		}
+
+		// Glazing Surface Treatment
 		std::string glazing_surface_treatment;
 		bool glazing_surface_treatment_lock;
 
 		if ( lAlphaFieldBlanks( 4 ) )
 		{
 			glazing_surface_treatment_lock = false;
-			glazing_surface_treatment = "NONE";
 		}
 		else
 		{
@@ -261,13 +306,18 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 			glazing_surface_treatment = ConstructAlphas( 4 );
 		}
 
+		if (! glazing_surface_treatment_lock )
+		{
+			glazing_surface_treatment = "NONE";
+		}
+
+		// Gas Type
 		std::string gas_type;
 		bool gas_type_lock;
 
 		if ( lAlphaFieldBlanks( 5 ) )
 		{
 			gas_type_lock = false;
-			gas_type = "AIR";
 		}
 		else
 		{
@@ -275,13 +325,18 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 			gas_type = ConstructAlphas( 5 );
 		}
 
+		if (! gas_type_lock )
+		{
+			gas_type = "AIR";
+		}
+
+		// Frame Material
 		std::string frame_material;
 		bool frame_material_lock;
 
 		if ( lAlphaFieldBlanks( 6 ) )
 		{
 			frame_material_lock = false;
-			frame_material = "VINYL";
 		}
 		else
 		{
@@ -289,13 +344,18 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 			frame_material = ConstructAlphas( 6 );
 		}
 
+		if (! frame_material_lock )
+		{
+			frame_material = "VINYL";
+		}
+
+		// Frame Width
 		Real64 frame_width;
 		bool frame_width_lock;
 
 		if ( lNumericFieldBlanks( 5 ) )
 		{
 			frame_width_lock = false;
-			frame_width = 0.0;
 		}
 		else
 		{
@@ -303,13 +363,18 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 			frame_width = ConstructNumerics( 5 );
 		}
 
+		if (! frame_width_lock )
+		{
+			frame_width = 0.0;
+		}
+
+		// Divider Width
 		Real64 divider_width;
 		bool divider_width_lock;
 
 		if ( lNumericFieldBlanks( 6 ) )
 		{
 			divider_width_lock = false;
-			divider_width = 0.0;
 		}
 		else
 		{
@@ -317,12 +382,26 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 			divider_width = ConstructNumerics( 6 );
 		}
 
-
+		if (! divider_width_lock )
+		{
+			divider_width = 0.0;
+		}
 
 		// internal defaults to be varied. TODO read these from ASHRAE 1588 RP Database file, or derive them as appropriate from other inputs.
+
+    // glass thickness
 		Real64 glass_thickness = 0.003;
+		bool glass_thickness_lock = false;
+
+		// glass solar transmissivity
 		Real64 glass_solar_transmissivity = 0.837;
+		bool glass_solar_transmissivity_lock = false;
+
+		// glass visible transmissivity
 		Real64 glass_visible_transmissivity = 0.898;
+		bool glass_visible_transmissivity_lock = false;
+
+
 		Real64 glass_solar_reflectivity = 0.075;
 		Real64 glass_visible_reflectivity = 0.081;
 		Real64 glass_IR_transmissivity = 0.0;
@@ -372,7 +451,15 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 		ASHRAE1588RP_Flag = true;
 		KickOffSimulation = false;
 
+		Real64 u_factor_match_tolerance = 0.05; // Precision of NFRC reporting
+		Real64 optical_match_tolerance = 0.01; // Precision of NFRC reporting
+
+		Real64 u_factor_diff;
+		Real64 shgc_diff;
+		Real64 vt_diff;
+
 		bool target_matched = false;
+
 		// This is where the iterative optimization loop will begin
 		while (! target_matched)
 		{
@@ -591,6 +678,7 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 
 
 			// Define material properties for glazings
+			// TODO do something different for first and last pane if there is surface treatment
 			for ( int MaterNum = 1; MaterNum <= number_of_new_materials; MaterNum += 2 )
 			{
 				Material( MaterNum ).Group = WindowGlass;
@@ -752,9 +840,22 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 
 			if (!u_factor_set && !shgc_set && !vt_set) target_matched = true;
 
-			target_matched = true;
+			u_factor_diff = std::abs(target_u_factor - u_factor);
+			shgc_diff = std::abs(target_shgc - shgc);
+			vt_diff = std::abs(target_vt - vt);
 
-		} // matching loop
+			if (u_factor_diff < u_factor_match_tolerance && shgc_diff < optical_match_tolerance && vt_diff < optical_match_tolerance )
+			{
+				target_matched = true;
+			}
+
+			// adjust properties
+			if (! target_matched)
+			{
+				target_matched = true; // TODO adjust properties
+			}
+
+		} // end matching loop
 
 		ASHRAE1588RP_Flag = false;
 		KickOffSimulation = true;
