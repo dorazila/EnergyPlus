@@ -393,7 +393,7 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 
 		// internal defaults to be varied. TODO read these from ASHRAE 1588 RP Database file, or derive them as appropriate from other inputs.
 
-    // glass thickness
+		// glass thickness
 		Real64 glass_thickness = 0.003;
 		bool glass_thickness_lock = false;
 
