@@ -3,7 +3,7 @@
 #include <string>
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray.functions.hh>
+#include <ObjexxFCL/Array.functions.hh>
 #include <ObjexxFCL/Fmath.hh>
 #include <ObjexxFCL/gio.hh>
 
@@ -75,9 +75,9 @@ namespace MoistureBalanceEMPDManager {
 
 	// Data
 	// MODULE VARIABLE and Function DECLARATIONs
-	FArray1D< Real64 > RhoVapEMPD; // Inside Surface Vapor Density Reporting variable
-	FArray1D< Real64 > WSurfEMPD; // Inside Surface Humidity Ratio Reporting variable
-	FArray1D< Real64 > RHEMPD; // Inside Surface Relative Humidity Reporting variable
+	Array1D< Real64 > RhoVapEMPD; // Inside Surface Vapor Density Reporting variable
+	Array1D< Real64 > WSurfEMPD; // Inside Surface Humidity Ratio Reporting variable
+	Array1D< Real64 > RHEMPD; // Inside Surface Relative Humidity Reporting variable
 
 	// SUBROUTINE SPECIFICATION FOR MODULE MoistureBalanceEMPDManager
 
@@ -127,11 +127,11 @@ namespace MoistureBalanceEMPDManager {
 
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 		int IOStat; // IO Status when calling get input subroutine
-		FArray1D_string MaterialNames( 3 ); // Number of Material Alpha names defined
+		Array1D_string MaterialNames( 3 ); // Number of Material Alpha names defined
 		int MaterNum; // Counter to keep track of the material number
 		int MaterialNumAlpha; // Number of material alpha names being passed
 		int MaterialNumProp; // Number of material properties being passed
-		FArray1D< Real64 > MaterialProps( 5 ); // Temporary array to transfer material properties
+		Array1D< Real64 > MaterialProps( 5 ); // Temporary array to transfer material properties
 		static bool ErrorsFound( false ); // If errors detected in input
 
 		int EMPDMat; // EMPD Moisture Material additional properties for each base material
@@ -140,7 +140,7 @@ namespace MoistureBalanceEMPDManager {
 		int SurfNum; // Surface number
 		int MatNum; // Material number at interior layer
 		int ConstrNum; // Construction number
-		FArray1D_bool EMPDzone; // EMPD property check for each zone
+		Array1D_bool EMPDzone; // EMPD property check for each zone
 		static int ErrCount( 0 );
 
 		// Load the additional EMPD Material properties
@@ -209,7 +209,7 @@ namespace MoistureBalanceEMPDManager {
 					ShowContinueError( "...use Output:Diagnostics,DisplayExtraWarnings; to show more details on individual surfaces." );
 				}
 				if ( DisplayExtraWarnings ) {
-					ShowMessage( "GetMoistureBalanceEMPDInput: EMPD properties are not assigned to the " "inside layer in Surface=" + Surface( SurfNum ).Name );
+					ShowMessage( "GetMoistureBalanceEMPDInput: EMPD properties are not assigned to the inside layer in Surface=" + Surface( SurfNum ).Name );
 					ShowContinueError( "with Construction=" + Construct( ConstrNum ).Name );
 				}
 			}
@@ -217,14 +217,14 @@ namespace MoistureBalanceEMPDManager {
 				continue;
 			} else { // Multiple layer construction
 				if ( Material( Construct( ConstrNum ).LayerPoint( 1 ) ).EMPDMaterialProps && Surface( SurfNum ).ExtBoundCond <= 0 ) { // The external layer is not exposed to zone
-					ShowSevereError( "GetMoistureBalanceEMPDInput: EMPD properties are assigned to the " "outside layer in Construction=" + Construct( ConstrNum ).Name );
+					ShowSevereError( "GetMoistureBalanceEMPDInput: EMPD properties are assigned to the outside layer in Construction=" + Construct( ConstrNum ).Name );
 					ShowContinueError( "..Outside layer material with EMPD properties = " + Material( Construct( ConstrNum ).LayerPoint( 1 ) ).Name );
 					ShowContinueError( "..A material with EMPD properties must be assigned to the inside layer of a construction." );
 					ErrorsFound = true;
 				}
 				for ( Layer = 2; Layer <= Construct( ConstrNum ).TotLayers - 1; ++Layer ) {
 					if ( Material( Construct( ConstrNum ).LayerPoint( Layer ) ).EMPDMaterialProps ) {
-						ShowSevereError( "GetMoistureBalanceEMPDInput: EMPD properties are assigned to a " "middle layer in Construction=" + Construct( ConstrNum ).Name );
+						ShowSevereError( "GetMoistureBalanceEMPDInput: EMPD properties are assigned to a middle layer in Construction=" + Construct( ConstrNum ).Name );
 						ShowContinueError( "..Middle layer material with EMPD properties = " + Material( Construct( ConstrNum ).LayerPoint( Layer ) ).Name );
 						ShowContinueError( "..A material with EMPD properties must be assigned to the inside layer of a construction." );
 						ErrorsFound = true;
@@ -449,7 +449,7 @@ namespace MoistureBalanceEMPDManager {
 			ZoneNum = Surface( SurfNum ).Zone;
 			RALPHA = ZoneAirHumRat( ZoneNum ) * OutBaroPress / ( 461.52 * ( TempZone + KelvinConv ) * ( ZoneAirHumRat( ZoneNum ) + 0.62198 ) );
 			BB = HM / ( RHOBULK * material.EMPDVALUE * AT );
-			CC = BB * RALPHA + BR / AT * ( TempSurfIn - TempSurfInOld ) / ( TimeStepZone * SecInHour );
+			CC = BB * RALPHA + BR / AT * ( TempSurfIn - TempSurfInOld ) / TimeStepZoneSec;
 			SolverMoistureBalanceEMPD( MoistEMPDNew( SurfNum ), MoistEMPDOld( SurfNum ), 1.0, BB, CC );
 
 			Flag = 0;
@@ -504,7 +504,6 @@ namespace MoistureBalanceEMPDManager {
 		// Finite difference method
 
 		// Using/Aliasing
-		using DataGlobals::TimeStepZone;
 
 		// Locals
 		// SUBROUTINE ARGUMENT DEFINITIONS:
@@ -521,7 +520,7 @@ namespace MoistureBalanceEMPDManager {
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 		// na
 
-		VARNEW = ( VAROLD + TimeStepZone * SecInHour * C / A ) / ( 1.0 + TimeStepZone * SecInHour * B / A );
+		VARNEW = ( VAROLD + TimeStepZoneSec * C / A ) / ( 1.0 + TimeStepZoneSec * B / A );
 
 	}
 
@@ -633,7 +632,7 @@ namespace MoistureBalanceEMPDManager {
 
 		if ( ! DoReport ) return;
 		//   Write Descriptions
-		gio::write( OutputFileInits, fmtA ) << "! <Construction EMPD>, Construction Name, Inside Layer Material Name, " "Penetration Depth {m}, a, b, c, d";
+		gio::write( OutputFileInits, fmtA ) << "! <Construction EMPD>, Construction Name, Inside Layer Material Name, Penetration Depth {m}, a, b, c, d";
 
 		for ( ConstrNum = 1; ConstrNum <= TotConstructs; ++ConstrNum ) {
 			if ( Construct( ConstrNum ).TypeIsWindow ) continue;

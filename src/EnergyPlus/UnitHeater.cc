@@ -2,7 +2,7 @@
 #include <cmath>
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray.functions.hh>
+#include <ObjexxFCL/Array.functions.hh>
 #include <ObjexxFCL/Fmath.hh>
 
 // EnergyPlus Headers
@@ -109,14 +109,14 @@ namespace UnitHeater {
 	bool HCoilOn; // TRUE if the heating coil (gas or electric especially) should be running
 	int NumOfUnitHeats; // Number of unit heaters in the input file
 	Real64 QZnReq; // heating or cooling needed by zone [watts]
-	FArray1D_bool MySizeFlag;
-	FArray1D_bool CheckEquipName;
+	Array1D_bool MySizeFlag;
+	Array1D_bool CheckEquipName;
 
 	// SUBROUTINE SPECIFICATIONS FOR MODULE UnitHeater
 
 	// Object Data
-	FArray1D< UnitHeaterData > UnitHeat;
-	FArray1D< UnitHeatNumericFieldData > UnitHeatNumericFields;
+	Array1D< UnitHeaterData > UnitHeat;
+	Array1D< UnitHeatNumericFieldData > UnitHeatNumericFields;
 
 	// Functions
 
@@ -249,14 +249,12 @@ namespace UnitHeater {
 		using WaterCoils::GetCoilWaterInletNode;
 		using SteamCoils::GetCoilSteamInletNode;
 		using SteamCoils::GetSteamCoilIndex;
-		using DataZoneEquipment::UnitHeater_Num;
 		using DataZoneEquipment::ZoneEquipConfig;
 		using DataSizing::AutoSize;
 		using General::TrimSigDigits;
 		using DataHVACGlobals::FanType_SimpleConstVolume;
 		using DataHVACGlobals::FanType_SimpleVAV;
 		using DataHVACGlobals::FanType_SimpleOnOff;
-		using DataHVACGlobals::ZoneComp;
 		using DataGlobals::NumOfZones;
 		using DataPlant::TypeOf_CoilWaterSimpleHeating;
 		using DataPlant::TypeOf_CoilSteamAirHeating;
@@ -289,12 +287,12 @@ namespace UnitHeater {
 		static std::string const RoutineName( "GetUnitHeaterInput: " ); // include trailing blank space
 		Real64 FanVolFlow; // Fan volumetric flow rate
 		std::string CurrentModuleObject;
-		FArray1D_string Alphas; // Alpha items for object
-		FArray1D< Real64 > Numbers; // Numeric items for object
-		FArray1D_string cAlphaFields; // Alpha field names
-		FArray1D_string cNumericFields; // Numeric field names
-		FArray1D_bool lAlphaBlanks; // Logical array, alpha field input BLANK = .TRUE.
-		FArray1D_bool lNumericBlanks; // Logical array, numeric field input BLANK = .TRUE.
+		Array1D_string Alphas; // Alpha items for object
+		Array1D< Real64 > Numbers; // Numeric items for object
+		Array1D_string cAlphaFields; // Alpha field names
+		Array1D_string cNumericFields; // Numeric field names
+		Array1D_bool lAlphaBlanks; // Logical array, alpha field input BLANK = .TRUE.
+		Array1D_bool lNumericBlanks; // Logical array, numeric field input BLANK = .TRUE.
 		int CtrlZone; // index to loop counter
 		int NodeNum; // index to loop counter
 		bool ZoneNodeNotFound; // used in error checking
@@ -388,8 +386,8 @@ namespace UnitHeater {
 
 					if ( FanVolFlow != AutoSize && UnitHeat( UnitHeatNum ).MaxAirVolFlow != AutoSize && FanVolFlow < UnitHeat( UnitHeatNum ).MaxAirVolFlow ) {
 						ShowSevereError( "Specified in " + CurrentModuleObject + " = " + UnitHeat( UnitHeatNum ).Name );
-						ShowContinueError( "...air flow rate (" + TrimSigDigits( FanVolFlow, 7 ) + ") in" " fan object " + UnitHeat( UnitHeatNum ).FanName + " is less than the unit heater maximum supply air" " flow rate (" + TrimSigDigits( UnitHeat( UnitHeatNum ).MaxAirVolFlow, 7 ) + ")." );
-						ShowContinueError( "...the fan flow rate must be greater than or equal to the unit heater maximum" " supply air flow rate." );
+						ShowContinueError( "...air flow rate (" + TrimSigDigits( FanVolFlow, 7 ) + ") in fan object " + UnitHeat( UnitHeatNum ).FanName + " is less than the unit heater maximum supply air flow rate (" + TrimSigDigits( UnitHeat( UnitHeatNum ).MaxAirVolFlow, 7 ) + ")." );
+						ShowContinueError( "...the fan flow rate must be greater than or equal to the unit heater maximum supply air flow rate." );
 						ErrorsFound = true;
 					} else if ( FanVolFlow == AutoSize && UnitHeat( UnitHeatNum ).MaxAirVolFlow != AutoSize ) {
 						ShowWarningError( "Specified in " + CurrentModuleObject + " = " + UnitHeat( UnitHeatNum ).Name );
@@ -521,7 +519,7 @@ namespace UnitHeater {
 				}
 			}
 			if ( ZoneNodeNotFound ) {
-				ShowSevereError( CurrentModuleObject + " = \"" + UnitHeat( UnitHeatNum ).Name + "\"." " Unit heater air inlet node name must be the same as a zone exhaust node name." );
+				ShowSevereError( CurrentModuleObject + " = \"" + UnitHeat( UnitHeatNum ).Name + "\". Unit heater air inlet node name must be the same as a zone exhaust node name." );
 				ShowContinueError( "..Zone exhaust node name is specified in ZoneHVAC:EquipmentConnections object." );
 				ShowContinueError( "..Unit heater air inlet node name = " + NodeID( UnitHeat( UnitHeatNum ).AirInNode ) );
 				ErrorsFound = true;
@@ -539,7 +537,7 @@ namespace UnitHeater {
 				}
 			}
 			if ( ZoneNodeNotFound ) {
-				ShowSevereError( CurrentModuleObject + " = \"" + UnitHeat( UnitHeatNum ).Name + "\"." " Unit heater air outlet node name must be the same as a zone inlet node name." );
+				ShowSevereError( CurrentModuleObject + " = \"" + UnitHeat( UnitHeatNum ).Name + "\". Unit heater air outlet node name must be the same as a zone inlet node name." );
 				ShowContinueError( "..Zone inlet node name is specified in ZoneHVAC:EquipmentConnections object." );
 				ShowContinueError( "..Unit heater air outlet node name = " + NodeID( UnitHeat( UnitHeatNum ).AirOutNode ) );
 				ErrorsFound = true;
@@ -581,7 +579,7 @@ namespace UnitHeater {
 	InitUnitHeater(
 		int const UnitHeatNum, // index for the current unit heater
 		int const ZoneNum, // number of zone being served
-		bool const FirstHVACIteration // TRUE if 1st HVAC simulation of system timestep
+		bool const EP_UNUSED( FirstHVACIteration ) // TRUE if 1st HVAC simulation of system timestep
 	)
 	{
 
@@ -602,7 +600,6 @@ namespace UnitHeater {
 		// na
 
 		// Using/Aliasing
-		using DataEnvironment::StdBaroPress;
 		using DataEnvironment::StdRhoAir;
 		using DataZoneEquipment::ZoneEquipInputsFilled;
 		using DataZoneEquipment::CheckZoneEquipmentList;
@@ -636,9 +633,9 @@ namespace UnitHeater {
 
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 		static bool MyOneTimeFlag( true );
-		static FArray1D_bool MyEnvrnFlag;
-		static FArray1D_bool MyPlantScanFlag;
-		static FArray1D_bool MyZoneEqFlag; // used to set up zone equipment availability managers
+		static Array1D_bool MyEnvrnFlag;
+		static Array1D_bool MyPlantScanFlag;
+		static Array1D_bool MyZoneEqFlag; // used to set up zone equipment availability managers
 		static bool ZoneEquipmentListChecked( false ); // True after the Zone Equipment List has been checked for items
 		int Loop;
 		int HotConNode; // hot water control node number in unit heater loop
@@ -839,7 +836,6 @@ namespace UnitHeater {
 		using General::RoundSigDigits;
 		using DataHVACGlobals::HeatingAirflowSizing;
 		using DataHVACGlobals::HeatingCapacitySizing;
-		using DataHVACGlobals::HeatingWaterflowSizing;
 		using DataHeatBalance::Zone;
 
 		// Locals
@@ -915,18 +911,18 @@ namespace UnitHeater {
 				SAFMethod = ZoneHVACSizing( zoneHVACIndex ).HeatingSAFMethod;
 				ZoneEqSizing( CurZoneEqNum ).SizingMethod( SizingMethod ) = SAFMethod;
 				if ( SAFMethod == None || SAFMethod == SupplyAirFlowRate || SAFMethod == FlowPerFloorArea || SAFMethod == FractionOfAutosizedHeatingAirflow ) {
-					if ( SAFMethod == SupplyAirFlowRate ){
+					if ( SAFMethod == SupplyAirFlowRate ) {
 						if ( ZoneHVACSizing( zoneHVACIndex ).MaxHeatAirVolFlow > 0.0 ) {
 							ZoneEqSizing( CurZoneEqNum ).AirVolFlow = ZoneHVACSizing( zoneHVACIndex ).MaxHeatAirVolFlow;
 							ZoneEqSizing( CurZoneEqNum ).SystemAirFlow = true;
 						}
 						TempSize = ZoneHVACSizing( zoneHVACIndex ).MaxHeatAirVolFlow;
-					} else if ( SAFMethod == FlowPerFloorArea ){
+					} else if ( SAFMethod == FlowPerFloorArea ) {
 						ZoneEqSizing( CurZoneEqNum ).SystemAirFlow = true;
 						ZoneEqSizing( CurZoneEqNum ).AirVolFlow = ZoneHVACSizing( zoneHVACIndex ).MaxHeatAirVolFlow * Zone( DataZoneNumber ).FloorArea;
 						TempSize = ZoneEqSizing( CurZoneEqNum ).AirVolFlow;
 						DataScalableSizingON = true;
-					} else if ( SAFMethod == FractionOfAutosizedHeatingAirflow ){
+					} else if ( SAFMethod == FractionOfAutosizedHeatingAirflow ) {
 						DataFracOfAutosizedCoolingAirflow = ZoneHVACSizing( zoneHVACIndex ).MaxHeatAirVolFlow;
 						TempSize = AutoSize;
 						DataScalableSizingON = true;
@@ -994,7 +990,7 @@ namespace UnitHeater {
 								CapSizingMethod = ZoneHVACSizing( zoneHVACIndex ).HeatingCapMethod;
 								ZoneEqSizing( CurZoneEqNum ).SizingMethod( SizingMethod ) = CapSizingMethod;
 								if ( CapSizingMethod == HeatingDesignCapacity || CapSizingMethod == CapacityPerFloorArea || CapSizingMethod == FractionOfAutosizedHeatingCapacity ) {
-									if ( CapSizingMethod == HeatingDesignCapacity ){
+									if ( CapSizingMethod == HeatingDesignCapacity ) {
 										if ( ZoneHVACSizing( zoneHVACIndex ).ScaledHeatingCapacity == AutoSize ) {
 											ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad = FinalZoneSizing( CurZoneEqNum ).DesHeatLoad;
 										} else {
@@ -1002,11 +998,11 @@ namespace UnitHeater {
 										}
 										ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 										TempSize = AutoSize;
-									} else if ( CapSizingMethod == CapacityPerFloorArea ){
+									} else if ( CapSizingMethod == CapacityPerFloorArea ) {
 										ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 										ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad = ZoneHVACSizing( zoneHVACIndex ).ScaledHeatingCapacity * Zone( DataZoneNumber ).FloorArea;
 										DataScalableCapSizingON = true;
-									} else if ( CapSizingMethod == FractionOfAutosizedHeatingCapacity ){
+									} else if ( CapSizingMethod == FractionOfAutosizedHeatingCapacity ) {
 										DataFracOfAutosizedHeatingCapacity = ZoneHVACSizing( zoneHVACIndex ).ScaledHeatingCapacity;
 										DataScalableCapSizingON = true;
 										TempSize = AutoSize;
@@ -1035,7 +1031,7 @@ namespace UnitHeater {
 
 						} else {
 							ShowSevereError( "Autosizing of water flow requires a heating loop Sizing:Plant object" );
-							ShowContinueError( "Occurs in " "ZoneHVAC:UnitHeater" " Object=" + UnitHeat( UnitHeatNum ).Name );
+							ShowContinueError( "Occurs in ZoneHVAC:UnitHeater Object=" + UnitHeat( UnitHeatNum ).Name );
 							ErrorsFound = true;
 						}
 					}
@@ -1090,7 +1086,7 @@ namespace UnitHeater {
 								CapSizingMethod = ZoneHVACSizing( zoneHVACIndex ).HeatingCapMethod;
 								ZoneEqSizing( CurZoneEqNum ).SizingMethod( SizingMethod ) = CapSizingMethod;
 								if ( CapSizingMethod == HeatingDesignCapacity || CapSizingMethod == CapacityPerFloorArea || CapSizingMethod == FractionOfAutosizedHeatingCapacity ) {
-									if ( CapSizingMethod == HeatingDesignCapacity ){
+									if ( CapSizingMethod == HeatingDesignCapacity ) {
 										if ( ZoneHVACSizing( zoneHVACIndex ).ScaledHeatingCapacity == AutoSize ) {
 											ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad = FinalZoneSizing( CurZoneEqNum ).DesHeatLoad;
 										} else {
@@ -1098,11 +1094,11 @@ namespace UnitHeater {
 										}
 										ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 										TempSize = AutoSize;
-									} else if ( CapSizingMethod == CapacityPerFloorArea ){
+									} else if ( CapSizingMethod == CapacityPerFloorArea ) {
 										ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 										ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad = ZoneHVACSizing( zoneHVACIndex ).ScaledHeatingCapacity * Zone( DataZoneNumber ).FloorArea;
 										DataScalableCapSizingON = true;
-									} else if ( CapSizingMethod == FractionOfAutosizedHeatingCapacity ){
+									} else if ( CapSizingMethod == FractionOfAutosizedHeatingCapacity ) {
 										DataFracOfAutosizedHeatingCapacity = ZoneHVACSizing( zoneHVACIndex ).ScaledHeatingCapacity;
 										TempSize = AutoSize;
 										DataScalableCapSizingON = true;
@@ -1127,7 +1123,7 @@ namespace UnitHeater {
 							}
 						} else {
 							ShowSevereError( "Autosizing of Steam flow requires a heating loop Sizing:Plant object" );
-							ShowContinueError( "Occurs in " "ZoneHVAC:UnitHeater" " Object=" + UnitHeat( UnitHeatNum ).Name );
+							ShowContinueError( "Occurs in ZoneHVAC:UnitHeater Object=" + UnitHeat( UnitHeatNum ).Name );
 							ErrorsFound = true;
 						}
 					}
@@ -1242,7 +1238,7 @@ namespace UnitHeater {
 		Real64 SpecHumOut; // Specific humidity ratio of outlet air (kg moisture / kg moist air)
 		Real64 SpecHumIn; // Specific humidity ratio of inlet air (kg moisture / kg moist air)
 		Real64 mdot; // local temporary for fluid mass flow rate
-		FArray1D< Real64 > Par( 3 ); // parameters passed to RegulaFalsi function
+		Array1D< Real64 > Par( 3 ); // parameters passed to RegulaFalsi function
 		int OpMode;
 		Real64 PartLoadFrac;
 		Real64 NoOutput;
@@ -1647,7 +1643,7 @@ namespace UnitHeater {
 	Real64
 	CalcUnitHeaterResidual(
 		Real64 const PartLoadRatio, // heating coil part load ratio
-		Optional< FArray1S< Real64 > const > Par // Function parameters
+		Array1< Real64 > const & Par // Function parameters
 	)
 	{
 
@@ -1698,13 +1694,9 @@ namespace UnitHeater {
 		Real64 QUnitOut; // heating provided by unit heater [watts]
 
 		// Convert parameters to usable variables
-		UnitHeaterNum = int( Par()( 1 ) ); //Autodesk:OPTIONAL Par used without PRESENT check
-		if ( Par()( 2 ) == 1.0 ) {
-			FirstHVACIteration = true;
-		} else {
-			FirstHVACIteration = false;
-		}
-		OpMode = int( Par()( 3 ) );
+		UnitHeaterNum = int( Par( 1 ) ); //Autodesk:OPTIONAL Par used without PRESENT check
+		FirstHVACIteration = ( Par( 2 ) == 1.0 );
+		OpMode = int( Par( 3 ) );
 
 		CalcUnitHeaterComponents( UnitHeaterNum, FirstHVACIteration, QUnitOut, OpMode, PartLoadRatio );
 

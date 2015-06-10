@@ -4,13 +4,14 @@
 
 // ObjexxFCL Headers
 #include <ObjexxFCL/Backspace.hh>
-#include <ObjexxFCL/FArray.functions.hh>
+#include <ObjexxFCL/Array.functions.hh>
 #include <ObjexxFCL/Fmath.hh>
 #include <ObjexxFCL/gio.hh>
 #include <ObjexxFCL/stream.functions.hh>
 #include <ObjexxFCL/string.functions.hh>
 
 // EnergyPlus Headers
+#include <CommandLineInterface.hh>
 #include <InputProcessor.hh>
 #include <DataIPShortCuts.hh>
 #include <DataOutputs.hh>
@@ -66,6 +67,7 @@ namespace InputProcessor {
 	using DataSystemVariables::SortedIDD;
 	using DataSystemVariables::iASCII_CR;
 	using DataSystemVariables::iUnicode_end;
+	using DataGlobals::DisplayInputInAudit;
 
 	// Use statements for access to subroutines in other modules
 
@@ -135,13 +137,13 @@ namespace InputProcessor {
 
 	//Character Variables for Module
 	std::string InputLine; // Each line can be up to MaxInputLineLength characters long
-	FArray1D_string ListOfSections;
-	FArray1D_string ListOfObjects;
-	FArray1D_int iListOfObjects;
-	FArray1D_int ObjectGotCount;
-	FArray1D_int ObjectStartRecord;
+	Array1D_string ListOfSections;
+	Array1D_string ListOfObjects;
+	Array1D_int iListOfObjects;
+	Array1D_int ObjectGotCount;
+	Array1D_int ObjectStartRecord;
 	std::string CurrentFieldName; // Current Field Name (IDD)
-	FArray1D_string ObsoleteObjectsRepNames; // Array of Replacement names for Obsolete objects
+	Array1D_string ObsoleteObjectsRepNames; // Array of Replacement names for Obsolete objects
 	std::string ReplacementName;
 
 	//Logical Variables for Module
@@ -157,17 +159,17 @@ namespace InputProcessor {
 	bool UniqueObject( false ); // Set to true when ReadInputLine has a unique object
 	bool ExtensibleObject( false ); // Set to true when ReadInputLine has an extensible object
 	int ExtensibleNumFields( 0 ); // set to number when ReadInputLine has an extensible object
-	FArray1D_bool IDFRecordsGotten; // Denotes that this record has been "gotten" from the IDF
+	Array1D_bool IDFRecordsGotten; // Denotes that this record has been "gotten" from the IDF
 
 	//Derived Types Variables
 
 	// Object Data
-	FArray1D< ObjectsDefinition > ObjectDef; // Contains all the Valid Objects on the IDD
-	FArray1D< SectionsDefinition > SectionDef; // Contains all the Valid Sections on the IDD
-	FArray1D< FileSectionsDefinition > SectionsOnFile; // lists the sections on file (IDF)
+	Array1D< ObjectsDefinition > ObjectDef; // Contains all the Valid Objects on the IDD
+	Array1D< SectionsDefinition > SectionDef; // Contains all the Valid Sections on the IDD
+	Array1D< FileSectionsDefinition > SectionsOnFile; // lists the sections on file (IDF)
 	LineDefinition LineItem; // Description of current record
-	FArray1D< LineDefinition > IDFRecords; // All the objects read from the IDF
-	FArray1D< SecretObjects > RepObjects; // Secret Objects that could replace old ones
+	Array1D< LineDefinition > IDFRecords; // All the objects read from the IDF
+	Array1D< SecretObjects > RepObjects; // Secret Objects that could replace old ones
 
 	// MODULE SUBROUTINES:
 	//*************************************************************************
@@ -227,57 +229,48 @@ namespace InputProcessor {
 		int CountErr;
 		int Num1;
 		int Which;
-		int endcol;
 		int write_stat;
 		int read_stat;
 
 		InitSecretObjects();
 
 		EchoInputFile = GetNewUnitNumber();
-		{ IOFlags flags; flags.ACTION( "write" ); gio::open( EchoInputFile, "eplusout.audit", flags ); write_stat = flags.ios(); }
+		{ IOFlags flags; flags.ACTION( "write" ); gio::open( EchoInputFile, outputAuditFileName, flags ); write_stat = flags.ios(); }
 		if ( write_stat != 0 ) {
-			DisplayString( "Could not open (write) eplusout.audit." );
-			ShowFatalError( "ProcessInput: Could not open file \"eplusout.audit\" for output (write)." );
+			DisplayString( "Could not open (write) "+ outputAuditFileName + " ." );
+			ShowFatalError( "ProcessInput: Could not open file " + outputAuditFileName + " for output (write)." );
 		}
 		echo_stream = gio::out_stream( EchoInputFile );
 
-		{ IOFlags flags; gio::inquire( "eplusout.iperr", flags ); FileExists = flags.exists(); }
+		{ IOFlags flags; gio::inquire( outputIperrFileName, flags ); FileExists = flags.exists(); }
 		if ( FileExists ) {
 			CacheIPErrorFile = GetNewUnitNumber();
-			{ IOFlags flags; flags.ACTION( "read" ); gio::open( CacheIPErrorFile, "eplusout.iperr", flags ); read_stat = flags.ios(); }
+			{ IOFlags flags; flags.ACTION( "read" ); gio::open( CacheIPErrorFile, outputIperrFileName, flags ); read_stat = flags.ios(); }
 			if ( read_stat != 0 ) {
-				ShowFatalError( "EnergyPlus: Could not open file \"eplusout.iperr\" for input (read)." );
+				ShowFatalError( "EnergyPlus: Could not open file "+outputIperrFileName+" for input (read)." );
 			}
 			{ IOFlags flags; flags.DISPOSE( "delete" ); gio::close( CacheIPErrorFile, flags ); }
 		}
 		CacheIPErrorFile = GetNewUnitNumber();
-		{ IOFlags flags; flags.ACTION( "write" ); gio::open( CacheIPErrorFile, "eplusout.iperr", flags ); write_stat = flags.ios(); }
+		{ IOFlags flags; flags.ACTION( "write" ); gio::open( CacheIPErrorFile, outputIperrFileName, flags ); write_stat = flags.ios(); }
 		if ( write_stat != 0 ) {
-			DisplayString( "Could not open (write) eplusout.iperr." );
-			ShowFatalError( "ProcessInput: Could not open file \"eplusout.audit\" for output (write)." );
+			DisplayString( "Could not open (write) "+outputIperrFileName );
+			ShowFatalError( "ProcessInput: Could not open file " + outputIperrFileName + " for output (write)." );
 		}
 
-		// FullName from StringGlobals is used to build file name with Path
-		if ( len( ProgramPath ) == 0 ) {
-			FullName = "Energy+.idd";
-		} else {
-			FullName = ProgramPath + "Energy+.idd";
-		}
-		std::ifstream idd_stream( FullName, std::ios_base::in | std::ios_base::binary );
+		std::ifstream idd_stream( inputIddFileName, std::ios_base::in | std::ios_base::binary );
 		if ( ! idd_stream ) {
 			if ( idd_stream.is_open() ) idd_stream.close();
-			if ( ! gio::file_exists( FullName ) ) { // No such file
-				DisplayString( "Missing " + FullName );
-				ShowFatalError( "ProcessInput: Energy+.idd missing. Program terminates. Fullname=" + FullName );
+			if ( ! gio::file_exists( inputIddFileName ) ) { // No such file
+				ShowFatalError( "ProcessInput: Energy+.idd missing. Program terminates. Fullname=" + inputIddFileName );
 			} else {
-				DisplayString( "Could not open (read) Energy+.idd." );
-				ShowFatalError( "ProcessInput: Could not open file \"Energy+.idd\" for input (read)." );
+				ShowFatalError( "ProcessInput: Could not open file \"" + inputIddFileName + "\" for input (read)." );
 			}
 		}
 		NumLines = 0;
 
 		DoingInputProcessing = true;
-		gio::write( EchoInputFile, fmtLD ) << " Processing Data Dictionary (Energy+.idd) File -- Start";
+		gio::write( EchoInputFile, fmtLD ) << " Processing Data Dictionary -- Start";
 		DisplayString( "Processing Data Dictionary" );
 		ProcessingIDD = true;
 		ProcessDataDicFile( idd_stream, ErrorsInIDD );
@@ -302,7 +295,7 @@ namespace InputProcessor {
 		}
 
 		ProcessingIDD = false;
-		gio::write( EchoInputFile, fmtLD ) << " Processing Data Dictionary (Energy+.idd) File -- Complete";
+		gio::write( EchoInputFile, fmtLD ) << " Processing Data Dictionary -- Complete";
 
 		gio::write( EchoInputFile, fmtLD ) << " Maximum number of Alpha Args=" << MaxAlphaArgsFound;
 		gio::write( EchoInputFile, fmtLD ) << " Maximum number of Numeric Args=" << MaxNumericArgsFound;
@@ -312,19 +305,15 @@ namespace InputProcessor {
 		gio::write( EchoInputFile, fmtLD ) << " Total Number of Numeric Fields=" << NumNumericArgsFound;
 		gio::write( EchoInputFile, fmtLD ) << " Total Number of Fields=" << NumAlphaArgsFound + NumNumericArgsFound;
 
-		gio::write( EchoInputFile, fmtLD ) << " Processing Input Data File (in.idf) -- Start";
-
-		{ IOFlags flags; gio::inquire( "in.idf", flags ); FileExists = flags.exists(); }
-		if ( ! FileExists ) {
-			DisplayString( "Missing " + CurrentWorkingFolder + "in.idf" );
-			ShowFatalError( "ProcessInput: in.idf missing. Program terminates." );
+		gio::write( EchoInputFile, fmtLD ) << " Processing Input Data File -- Start";
+		if ( !DisplayInputInAudit ) {
+			gio::write( EchoInputFile, fmtLD ) << " Echo of input lines is off. May be activated by setting the environmental variable DISPLAYINPUTINAUDIT=YES";
 		}
 
-		std::ifstream idf_stream( "in.idf", std::ios_base::in | std::ios_base::binary );
+		std::ifstream idf_stream( inputIdfFileName, std::ios_base::in | std::ios_base::binary );
 		if ( ! idf_stream ) {
 			if ( idf_stream.is_open() ) idf_stream.close();
-			DisplayString( "Could not open (read) in.idf." );
-			ShowFatalError( "ProcessInput: Could not open file \"in.idf\" for input (read)." );
+			ShowFatalError( "ProcessInput: Could not open file \"" + inputIdfFileName + "\" for input (read)." );
 		}
 		NumLines = 0;
 		EchoInputLine = true;
@@ -344,7 +333,7 @@ namespace InputProcessor {
 
 		IDFRecordsGotten.dimension( NumIDFRecords, false );
 
-		gio::write( EchoInputFile, fmtLD ) << " Processing Input Data File (in.idf) -- Complete";
+		gio::write( EchoInputFile, fmtLD ) << " Processing Input Data File -- Complete";
 		//   WRITE(EchoInputFile,*) ' Number of IDF "Lines"=',NumIDFRecords
 		gio::write( EchoInputFile, fmtLD ) << " Maximum number of Alpha IDF Args=" << MaxAlphaIDFArgsFound;
 		gio::write( EchoInputFile, fmtLD ) << " Maximum number of Numeric IDF Args=" << MaxNumericIDFArgsFound;
@@ -398,7 +387,7 @@ namespace InputProcessor {
 		}
 
 		if ( TotalAuditErrors > 0 ) {
-			ShowWarningError( "IP: Note -- Some missing fields have been filled with defaults." " See the audit output file for details." );
+			ShowWarningError( "IP: Note -- Some missing fields have been filled with defaults. See the audit output file for details." );
 		}
 
 		if ( NumOutOfRangeErrorsFound > 0 ) {
@@ -583,7 +572,7 @@ namespace InputProcessor {
 				ErrorsFound = true;
 			}
 		} else {
-			ShowSevereError( "IP: Blank Sections not allowed.  Review eplusout.audit file.", EchoInputFile );
+			ShowSevereError( "IP: Blank Sections not allowed.  Review " + outputAuditFileName + " file.", EchoInputFile );
 			errFlag = true;
 			ErrorsFound = true;
 		}
@@ -646,12 +635,12 @@ namespace InputProcessor {
 		bool errFlag; // Local Error condition flag, when true, object not added to Global list
 		char TargetChar; // Single character scanned to test for current field type (A or N)
 		bool BlankLine; // True when this line is "blank" (may have comment characters as first character on line)
-		static FArray1D_bool AlphaOrNumeric; // Array of argument designations, True is Alpha,
+		static Array1D_bool AlphaOrNumeric; // Array of argument designations, True is Alpha,
 		// False is numeric, saved in ObjectDef when done
-		static FArray1D_bool RequiredFields; // Array of argument required fields
-		static FArray1D_bool AlphRetainCase; // Array of argument for retain case
-		static FArray1D_string AlphFieldChecks; // Array with alpha field names
-		static FArray1D_string AlphFieldDefaults; // Array with alpha field defaults
+		static Array1D_bool RequiredFields; // Array of argument required fields
+		static Array1D_bool AlphRetainCase; // Array of argument for retain case
+		static Array1D_string AlphFieldChecks; // Array with alpha field names
+		static Array1D_string AlphFieldDefaults; // Array with alpha field defaults
 		bool MinMax; // Set to true when MinMax field has been found by ReadInputLine
 		bool Default; // Set to true when Default field has been found by ReadInputLine
 		bool AutoSize; // Set to true when Autosizable field has been found by ReadInputLine
@@ -668,8 +657,8 @@ namespace InputProcessor {
 		static int PrevSizeNumAlpha( -1 );
 
 		// Object Data
-		static FArray1D< RangeCheckDef > NumRangeChecks; // Structure for Range Check, Defaults of numeric fields
-		static FArray1D< RangeCheckDef > TempChecks; // Structure (ref: NumRangeChecks) for re-allocation procedure
+		static Array1D< RangeCheckDef > NumRangeChecks; // Structure for Range Check, Defaults of numeric fields
+		static Array1D< RangeCheckDef > TempChecks; // Structure (ref: NumRangeChecks) for re-allocation procedure
 
 		if ( ! allocated( AlphaOrNumeric ) ) {
 			AlphaOrNumeric.allocate( {0,MaxANArgs} );
@@ -872,7 +861,7 @@ namespace InputProcessor {
 						Pos = std::string::npos;
 					}
 					if ( Pos == std::string::npos ) {
-						ShowSevereError( "IP: IDD line~" + IPTrimSigDigits( NumLines ) + " , or ; expected on this line" ",position=\"" + InputLine.substr( CurPos ) + "\"", EchoInputFile );
+						ShowSevereError( "IP: IDD line~" + IPTrimSigDigits( NumLines ) + " , or ; expected on this line,position=\"" + InputLine.substr( CurPos ) + "\"", EchoInputFile );
 						errFlag = true;
 						ErrorsFound = true;
 					}
@@ -1346,7 +1335,7 @@ namespace InputProcessor {
 		std::string Message;
 		std::string cStartLine;
 		std::string cStartName;
-		static FArray1D_string LineBuf( dimLineBuf );
+		static Array1D_string LineBuf( dimLineBuf );
 		static int StartLine;
 		static int NumConxLines;
 		static int CurLines;
@@ -1852,7 +1841,7 @@ namespace InputProcessor {
 
 		for ( int Count = 1; Count <= NumIDFSections; ++Count ) {
 			if ( SectionsOnFile( Count ).FirstRecord > SectionsOnFile( Count ).LastRecord ) {
-				gio::write( EchoInputFile, fmtLD ) << " Section " << Count << " " << SectionsOnFile( Count ).Name << " had no object records";
+				gio::write( EchoInputFile, fmtLD ) << " Section " << Count << ' ' << SectionsOnFile( Count ).Name << " had no object records";
 				SectionsOnFile( Count ).FirstRecord = -1;
 				SectionsOnFile( Count ).LastRecord = -1;
 			}
@@ -1961,7 +1950,7 @@ namespace InputProcessor {
 
 	void
 	GetListofSectionsinInput(
-		FArray1S_string SectionList,
+		Array1S_string SectionList,
 		int & NuminList
 	)
 	{
@@ -2125,15 +2114,15 @@ namespace InputProcessor {
 	GetObjectItem(
 		std::string const & Object,
 		int const Number,
-		FArray1S_string Alphas,
+		Array1S_string Alphas,
 		int & NumAlphas,
-		FArray1S< Real64 > Numbers,
+		Array1S< Real64 > Numbers,
 		int & NumNumbers,
 		int & Status,
-		Optional< FArray1_bool > NumBlank,
-		Optional< FArray1_bool > AlphaBlank,
-		Optional< FArray1_string > AlphaFieldNames,
-		Optional< FArray1_string > NumericFieldNames
+		Optional< Array1_bool > NumBlank,
+		Optional< Array1_bool > AlphaBlank,
+		Optional< Array1_string > AlphaFieldNames,
+		Optional< Array1_string > NumericFieldNames
 	)
 	{
 
@@ -2174,10 +2163,10 @@ namespace InputProcessor {
 		int LoopIndex;
 		std::string ObjectWord;
 		std::string UCObject;
-		static FArray1D_string AlphaArgs;
-		static FArray1D< Real64 > NumberArgs;
-		static FArray1D_bool AlphaArgsBlank;
-		static FArray1D_bool NumberArgsBlank;
+		static Array1D_string AlphaArgs;
+		static Array1D< Real64 > NumberArgs;
+		static Array1D_bool AlphaArgsBlank;
+		static Array1D_bool NumberArgsBlank;
 		int MaxAlphas;
 		int MaxNumbers;
 		int Found;
@@ -2185,8 +2174,6 @@ namespace InputProcessor {
 		std::string cfld1;
 		std::string cfld2;
 		bool GoodItem;
-		int NAfld;
-		int NNfld;
 
 		//Autodesk:Uninit Initialize variables used uninitialized
 		NumAlphas = 0; //Autodesk:Uninit Force default initialization
@@ -2502,10 +2489,10 @@ namespace InputProcessor {
 		std::string & ObjectWord,
 		int & NumAlpha,
 		int & NumNumeric,
-		Optional< FArray1S_string > AlphaArgs,
-		Optional< FArray1S< Real64 > > NumericArgs,
-		Optional< FArray1S_bool > AlphaBlanks,
-		Optional< FArray1S_bool > NumericBlanks
+		Optional< Array1S_string > AlphaArgs,
+		Optional< Array1S< Real64 > > NumericArgs,
+		Optional< Array1S_bool > AlphaBlanks,
+		Optional< Array1S_bool > NumericBlanks
 	)
 	{
 
@@ -2639,7 +2626,9 @@ namespace InputProcessor {
 		} else {
 			if ( EchoInputLine ) {
 				++NumLines;
-				if ( echo_stream ) *echo_stream << std::setw( 7 ) << NumLines << ' ' << InputLine << NL;
+				if ( DisplayInputInAudit ) {
+					if ( echo_stream ) *echo_stream << std::setw( 7 ) << NumLines << ' ' << InputLine << NL;
+				}
 			}
 			EchoInputLine = true;
 			InputLineLength = static_cast< int >( len_trim( InputLine ) );
@@ -2818,7 +2807,9 @@ namespace InputProcessor {
 		} else {
 			if ( EchoInputLine ) {
 				++NumLines;
-				if ( echo_stream ) *echo_stream << std::setw( 7 ) << NumLines << ' ' << InputLine << NL;
+				if ( DisplayInputInAudit ) {
+					if ( echo_stream ) *echo_stream << std::setw( 7 ) << NumLines << ' ' << InputLine << NL;
+				}
 			}
 			EchoInputLine = true;
 			InputLineLength = static_cast< int >( len_trim( InputLine ) );
@@ -3056,7 +3047,7 @@ namespace InputProcessor {
 		Count = NumParams - ObjectDef( ObjectNum ).ExtensibleNum + 1;
 		//  MaxArgsChanged=.FALSE.
 
-		FArray1D_bool AorN( ObjectDef( ObjectNum ).ExtensibleNum, false );
+		Array1D_bool AorN( ObjectDef( ObjectNum ).ExtensibleNum, false );
 		for ( int Loop = Count, Item = 1; Loop <= NumParams; ++Loop, ++Item ) {
 			bool const AON_Loop( ObjectDef( ObjectNum ).AlphaOrNumeric( Loop ) );
 			if ( AON_Loop ) {
@@ -3188,7 +3179,6 @@ namespace InputProcessor {
 		if ( StringLen == 0 ) return rProcessNumber;
 		int IoStatus( 0 );
 		if ( PString.find_first_not_of( ValidNumerics ) == std::string::npos ) {
-			Real64 Temp;
 			{ IOFlags flags; gio::read( PString, fmtLD, flags ) >> rProcessNumber; IoStatus = flags.ios(); }
 			ErrorFlag = false;
 		} else {
@@ -3346,7 +3336,7 @@ namespace InputProcessor {
 	int
 	FindItemInList(
 		std::string const & String,
-		FArray1S_string const ListOfItems,
+		Array1S_string const ListOfItems,
 		int const NumItems
 	)
 	{
@@ -3400,7 +3390,7 @@ namespace InputProcessor {
 	int
 	FindItemInSortedList(
 		std::string const & String,
-		FArray1S_string const ListOfItems,
+		Array1S_string const ListOfItems,
 		int const NumItems
 	)
 	{
@@ -3466,7 +3456,7 @@ namespace InputProcessor {
 	int
 	FindItem(
 		std::string const & String,
-		FArray1S_string const ListOfItems,
+		Array1S_string const ListOfItems,
 		int const NumItems
 	)
 	{
@@ -3575,7 +3565,7 @@ namespace InputProcessor {
 	void
 	VerifyName(
 		std::string const & NameToVerify,
-		FArray1S_string const NamesList,
+		Array1S_string const NamesList,
 		int const NumOfNames,
 		bool & ErrorFound,
 		bool & IsBlank,
@@ -4012,7 +4002,7 @@ namespace InputProcessor {
 
 	void
 	GetListOfObjectsInIDD(
-		FArray1S_string ObjectNames, // List of Object Names (from IDD)
+		Array1S_string ObjectNames, // List of Object Names (from IDD)
 		int & Number // Number in List
 	)
 	{
@@ -4063,8 +4053,8 @@ namespace InputProcessor {
 	GetObjectDefInIDD(
 		std::string const & ObjectWord, // Object for definition
 		int & NumArgs, // How many arguments (max) this Object can have
-		FArray1S_bool AlphaOrNumeric, // Array designating Alpha (true) or Numeric (false) for each
-		FArray1S_bool RequiredFields, // Array designating RequiredFields (true) for each argument
+		Array1S_bool AlphaOrNumeric, // Array designating Alpha (true) or Numeric (false) for each
+		Array1S_bool RequiredFields, // Array designating RequiredFields (true) for each argument
 		int & MinNumFields // Minimum Number of Fields to be returned to Get routines
 	)
 	{
@@ -4306,8 +4296,8 @@ namespace InputProcessor {
 		int NumOrphObjNames;
 		bool potentialOrphanedSpecialObjects( false );
 
-		FArray1D_string OrphanObjectNames( NumIDFRecords );
-		FArray1D_string OrphanNames( NumIDFRecords );
+		Array1D_string OrphanObjectNames( NumIDFRecords );
+		Array1D_string OrphanNames( NumIDFRecords );
 		NumOrphObjNames = 0;
 
 		for ( Count = 1; Count <= NumIDFRecords; ++Count ) {
@@ -4374,7 +4364,7 @@ namespace InputProcessor {
 			gio::write( EchoInputFile, fmtLD ) << "Unused Objects -- Objects in IDF that were never \"gotten\"";
 			for ( Count = 1; Count <= NumOrphObjNames; ++Count ) {
 				if ( ! OrphanNames( Count ).empty() ) {
-					gio::write( EchoInputFile, fmtA ) << " " + OrphanObjectNames( Count ) + '=' + OrphanNames( Count );
+					gio::write( EchoInputFile, fmtA ) << ' ' + OrphanObjectNames( Count ) + '=' + OrphanNames( Count );
 				} else {
 					gio::write( EchoInputFile, fmtLD ) << OrphanObjectNames( Count );
 				}
@@ -4382,7 +4372,7 @@ namespace InputProcessor {
 			ShowWarningError( "The following lines are \"Unused Objects\".  These objects are in the idf" );
 			ShowContinueError( " file but are never obtained by the simulation and therefore are NOT used." );
 			if ( ! DisplayAllWarnings ) {
-				ShowContinueError( " Only the first unused named object of an object class is shown.  " "Use Output:Diagnostics,DisplayAllWarnings to see all." );
+				ShowContinueError( " Only the first unused named object of an object class is shown.  Use Output:Diagnostics,DisplayAllWarnings to see all." );
 			} else {
 				ShowContinueError( " Each unused object is shown." );
 			}
@@ -5764,7 +5754,7 @@ namespace InputProcessor {
 		std::string const & cStartName,
 		int const CurLine,
 		int const NumConxLines,
-		FArray1S_string const LineBuf,
+		Array1S_string const LineBuf,
 		int const CurQPtr
 	)
 	{
@@ -5946,7 +5936,7 @@ namespace InputProcessor {
 
 	//     NOTICE
 
-	//     Copyright © 1996-2014 The Board of Trustees of the University of Illinois
+	//     Copyright Â© 1996-2014 The Board of Trustees of the University of Illinois
 	//     and The Regents of the University of California through Ernest Orlando Lawrence
 	//     Berkeley National Laboratory.  All rights reserved.
 

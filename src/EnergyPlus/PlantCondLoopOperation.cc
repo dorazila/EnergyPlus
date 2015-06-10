@@ -4,8 +4,8 @@
 #include <vector>
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray.functions.hh>
-#include <ObjexxFCL/FArray1D.hh>
+#include <ObjexxFCL/Array.functions.hh>
+#include <ObjexxFCL/Array1D.hh>
 #include <ObjexxFCL/Fmath.hh>
 #include <ObjexxFCL/gio.hh>
 #include <ObjexxFCL/string.functions.hh>
@@ -162,10 +162,6 @@ namespace PlantCondLoopOperation {
 		int NumEquipLists; // number of equipment lists
 		//Error control flags
 		bool foundlist; // equipment list found
-		bool UpperLimitTooLow; // error processing
-		Real64 HighestRange; // error processing
-		static int TooLowIndex( 0 ); // error processing
-		static int NotTooLowIndex( 0 ); // error processing
 		int NumCompsOnList;
 		int CompIndex;
 		int EquipBranchNum;
@@ -358,7 +354,7 @@ namespace PlantCondLoopOperation {
 		std::string PlantOpSchemeName; // Name of the plant or condenser operating scheme
 		std::string CurrentModuleObject; // for ease in renaming
 		std::string PlantLoopObject; // for ease in renaming
-		FArray1D_string OpSchemeNames; // Used to verify unique op scheme names
+		Array1D_string OpSchemeNames; // Used to verify unique op scheme names
 		bool IsNotOK;
 		bool IsBlank;
 		bool ErrorsFound; // Passed in from OpSchemeInput
@@ -445,7 +441,7 @@ namespace PlantCondLoopOperation {
 						if ( plantLoopOperation == "LOAD RANGE BASED OPERATION" ) { // Deprecated
 							PlantLoop( LoopNum ).OpScheme( Num ).OpSchemeType = LoadRBOpSchemeType; // Deprecated
 							ShowSevereError( CurrentModuleObject + " = \"" + cAlphaArgs( 1 ) + "\" deprecated field value =\"" + PlantLoop( LoopNum ).OpScheme( Num ).TypeOf + "\"." );
-							ShowContinueError( "... should be replaced with PlantEquipmentOperation:CoolingLoad or " "PlantEquipmentOperation:HeatingLoad" );
+							ShowContinueError( "... should be replaced with PlantEquipmentOperation:CoolingLoad or PlantEquipmentOperation:HeatingLoad" );
 						} else if ( plantLoopOperation == "PLANTEQUIPMENTOPERATION:COOLINGLOAD" ) {
 							PlantLoop( LoopNum ).OpScheme( Num ).OpSchemeType = CoolingRBOpSchemeType;
 						} else if ( plantLoopOperation == "PLANTEQUIPMENTOPERATION:HEATINGLOAD" ) {
@@ -496,7 +492,7 @@ namespace PlantCondLoopOperation {
 		}
 
 		if ( ErrorsFound ) {
-			ShowFatalError( RoutineName + "Errors found in getting input for PlantEquipmentOperationSchemes or " "CondenserEquipmentOperationSchemes" );
+			ShowFatalError( RoutineName + "Errors found in getting input for PlantEquipmentOperationSchemes or CondenserEquipmentOperationSchemes" );
 		}
 
 	}
@@ -573,7 +569,7 @@ namespace PlantCondLoopOperation {
 		int NumSchemeLists;
 		int LoopNum;
 		std::string CurrentModuleObject; // for ease in renaming.
-		FArray1D_string TempVerifyNames;
+		Array1D_string TempVerifyNames;
 
 		ErrorsFound = false; //DSU CS
 
@@ -803,12 +799,12 @@ namespace PlantCondLoopOperation {
 		int NumAlphas;
 		int NumNums;
 		int IOStat;
-		FArray1D_string AlphArray; // Alpha input items for object
-		FArray1D_string cAlphaFields; // Alpha field names
-		FArray1D_string cNumericFields; // Numeric field names
-		FArray1D< Real64 > NumArray; // Numeric input items for object
-		FArray1D_bool lAlphaBlanks; // Logical array, alpha field input BLANK = .TRUE.
-		FArray1D_bool lNumericBlanks; // Logical array, numeric field input BLANK = .TRUE.
+		Array1D_string AlphArray; // Alpha input items for object
+		Array1D_string cAlphaFields; // Alpha field names
+		Array1D_string cNumericFields; // Numeric field names
+		Array1D< Real64 > NumArray; // Numeric input items for object
+		Array1D_bool lAlphaBlanks; // Logical array, alpha field input BLANK = .TRUE.
+		Array1D_bool lNumericBlanks; // Logical array, numeric field input BLANK = .TRUE.
 		static int TotalArgs( 0 ); // Total number of alpha and numeric arguments (max) for a
 		//   certain object in the input file
 		int Num;
@@ -907,14 +903,14 @@ namespace PlantCondLoopOperation {
 								if ( InnerListNumLowerLimit > OuterListNumLowerLimit && InnerListNumLowerLimit < OuterListNumUpperLimit ) {
 									ShowWarningError( LoopOpSchemeObj + " = \"" + PlantLoop( LoopNum ).OperationScheme + "\", detected overlapping ranges in " + CurrentModuleObject + " = \"" + PlantLoop( LoopNum ).OpScheme( SchemeNum ).Name + "\"." );
 									ShowContinueError( "Range # " + RoundSigDigits( InnerListNum ) + " Lower limit = " + RoundSigDigits( InnerListNumLowerLimit, 1 ) + " lies within the Range # " + RoundSigDigits( ListNum ) + " (" + RoundSigDigits( OuterListNumLowerLimit, 1 ) + " to " + RoundSigDigits( OuterListNumUpperLimit, 1 ) + ")." );
-									ShowContinueError( "Check that input for load range limit values do not overlap, " "and the simulation continues..." );
+									ShowContinueError( "Check that input for load range limit values do not overlap, and the simulation continues..." );
 
 								}
 								// Check if inner list has an upper limit that is between an outer's lower and upper limit
 								if ( InnerListNumUpperLimit > OuterListNumLowerLimit && InnerListNumUpperLimit < OuterListNumUpperLimit ) {
 									ShowWarningError( LoopOpSchemeObj + " = \"" + PlantLoop( LoopNum ).OperationScheme + "\", detected overlapping ranges in " + CurrentModuleObject + " = \"" + PlantLoop( LoopNum ).OpScheme( SchemeNum ).Name + "\"." );
 									ShowContinueError( "Range # " + RoundSigDigits( InnerListNum ) + " Upper limit = " + RoundSigDigits( InnerListNumUpperLimit, 1 ) + " lies within Range # " + RoundSigDigits( ListNum ) + " (" + RoundSigDigits( OuterListNumLowerLimit, 1 ) + " to " + RoundSigDigits( OuterListNumUpperLimit, 1 ) + ")." );
-									ShowContinueError( "Check that input for load range limit values do not overlap, " "and the simulation continues..." );
+									ShowContinueError( "Check that input for load range limit values do not overlap, and the simulation continues..." );
 
 								}
 							}
@@ -988,12 +984,12 @@ namespace PlantCondLoopOperation {
 		int NumAlphas;
 		int NumNums;
 		int IOStat;
-		FArray1D_string AlphArray; // Alpha input items for object
-		FArray1D_string cAlphaFields; // Alpha field names
-		FArray1D_string cNumericFields; // Numeric field names
-		FArray1D< Real64 > NumArray; // Numeric input items for object
-		FArray1D_bool lAlphaBlanks; // Logical array, alpha field input BLANK = .TRUE.
-		FArray1D_bool lNumericBlanks; // Logical array, numeric field input BLANK = .TRUE.
+		Array1D_string AlphArray; // Alpha input items for object
+		Array1D_string cAlphaFields; // Alpha field names
+		Array1D_string cNumericFields; // Numeric field names
+		Array1D< Real64 > NumArray; // Numeric input items for object
+		Array1D_bool lAlphaBlanks; // Logical array, alpha field input BLANK = .TRUE.
+		Array1D_bool lNumericBlanks; // Logical array, numeric field input BLANK = .TRUE.
 		static int TotalArgs( 0 ); // Total number of alpha and numeric arguments (max) for a
 		//   certain object in the input file
 		int Num;
@@ -1119,9 +1115,9 @@ namespace PlantCondLoopOperation {
 		bool IsNotOK;
 		std::string CurrentModuleObject;
 		static int TotNumLists( 0 );
-		static FArray1D_string EquipListsNameList;
-		static FArray1D_int EquipListsTypeList;
-		static FArray1D_int EquipListsIndexList;
+		static Array1D_string EquipListsNameList;
+		static Array1D_int EquipListsTypeList;
+		static Array1D_int EquipListsIndexList;
 		int iIndex;
 		bool firstblank;
 
@@ -1423,7 +1419,7 @@ namespace PlantCondLoopOperation {
 												ShowContinueError( "PlantLoop=\"" + PlantLoop( LoopNum ).Name + "\", Plant Loop Demand Calculation Scheme=DualSetpointDeadband" );
 											} else if ( PlantLoop( LoopNum ).TypeOfLoop == Condenser ) { // not applicable to Condenser loops
 											}
-											ShowContinueError( " Use a setpoint manager or EMS actuator to place a dual or high temperature" " setpoint on node" );
+											ShowContinueError( " Use a setpoint manager or EMS actuator to place a dual or high temperature setpoint on node" );
 											ErrorsFound = true;
 										}
 									}
@@ -1451,7 +1447,7 @@ namespace PlantCondLoopOperation {
 												ShowContinueError( "PlantLoop=\"" + PlantLoop( LoopNum ).Name + "\", Plant Loop Demand Calculation Scheme=DualSetpointDeadband" );
 											} else if ( PlantLoop( LoopNum ).TypeOfLoop == Condenser ) { // not applicable to Condenser loops
 											}
-											ShowContinueError( " Use a setpoint manager or EMS actuator to place a dual or low temperature" " setpoint on node" );
+											ShowContinueError( " Use a setpoint manager or EMS actuator to place a dual or low temperature setpoint on node" );
 											ErrorsFound = true;
 										}
 									}
@@ -1478,7 +1474,7 @@ namespace PlantCondLoopOperation {
 												ShowContinueError( "PlantLoop=\"" + PlantLoop( LoopNum ).Name + "\", Plant Loop Demand Calculation Scheme=DualSetpointDeadband" );
 											} else if ( PlantLoop( LoopNum ).TypeOfLoop == Condenser ) { // not applicable to Condenser loops
 											}
-											ShowContinueError( " Use a setpoint manager or EMS actuator to place a dual temperature" " setpoint on node" );
+											ShowContinueError( " Use a setpoint manager or EMS actuator to place a dual temperature setpoint on node" );
 											ErrorsFound = true;
 										}
 									}
@@ -1676,7 +1672,6 @@ namespace PlantCondLoopOperation {
 		int CompNum;
 		int Index;
 		int OpSchemePtr;
-		int SchemeNum;
 		int thisSchemeNum;
 		int SchemeType;
 		static bool MyOneTimeFlag( true );
@@ -1687,7 +1682,6 @@ namespace PlantCondLoopOperation {
 		int ThisTypeOfNum;
 		int CompOpNum;
 		int OldNumOpSchemes;
-		int OldNumEquipLists;
 		int NewNumEquipLists;
 		int NewNumOpSchemes;
 		int NumSearchResults;
@@ -1726,7 +1720,7 @@ namespace PlantCondLoopOperation {
 						auto & this_equip_list( this_op_scheme.EquipList( ListNum ) );
 						for ( int EquipNum = 1, EquipNum_end = this_equip_list.NumComps; EquipNum <= EquipNum_end; ++EquipNum ) {
 							auto & this_equip( this_equip_list.Comp( EquipNum ) );
-							ThisTypeOfNum = FindItem( trim( this_equip.TypeOf ), SimPlantEquipTypes, NumSimPlantEquipTypes );
+							ThisTypeOfNum = FindItem( this_equip.TypeOf, SimPlantEquipTypes, NumSimPlantEquipTypes );
 							errFlag1 = false;
 							ScanPlantLoopsForObject( this_equip.Name, ThisTypeOfNum, DummyLoopNum, LoopSideNum, BranchNum, CompNum, _, _, NumSearchResults, _, LoopNum, errFlag1 );
 
@@ -2123,8 +2117,8 @@ namespace PlantCondLoopOperation {
 						BranchNum = this_equiplist.Comp( CompIndex ).BranchNumPtr;
 						CompNum = this_equiplist.Comp( CompIndex ).CompNumPtr;
 
-                        // create a reference to the component itself
-                        auto & this_component( this_loopside.Branch( BranchNum ).Comp( CompNum ) );
+						// create a reference to the component itself
+						auto & this_component( this_loopside.Branch( BranchNum ).Comp( CompNum ) );
 
 						if ( ! this_component.Available ) continue;
 
@@ -2268,7 +2262,7 @@ namespace PlantCondLoopOperation {
 
 					PlantCapacity += this_component.MaxLoad;
 
-					if ( this_component.MaxLoad < SmallLoad ){
+					if ( this_component.MaxLoad < SmallLoad ) {
 						ShowWarningMessage( "Plant component " + this_component.Name + " has zero available capacity. Check component controls." );
 						MinCompPLR = 0.0;
 					} else {
@@ -2364,14 +2358,14 @@ namespace PlantCondLoopOperation {
 					BranchNum = this_equiplist.Comp( CompIndex ).BranchNumPtr;
 					CompNum = this_equiplist.Comp( CompIndex ).CompNumPtr;
 
-                    // create a reference to the component itself
-                    auto & this_component( this_loopside.Branch( BranchNum ).Comp( CompNum ) );
+					// create a reference to the component itself
+					auto & this_component( this_loopside.Branch( BranchNum ).Comp( CompNum ) );
 
 					if ( ! this_component.Available ) continue;
 
 					PlantCapacity += this_component.MaxLoad;
 
-					if ( this_component.MaxLoad < SmallLoad ){
+					if ( this_component.MaxLoad < SmallLoad ) {
 						ShowWarningMessage( "Plant component " + this_component.Name + " has zero available capacity. Check component controls." );
 						MinCompPLR = 0.0;
 					} else {
@@ -2401,8 +2395,8 @@ namespace PlantCondLoopOperation {
 					BranchNum = this_equiplist.Comp( CompIndex ).BranchNumPtr;
 					CompNum = this_equiplist.Comp( CompIndex ).CompNumPtr;
 
-                    // create a reference to the component itself
-                    auto & this_component( this_loopside.Branch( BranchNum ).Comp( CompNum ) );
+					// create a reference to the component itself
+					auto & this_component( this_loopside.Branch( BranchNum ).Comp( CompNum ) );
 
 					if ( ! this_component.Available ) continue;
 
@@ -2834,7 +2828,7 @@ namespace PlantCondLoopOperation {
 		int const CurCompLevelOpNum, // index for Plant()%LoopSide()%Branch()%Comp()%OpScheme()
 		int const CurSchemePtr,
 		Real64 const LoopDemand,
-		Real64 & RemLoopDemand
+		Real64 & EP_UNUSED( RemLoopDemand )
 	)
 	{
 
@@ -2871,7 +2865,6 @@ namespace PlantCondLoopOperation {
 
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 		int CompPtr;
-		int ListPtr;
 
 		auto & this_component( PlantLoop( LoopNum ).LoopSide( LoopSideNum ).Branch( BranchNum ).Comp( CompNum ) );
 
@@ -2943,23 +2936,21 @@ namespace PlantCondLoopOperation {
 		int ReferenceNodeNum;
 		Real64 NodeTemperature;
 
-		OperationScheme: { auto const SELECT_CASE_var( CurSchemeType );
-
-		if ( SELECT_CASE_var == DryBulbTDBOpSchemeType ) { // drybulb temp based controls
+		if ( CurSchemeType == DryBulbTDBOpSchemeType ) { // drybulb temp based controls
 			ReferenceNodeNum = PlantLoop( LoopNum ).OpScheme( CurSchemePtr ).ReferenceNodeNumber;
 			NodeTemperature = Node( ReferenceNodeNum ).Temp;
 			FindRangeVariable = NodeTemperature - OutDryBulbTemp;
-		} else if ( SELECT_CASE_var == WetBulbTDBOpSchemeType ) { // wetbulb temp based controls
+		} else if ( CurSchemeType == WetBulbTDBOpSchemeType ) { // wetbulb temp based controls
 			ReferenceNodeNum = PlantLoop( LoopNum ).OpScheme( CurSchemePtr ).ReferenceNodeNumber;
 			NodeTemperature = Node( ReferenceNodeNum ).Temp;
 			FindRangeVariable = NodeTemperature - OutWetBulbTemp;
-		} else if ( SELECT_CASE_var == DewPointTDBOpSchemeType ) { // dewpoint temp based controls
+		} else if ( CurSchemeType == DewPointTDBOpSchemeType ) { // dewpoint temp based controls
 			ReferenceNodeNum = PlantLoop( LoopNum ).OpScheme( CurSchemePtr ).ReferenceNodeNumber;
 			NodeTemperature = Node( ReferenceNodeNum ).Temp;
 			FindRangeVariable = NodeTemperature - OutDewPointTemp;
 		} else {
 			assert( false );
-		}} // OperationScheme
+		} // OperationScheme
 
 		return FindRangeVariable;
 

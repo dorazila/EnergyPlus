@@ -2,7 +2,7 @@
 #include <cmath>
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray.functions.hh>
+#include <ObjexxFCL/Array.functions.hh>
 
 // EnergyPlus Headers
 #include <SteamBaseboardRadiator.hh>
@@ -95,24 +95,24 @@ namespace SteamBaseboardRadiator {
 	int NumSteamBaseboards( 0 );
 	int SteamIndex( 0 );
 
-	FArray1D< Real64 > QBBSteamRadSource; // Need to keep the last value in case we are still iterating
-	FArray1D< Real64 > QBBSteamRadSrcAvg; // Need to keep the last value in case we are still iterating
-	FArray1D< Real64 > ZeroSourceSumHATsurf; // Equal to the SumHATsurf for all the walls in a zone
+	Array1D< Real64 > QBBSteamRadSource; // Need to keep the last value in case we are still iterating
+	Array1D< Real64 > QBBSteamRadSrcAvg; // Need to keep the last value in case we are still iterating
+	Array1D< Real64 > ZeroSourceSumHATsurf; // Equal to the SumHATsurf for all the walls in a zone
 	// with no source
 
 	// Record keeping variables used to calculate QBBRadSrcAvg locally
-	FArray1D< Real64 > LastQBBSteamRadSrc; // Need to keep the last value in case we are still iterating
-	FArray1D< Real64 > LastSysTimeElapsed; // Need to keep the last value in case we are still iterating
-	FArray1D< Real64 > LastTimeStepSys; // Need to keep the last value in case we are still iterating
-	FArray1D_bool MySizeFlag;
-	FArray1D_bool CheckEquipName;
-	FArray1D_bool SetLoopIndexFlag; // get loop number flag
+	Array1D< Real64 > LastQBBSteamRadSrc; // Need to keep the last value in case we are still iterating
+	Array1D< Real64 > LastSysTimeElapsed; // Need to keep the last value in case we are still iterating
+	Array1D< Real64 > LastTimeStepSys; // Need to keep the last value in case we are still iterating
+	Array1D_bool MySizeFlag;
+	Array1D_bool CheckEquipName;
+	Array1D_bool SetLoopIndexFlag; // get loop number flag
 
 	//SUBROUTINE SPECIFICATIONS FOR MODULE BaseboardRadiator
 
 	// Object Data
-	FArray1D< SteamBaseboardParams > SteamBaseboard;
-	FArray1D< SteamBaseboardNumericFieldData > SteamBaseboardNumericFields;
+	Array1D< SteamBaseboardParams > SteamBaseboard;
+	Array1D< SteamBaseboardNumericFieldData > SteamBaseboardNumericFields;
 
 	// Functions
 
@@ -154,7 +154,6 @@ namespace SteamBaseboardRadiator {
 		// SUBROUTINE ARGUMENT DEFINITIONS:
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		int const MaxIter( 30 );
 
 		// INTERFACE BLOCK SPECIFICATIONS
 
@@ -407,7 +406,7 @@ namespace SteamBaseboardRadiator {
 					ShowContinueError( "Blank field not allowed for " + cNumericFieldNames( iHeatCapacityPerFloorAreaNumericNum ) );
 					ErrorsFound = true;
 				}
-			} else if ( SameString( cAlphaArgs( iHeatCAPMAlphaNum ), "FractionOfAutosizedHeatingCapacity" ) ){
+			} else if ( SameString( cAlphaArgs( iHeatCAPMAlphaNum ), "FractionOfAutosizedHeatingCapacity" ) ) {
 				SteamBaseboard( BaseboardNum ).HeatingCapMethod = FractionOfAutosizedHeatingCapacity;
 				if ( !lNumericFieldBlanks( iHeatFracOfAutosizedCapacityNumericNum ) ) {
 					SteamBaseboard( BaseboardNum ).ScaledHeatingCapacity = rNumericArgs( iHeatFracOfAutosizedCapacityNumericNum );
@@ -605,7 +604,6 @@ namespace SteamBaseboardRadiator {
 		// REFERENCES:
 
 		// Using/Aliasing
-		using DataEnvironment::StdBaroPress;
 		using FluidProperties::GetSatEnthalpyRefrig;
 		using FluidProperties::GetSatDensityRefrig;
 		using PlantUtilities::InitComponentNodes;
@@ -626,7 +624,7 @@ namespace SteamBaseboardRadiator {
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 		static bool MyOneTimeFlag( true );
 		static bool ZoneEquipmentListChecked( false );
-		static FArray1D_bool MyEnvrnFlag;
+		static Array1D_bool MyEnvrnFlag;
 		int Loop;
 		int SteamInletNode;
 		int ZoneNode;
@@ -763,7 +761,6 @@ namespace SteamBaseboardRadiator {
 		// Using/Aliasing
 		using namespace DataSizing;
 		using PlantUtilities::RegisterPlantCompDesignFlow;
-		using DataEnvironment::StdBaroPress;
 		using FluidProperties::GetSatEnthalpyRefrig;
 		using FluidProperties::GetSatDensityRefrig;
 		using FluidProperties::GetSatSpecificHeatRefrig;
@@ -795,7 +792,6 @@ namespace SteamBaseboardRadiator {
 		Real64 LatentHeatSteam; // latent heat of steam
 		Real64 SteamDensity; // Density of steam
 		Real64 Cp; // local fluid specific heat
-		Real64 tmpSteamVolFlowRateMax; // local temporary design steam flow
 		bool ErrorsFound; // If errors detected in input
 		bool IsAutoSize; // Indicator to autosizing steam flow
 		Real64 SteamVolFlowRateMaxDes; // Design maximum steam volume flow for reporting
@@ -849,19 +845,19 @@ namespace SteamBaseboardRadiator {
 					ZoneEqSizing( CurZoneEqNum ).SizingMethod( SizingMethod ) = CapSizingMethod;
 					if ( CapSizingMethod == HeatingDesignCapacity || CapSizingMethod == CapacityPerFloorArea || CapSizingMethod == FractionOfAutosizedHeatingCapacity ) {
 
-						if ( CapSizingMethod == HeatingDesignCapacity ){
+						if ( CapSizingMethod == HeatingDesignCapacity ) {
 							if ( SteamBaseboard( BaseboardNum ).ScaledHeatingCapacity == AutoSize ) {
 								CheckZoneSizing( CompType, CompName );
 								ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 								ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad = CalcFinalZoneSizing( CurZoneEqNum ).DesHeatLoad * CalcFinalZoneSizing( CurZoneEqNum ).HeatSizingFactor;
 							}
 							TempSize = SteamBaseboard( BaseboardNum ).ScaledHeatingCapacity;
-						} else if ( CapSizingMethod == CapacityPerFloorArea ){
+						} else if ( CapSizingMethod == CapacityPerFloorArea ) {
 							ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 							ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad = SteamBaseboard( BaseboardNum ).ScaledHeatingCapacity * Zone( DataZoneNumber ).FloorArea;
 							TempSize = ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad;
 							DataScalableCapSizingON = true;
-						} else if ( CapSizingMethod == FractionOfAutosizedHeatingCapacity ){
+						} else if ( CapSizingMethod == FractionOfAutosizedHeatingCapacity ) {
 							CheckZoneSizing( CompType, CompName );
 							ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 							DataFracOfAutosizedHeatingCapacity = SteamBaseboard( BaseboardNum ).ScaledHeatingCapacity;
@@ -901,7 +897,7 @@ namespace SteamBaseboardRadiator {
 							if ( DisplayExtraWarnings ) {
 								// Report difference between design size and user-specified values
 								if ( ( std::abs( SteamVolFlowRateMaxDes - SteamVolFlowRateMaxUser ) / SteamVolFlowRateMaxUser ) > AutoVsHardSizingThreshold ) {
-									ShowMessage( "SizeSteamBaseboard: Potential issue with equipment sizing for " "ZoneHVAC:Baseboard:RadiantConvective:Steam=\"" + SteamBaseboard( BaseboardNum ).EquipID + "\"." );
+									ShowMessage( "SizeSteamBaseboard: Potential issue with equipment sizing for ZoneHVAC:Baseboard:RadiantConvective:Steam=\"" + SteamBaseboard( BaseboardNum ).EquipID + "\"." );
 									ShowContinueError( "User-Specified Maximum Steam Flow Rate of " + RoundSigDigits( SteamVolFlowRateMaxUser, 5 ) + " [m3/s]" );
 									ShowContinueError( "differs from Design Size Maximum Steam Flow Rate of " + RoundSigDigits( SteamVolFlowRateMaxDes, 5 ) + " [m3/s]" );
 									ShowContinueError( "This may, or may not, indicate mismatched component sizes." );
@@ -961,7 +957,6 @@ namespace SteamBaseboardRadiator {
 		using FluidProperties::GetSatDensityRefrig;
 		using FluidProperties::GetSatSpecificHeatRefrig;
 		using DataHVACGlobals::SmallLoad;
-		using DataBranchAirLoopPlant::MassFlowTolerance;
 
 		// Locals
 		// SUBROUTINE ARGUMENT DEFINITIONS:
@@ -1072,7 +1067,6 @@ namespace SteamBaseboardRadiator {
 		// Using/Aliasing
 		using DataGlobals::TimeStepZone;
 		using DataGlobals::BeginEnvrnFlag;
-		using DataEnvironment::StdBaroPress;
 		using PlantUtilities::SafeCopyPlantNode;
 
 		// Locals
@@ -1394,11 +1388,11 @@ namespace SteamBaseboardRadiator {
 	UpdateSteamBaseboardPlantConnection(
 		int const BaseboardTypeNum, // type index
 		std::string const & BaseboardName, // component name
-		int const EquipFlowCtrl, // Flow control mode for the equipment
-		int const LoopNum, // Plant loop index for where called from
-		int const LoopSide, // Plant loop side index for where called from
+		int const EP_UNUSED( EquipFlowCtrl ), // Flow control mode for the equipment
+		int const EP_UNUSED( LoopNum ), // Plant loop index for where called from
+		int const EP_UNUSED( LoopSide ), // Plant loop side index for where called from
 		int & CompIndex, // Chiller number pointer
-		bool const FirstHVACIteration,
+		bool const EP_UNUSED( FirstHVACIteration ),
 		bool & InitLoopEquip // If not zero, calculate the max load for operating conditions
 	)
 	{
@@ -1445,8 +1439,6 @@ namespace SteamBaseboardRadiator {
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 
 		int BaseboardNum;
-		int InletNodeNum;
-		int OutletNodeNum;
 
 		// Find the correct baseboard
 		if ( CompIndex == 0 ) {

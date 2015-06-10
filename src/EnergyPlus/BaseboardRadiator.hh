@@ -2,9 +2,7 @@
 #define BaseboardRadiator_hh_INCLUDED
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray1D.hh>
-#include <ObjexxFCL/FArray1S.hh>
-#include <ObjexxFCL/Optional.hh>
+#include <ObjexxFCL/Array1D.hh>
 
 // EnergyPlus Headers
 #include <EnergyPlus.hh>
@@ -28,9 +26,9 @@ namespace BaseboardRadiator {
 
 	//MODULE VARIABLE DECLARATIONS:
 	extern int NumBaseboards;
-	extern FArray1D_bool MySizeFlag;
-	extern FArray1D_bool CheckEquipName;
-	extern FArray1D_bool SetLoopIndexFlag; // get loop number flag
+	extern Array1D_bool MySizeFlag;
+	extern Array1D_bool CheckEquipName;
+	extern Array1D_bool SetLoopIndexFlag; // get loop number flag
 
 	//SUBROUTINE SPECIFICATIONS FOR MODULE BaseboardRadiator
 
@@ -71,8 +69,8 @@ namespace BaseboardRadiator {
 		int BBLoadReSimIndex;
 		int BBMassFlowReSimIndex;
 		int BBInletTempFlowReSimIndex;
-		int HeatingCapMethod; // - Method for water baseboard Radiator system heating capacity scaledsizing calculation (HeatingDesignCapacity, CapacityPerFloorArea, FracOfAutosizedHeatingCapacity) 
-		Real64 ScaledHeatingCapacity; // -  water baseboard Radiator system scaled maximum heating capacity {W} or scalable variable of zone HVAC equipment, {-}, or {W/m2} 
+		int HeatingCapMethod; // - Method for water baseboard Radiator system heating capacity scaledsizing calculation (HeatingDesignCapacity, CapacityPerFloorArea, FracOfAutosizedHeatingCapacity)
+		Real64 ScaledHeatingCapacity; // -  water baseboard Radiator system scaled maximum heating capacity {W} or scalable variable of zone HVAC equipment, {-}, or {W/m2}
 
 		// Default Constructor
 		BaseboardParams() :
@@ -144,8 +142,8 @@ namespace BaseboardRadiator {
 			int const BBLoadReSimIndex,
 			int const BBMassFlowReSimIndex,
 			int const BBInletTempFlowReSimIndex,
-			int const HeatingCapMethod, // - Method for steam baseboard Radiator system heating capacity scaledsizing calculation (HeatingDesignCapacity, CapacityPerFloorArea, FracOfAutosizedHeatingCapacity) 
-			Real64 const ScaledHeatingCapacity // -  steam baseboard Radiator system scaled maximum heating capacity {W} or scalable variable of zone HVAC equipment, {-}, or {W/m2} 
+			int const HeatingCapMethod, // - Method for steam baseboard Radiator system heating capacity scaledsizing calculation (HeatingDesignCapacity, CapacityPerFloorArea, FracOfAutosizedHeatingCapacity)
+			Real64 const ScaledHeatingCapacity // -  steam baseboard Radiator system scaled maximum heating capacity {W} or scalable variable of zone HVAC equipment, {-}, or {W/m2}
 
 		) :
 			EquipID( EquipID ),
@@ -189,7 +187,7 @@ namespace BaseboardRadiator {
 	struct BaseboardParamsNumericFieldData
 	{
 		// Members
-		FArray1D_string FieldNames;
+		Array1D_string FieldNames;
 
 		// Default Constructor
 		BaseboardParamsNumericFieldData()
@@ -197,14 +195,14 @@ namespace BaseboardRadiator {
 
 		// Member Constructor
 		BaseboardParamsNumericFieldData(
-			FArray1_string const & FieldNames // Name of the HeatingCoil numeric field descriptions
+			Array1_string const & FieldNames // Name of the HeatingCoil numeric field descriptions
 			) :
 			FieldNames(FieldNames)
 		{}
 	};
 	// Object Data
-	extern FArray1D< BaseboardParams > Baseboard;
-	extern FArray1D< BaseboardParamsNumericFieldData > BaseboardParamsNumericFields;
+	extern Array1D< BaseboardParams > Baseboard;
+	extern Array1D< BaseboardParamsNumericFieldData > BaseboardParamsNumericFields;
 
 
 	// Functions
@@ -246,7 +244,7 @@ namespace BaseboardRadiator {
 	Real64
 	HWBaseboardUAResidual(
 		Real64 const UA, // UA of coil
-		Optional< FArray1S< Real64 > const > Par = _ // par(1) = design coil load [W]
+		Array1< Real64 > const & Par // par(1) = design coil load [W]
 	);
 
 	void

@@ -2,7 +2,7 @@
 #include <cmath>
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray.functions.hh>
+#include <ObjexxFCL/Array.functions.hh>
 #include <ObjexxFCL/Fmath.hh>
 
 // EnergyPlus Headers
@@ -92,23 +92,23 @@ namespace HWBaseboardRadiator {
 
 	//MODULE VARIABLE DECLARATIONS:
 	int NumHWBaseboards( 0 );
-	FArray1D< Real64 > QBBRadSource; // Need to keep the last value in case we are still iterating
-	FArray1D< Real64 > QBBRadSrcAvg; // Need to keep the last value in case we are still iterating
-	FArray1D< Real64 > ZeroSourceSumHATsurf; // Equal to the SumHATsurf for all the walls in a zone with no source
+	Array1D< Real64 > QBBRadSource; // Need to keep the last value in case we are still iterating
+	Array1D< Real64 > QBBRadSrcAvg; // Need to keep the last value in case we are still iterating
+	Array1D< Real64 > ZeroSourceSumHATsurf; // Equal to the SumHATsurf for all the walls in a zone with no source
 
 	// Record keeping variables used to calculate QBBRadSrcAvg locally
-	FArray1D< Real64 > LastQBBRadSrc; // Need to keep the last value in case we are still iterating
-	FArray1D< Real64 > LastSysTimeElapsed; // Need to keep the last value in case we are still iterating
-	FArray1D< Real64 > LastTimeStepSys; // Need to keep the last value in case we are still iterating
-	FArray1D_bool MySizeFlag;
-	FArray1D_bool CheckEquipName;
-	FArray1D_bool SetLoopIndexFlag; // get loop number flag
+	Array1D< Real64 > LastQBBRadSrc; // Need to keep the last value in case we are still iterating
+	Array1D< Real64 > LastSysTimeElapsed; // Need to keep the last value in case we are still iterating
+	Array1D< Real64 > LastTimeStepSys; // Need to keep the last value in case we are still iterating
+	Array1D_bool MySizeFlag;
+	Array1D_bool CheckEquipName;
+	Array1D_bool SetLoopIndexFlag; // get loop number flag
 
 	//SUBROUTINE SPECIFICATIONS FOR MODULE BaseboardRadiator
 
 	// Object Data
-	FArray1D< HWBaseboardParams > HWBaseboard;
-	FArray1D< HWBaseboardNumericFieldData > HWBaseboardNumericFields;
+	Array1D< HWBaseboardParams > HWBaseboard;
+	Array1D< HWBaseboardNumericFieldData > HWBaseboardNumericFields;
 
 	// Functions
 
@@ -149,7 +149,6 @@ namespace HWBaseboardRadiator {
 		// SUBROUTINE ARGUMENT DEFINITIONS:
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		int const MaxIter( 30 );
 
 		// INTERFACE BLOCK SPECIFICATIONS
 
@@ -268,7 +267,6 @@ namespace HWBaseboardRadiator {
 		using General::RoundSigDigits;
 		using General::TrimSigDigits;
 		using DataSizing::AutoSize;
-		using DataSizing::FinalZoneSizing;
 		using DataSizing::HeatingDesignCapacity;
 		using DataSizing::CapacityPerFloorArea;
 		using DataSizing::FractionOfAutosizedHeatingCapacity;
@@ -288,13 +286,10 @@ namespace HWBaseboardRadiator {
 		Real64 const LowWaterMassFlowRate( 0.00001 ); // Minimum limit of water mass flow rate in kg/s
 		Real64 const MaxWaterFlowRate( 10.0 ); // Maximum limit of water volume flow rate in m3/s
 		Real64 const MinWaterFlowRate( 0.00001 ); // Minimum limit of water volume flow rate in m3/s
-		Real64 const WaterTempAvgDefault( 87.78 ); // Default water mass flow rate in kg/s
 		Real64 const WaterMassFlowDefault( 0.063 ); // Default water mass flow rate in kg/s
-		Real64 const AirInletTempStd( 18.0 ); // Standard air inlet temperature in degree C
-		Real64 const CPAirStd( 1005.0 ); // Average specific heat of air at between 25C and 40C in J/kg-k
 		//    INTEGER, PARAMETER   :: MaxDistribSurfaces    = 20         ! Maximum number of surfaces that a baseboard heater can radiate to
 		int const MinDistribSurfaces( 1 ); // Minimum number of surfaces that a baseboard heater can radiate to
-		int const iHeatCAPMAlphaNum( 5 ) ; // get input index to HW baseboard heating capacity sizing method
+		int const iHeatCAPMAlphaNum( 5 ); // get input index to HW baseboard heating capacity sizing method
 		int const iHeatDesignCapacityNumericNum( 3 ); // get input index to HW baseboard heating capacity
 		int const iHeatCapacityPerFloorAreaNumericNum( 4 ); // get input index to HW baseboard heating capacity per floor area sizing
 		int const iHeatFracOfAutosizedCapacityNumericNum( 5 ); //  get input index to HW baseboard heating capacity sizing as fraction of autozized heating capacity
@@ -426,7 +421,7 @@ namespace HWBaseboardRadiator {
 					ShowContinueError( "Blank field not allowed for " + cNumericFieldNames( iHeatCapacityPerFloorAreaNumericNum ) );
 					ErrorsFound = true;
 				}
-			} else if ( SameString( cAlphaArgs( iHeatCAPMAlphaNum ), "FractionOfAutosizedHeatingCapacity" ) ){
+			} else if ( SameString( cAlphaArgs( iHeatCAPMAlphaNum ), "FractionOfAutosizedHeatingCapacity" ) ) {
 				HWBaseboard( BaseboardNum ).HeatingCapMethod = FractionOfAutosizedHeatingCapacity;
 				if ( !lNumericFieldBlanks( iHeatFracOfAutosizedCapacityNumericNum ) ) {
 					HWBaseboard( BaseboardNum ).ScaledHeatingCapacity = rNumericArgs( iHeatFracOfAutosizedCapacityNumericNum );
@@ -642,7 +637,7 @@ namespace HWBaseboardRadiator {
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 		static bool MyOneTimeFlag( true );
 		static bool ZoneEquipmentListChecked( false );
-		static FArray1D_bool MyEnvrnFlag;
+		static Array1D_bool MyEnvrnFlag;
 		int Loop;
 		int WaterInletNode;
 		int ZoneNode;
@@ -870,7 +865,7 @@ namespace HWBaseboardRadiator {
 			CapSizingMethod = HWBaseboard( BaseboardNum ).HeatingCapMethod;
 			ZoneEqSizing( CurZoneEqNum ).SizingMethod( SizingMethod ) = CapSizingMethod;
 			if ( CapSizingMethod == HeatingDesignCapacity || CapSizingMethod == CapacityPerFloorArea || CapSizingMethod == FractionOfAutosizedHeatingCapacity ) {
-				if ( CapSizingMethod == HeatingDesignCapacity ){
+				if ( CapSizingMethod == HeatingDesignCapacity ) {
 					if ( HWBaseboard( BaseboardNum ).ScaledHeatingCapacity == AutoSize ) {
 						CheckZoneSizing( CompType, CompName );
 						ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
@@ -878,12 +873,12 @@ namespace HWBaseboardRadiator {
 					}
 					TempSize = HWBaseboard( BaseboardNum ).ScaledHeatingCapacity;
 
-				} else if ( CapSizingMethod == CapacityPerFloorArea ){
+				} else if ( CapSizingMethod == CapacityPerFloorArea ) {
 					ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 					ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad = HWBaseboard( BaseboardNum ).ScaledHeatingCapacity * Zone( DataZoneNumber ).FloorArea;
 					TempSize = ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad;
 					DataScalableCapSizingON = true;
-				} else if ( CapSizingMethod == FractionOfAutosizedHeatingCapacity ){
+				} else if ( CapSizingMethod == FractionOfAutosizedHeatingCapacity ) {
 					CheckZoneSizing( CompType, CompName );
 					ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 					DataFracOfAutosizedHeatingCapacity = HWBaseboard( BaseboardNum ).ScaledHeatingCapacity;
@@ -936,7 +931,7 @@ namespace HWBaseboardRadiator {
 							ReportSizingOutput( cCMO_BBRadiator_Water, HWBaseboard( BaseboardNum ).EquipID, "Design Size Maximum Water Flow Rate [m3/s]", WaterVolFlowRateMaxDes, "User-Specified Maximum Water Flow Rate [m3/s]", WaterVolFlowRateMaxUser );
 							if ( DisplayExtraWarnings ) {
 								if ( ( std::abs( WaterVolFlowRateMaxDes - WaterVolFlowRateMaxUser ) / WaterVolFlowRateMaxUser ) > AutoVsHardSizingThreshold ) {
-									ShowMessage( "SizeHWBaseboard: Potential issue with equipment sizing for " "ZoneHVAC:Baseboard:RadiantConvective:Water=\"" + HWBaseboard( BaseboardNum ).EquipID + "\"." );
+									ShowMessage( "SizeHWBaseboard: Potential issue with equipment sizing for ZoneHVAC:Baseboard:RadiantConvective:Water=\"" + HWBaseboard( BaseboardNum ).EquipID + "\"." );
 									ShowContinueError( "User-Specified Maximum Water Flow Rate of " + RoundSigDigits( WaterVolFlowRateMaxUser, 5 ) + " [m3/s]" );
 									ShowContinueError( "differs from Design Size Maximum Water Flow Rate of " + RoundSigDigits( WaterVolFlowRateMaxDes, 5 ) + " [m3/s]" );
 									ShowContinueError( "This may, or may not, indicate mismatched component sizes." );
@@ -1087,8 +1082,6 @@ namespace HWBaseboardRadiator {
 		// SUBROUTINE ARGUMENT DEFINITIONS:
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		Real64 const Constant( 0.0062 ); // Constant of linear equation for air mass flow rate
-		Real64 const Coeff( 0.0000275 ); // Correlation coefficient to capacity
 		Real64 const MinFrac( 0.0005 ); // Minimum fraction that delivers radiant heats to surfaces
 		static std::string const RoutineName( "CalcHWBaseboard" );
 
@@ -1563,11 +1556,11 @@ namespace HWBaseboardRadiator {
 	UpdateHWBaseboardPlantConnection(
 		int const BaseboardTypeNum, // type index
 		std::string const & BaseboardName, // component name
-		int const EquipFlowCtrl, // Flow control mode for the equipment
-		int const LoopNum, // Plant loop index for where called from
-		int const LoopSide, // Plant loop side index for where called from
+		int const EP_UNUSED( EquipFlowCtrl ), // Flow control mode for the equipment
+		int const EP_UNUSED( LoopNum ), // Plant loop index for where called from
+		int const EP_UNUSED( LoopSide ), // Plant loop side index for where called from
 		int & CompIndex, // Chiller number pointer
-		bool const FirstHVACIteration,
+		bool const EP_UNUSED( FirstHVACIteration ),
 		bool & InitLoopEquip // If not zero, calculate the max load for operating conditions
 	)
 	{
@@ -1614,8 +1607,6 @@ namespace HWBaseboardRadiator {
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 
 		int BaseboardNum;
-		int InletNodeNum;
-		int OutletNodeNum;
 
 		// Find the correct baseboard
 		if ( CompIndex == 0 ) {

@@ -2,7 +2,7 @@
 #define LowTempRadiantSystem_hh_INCLUDED
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray1D.hh>
+#include <ObjexxFCL/Array1D.hh>
 
 // EnergyPlus Headers
 #include <EnergyPlus.hh>
@@ -59,17 +59,17 @@ namespace LowTempRadiantSystem {
 	extern int MaxCloNumOfSurfaces; // Used to set allocate size in CalcClo routine
 	extern bool VarOffCond; // Set to true when in cooling for constant flow system + variable off condensation predicted
 	extern Real64 LoopReqTemp; // Temperature required at the inlet of the pump (from the loop) to meet control logic
-	extern FArray1D< Real64 > QRadSysSrcAvg; // Average source over the time step for a particular radiant surface
-	extern FArray1D< Real64 > ZeroSourceSumHATsurf; // Equal to SumHATsurf for all the walls in a zone with no source
+	extern Array1D< Real64 > QRadSysSrcAvg; // Average source over the time step for a particular radiant surface
+	extern Array1D< Real64 > ZeroSourceSumHATsurf; // Equal to SumHATsurf for all the walls in a zone with no source
 	// Record keeping variables used to calculate QRadSysSrcAvg locally
-	extern FArray1D< Real64 > LastQRadSysSrc; // Need to keep the last value in case we are still iterating
-	extern FArray1D< Real64 > LastSysTimeElapsed; // Need to keep the last value in case we are still iterating
-	extern FArray1D< Real64 > LastTimeStepSys; // Need to keep the last value in case we are still iterating
+	extern Array1D< Real64 > LastQRadSysSrc; // Need to keep the last value in case we are still iterating
+	extern Array1D< Real64 > LastSysTimeElapsed; // Need to keep the last value in case we are still iterating
+	extern Array1D< Real64 > LastTimeStepSys; // Need to keep the last value in case we are still iterating
 	// Autosizing variables
-	extern FArray1D_bool MySizeFlagHydr;
-	extern FArray1D_bool MySizeFlagCFlo;
-	extern FArray1D_bool MySizeFlagElec;
-	extern FArray1D_bool CheckEquipName;
+	extern Array1D_bool MySizeFlagHydr;
+	extern Array1D_bool MySizeFlagCFlo;
+	extern Array1D_bool MySizeFlagElec;
+	extern Array1D_bool CheckEquipName;
 
 	// SUBROUTINE SPECIFICATIONS FOR MODULE LowTempRadiantSystem
 
@@ -86,10 +86,10 @@ namespace LowTempRadiantSystem {
 		int ZonePtr; // Point to this zone in the Zone derived type
 		std::string SurfListName; // Name of surface/surface list that is the radiant system
 		int NumOfSurfaces; // Number of surfaces included in this radiant system (coordinated control)
-		FArray1D_int SurfacePtr; // Pointer to the surface(s) in the Surface derived type
-		FArray1D_string SurfaceName; // Name of surfaces that are the radiant system (can be one or more)
-		FArray1D< Real64 > SurfaceFlowFrac; // Fraction of flow/pipe length for a particular surface
-		FArray1D< Real64 > NumCircuits; // Number of fluid circuits in the surface
+		Array1D_int SurfacePtr; // Pointer to the surface(s) in the Surface derived type
+		Array1D_string SurfaceName; // Name of surfaces that are the radiant system (can be one or more)
+		Array1D< Real64 > SurfaceFlowFrac; // Fraction of flow/pipe length for a particular surface
+		Array1D< Real64 > NumCircuits; // Number of fluid circuits in the surface
 		Real64 TotalSurfaceArea; // Total surface area for all surfaces that are part of this radiant system
 		Real64 TubeDiameter; // tube diameter for embedded tubing
 		Real64 TubeLength; // tube length embedded in radiant surface
@@ -139,10 +139,10 @@ namespace LowTempRadiantSystem {
 		Real64 CoolEnergy; // cooling sent to panel in Joules
 		int OutRangeHiErrorCount; // recurring errors for crazy results too high fluid temperature
 		int OutRangeLoErrorCount; // recurring errors for crazy results too low fluid temperature
-		int HeatingCapMethod; // - Method for Low Temp Radiant system heating capacity scaledsizing calculation (HeatingDesignCapacity, CapacityPerFloorArea, FracOfAutosizedHeatingCapacity) 
-		Real64 ScaledHeatingCapacity; // -  Low Temp Radiant system scaled maximum heating capacity {W} or scalable variable of zone HVAC equipment, {-}, or {W/m2} 
-		int CoolingCapMethod; // - Method for Low Temp Radiant system cooling capacity scaledsizing calculation (CoolingDesignCapacity, CapacityPerFloorArea, FracOfAutosizedCoolingCapacity) 
-		Real64 ScaledCoolingCapacity; // -  Low Temp Radiant system scaled maximum cooling capacity {W} or scalable variable of zone HVAC equipment, {-}, or {W/m2} 
+		int HeatingCapMethod; // - Method for Low Temp Radiant system heating capacity scaledsizing calculation (HeatingDesignCapacity, CapacityPerFloorArea, FracOfAutosizedHeatingCapacity)
+		Real64 ScaledHeatingCapacity; // -  Low Temp Radiant system scaled maximum heating capacity {W} or scalable variable of zone HVAC equipment, {-}, or {W/m2}
+		int CoolingCapMethod; // - Method for Low Temp Radiant system cooling capacity scaledsizing calculation (CoolingDesignCapacity, CapacityPerFloorArea, FracOfAutosizedCoolingCapacity)
+		Real64 ScaledCoolingCapacity; // -  Low Temp Radiant system scaled maximum cooling capacity {W} or scalable variable of zone HVAC equipment, {-}, or {W/m2}
 
 		// Default Constructor
 		HydronicRadiantSystemData() :
@@ -209,10 +209,10 @@ namespace LowTempRadiantSystem {
 			int const ZonePtr, // Point to this zone in the Zone derived type
 			std::string const & SurfListName, // Name of surface/surface list that is the radiant system
 			int const NumOfSurfaces, // Number of surfaces included in this radiant system (coordinated control)
-			FArray1_int const & SurfacePtr, // Pointer to the surface(s) in the Surface derived type
-			FArray1_string const & SurfaceName, // Name of surfaces that are the radiant system (can be one or more)
-			FArray1< Real64 > const & SurfaceFlowFrac, // Fraction of flow/pipe length for a particular surface
-			FArray1< Real64 > const & NumCircuits, // Number of fluid circuits in the surface
+			Array1_int const & SurfacePtr, // Pointer to the surface(s) in the Surface derived type
+			Array1_string const & SurfaceName, // Name of surfaces that are the radiant system (can be one or more)
+			Array1< Real64 > const & SurfaceFlowFrac, // Fraction of flow/pipe length for a particular surface
+			Array1< Real64 > const & NumCircuits, // Number of fluid circuits in the surface
 			Real64 const TotalSurfaceArea, // Total surface area for all surfaces that are part of this radiant system
 			Real64 const TubeDiameter, // tube diameter for embedded tubing
 			Real64 const TubeLength, // tube length embedded in radiant surface
@@ -260,10 +260,10 @@ namespace LowTempRadiantSystem {
 			Real64 const CoolEnergy, // cooling sent to panel in Joules
 			int const OutRangeHiErrorCount, // recurring errors for crazy results too high fluid temperature
 			int const OutRangeLoErrorCount, // recurring errors for crazy results too low fluid temperature
-			int const HeatingCapMethod, // - Method for Low Temp Radiant system heating capacity scaledsizing calculation (HeatingDesignCapacity, CapacityPerFloorArea, FracOfAutosizedHeatingCapacity) 
-			Real64 const ScaledHeatingCapacity, // -  Low Temp Radiant system scaled maximum heating capacity {W} or scalable variable of zone HVAC equipment, {-}, or {W/m2} 
-			int const CoolingCapMethod, // - Method for Low Temp Radiant system cooling capacity scaledsizing calculation (CoolingDesignCapacity, CapacityPerFloorArea, FracOfAutosizedCoolingCapacity) 
-			Real64 const ScaledCoolingCapacity // -  Low Temp Radiant system scaled maximum cooling capacity {W} or scalable variable of zone HVAC equipment, {-}, or {W/m2} 
+			int const HeatingCapMethod, // - Method for Low Temp Radiant system heating capacity scaledsizing calculation (HeatingDesignCapacity, CapacityPerFloorArea, FracOfAutosizedHeatingCapacity)
+			Real64 const ScaledHeatingCapacity, // -  Low Temp Radiant system scaled maximum heating capacity {W} or scalable variable of zone HVAC equipment, {-}, or {W/m2}
+			int const CoolingCapMethod, // - Method for Low Temp Radiant system cooling capacity scaledsizing calculation (CoolingDesignCapacity, CapacityPerFloorArea, FracOfAutosizedCoolingCapacity)
+			Real64 const ScaledCoolingCapacity // -  Low Temp Radiant system scaled maximum cooling capacity {W} or scalable variable of zone HVAC equipment, {-}, or {W/m2}
 		) :
 			Name( Name ),
 			SchedName( SchedName ),
@@ -341,10 +341,10 @@ namespace LowTempRadiantSystem {
 		int ZonePtr; // Point to this zone in the Zone derived type
 		std::string SurfListName; // Name of surface/surface list that is the radiant system
 		int NumOfSurfaces; // Number of surfaces included in this radiant system (coordinated control)
-		FArray1D_int SurfacePtr; // Pointer to the surface(s) in the Surface derived type
-		FArray1D_string SurfaceName; // Name of surfaces that are the radiant system (can be one or more)
-		FArray1D< Real64 > SurfaceFlowFrac; // Fraction of flow/pipe length for a particular surface
-		FArray1D< Real64 > NumCircuits; // Number of fluid circuits in the surface
+		Array1D_int SurfacePtr; // Pointer to the surface(s) in the Surface derived type
+		Array1D_string SurfaceName; // Name of surfaces that are the radiant system (can be one or more)
+		Array1D< Real64 > SurfaceFlowFrac; // Fraction of flow/pipe length for a particular surface
+		Array1D< Real64 > NumCircuits; // Number of fluid circuits in the surface
 		Real64 TotalSurfaceArea; // Total surface area for all surfaces that are part of this radiant system
 		Real64 TubeDiameter; // tube diameter for embedded tubing
 		Real64 TubeLength; // tube length embedded in radiant surface
@@ -505,10 +505,10 @@ namespace LowTempRadiantSystem {
 			int const ZonePtr, // Point to this zone in the Zone derived type
 			std::string const & SurfListName, // Name of surface/surface list that is the radiant system
 			int const NumOfSurfaces, // Number of surfaces included in this radiant system (coordinated control)
-			FArray1_int const & SurfacePtr, // Pointer to the surface(s) in the Surface derived type
-			FArray1_string const & SurfaceName, // Name of surfaces that are the radiant system (can be one or more)
-			FArray1< Real64 > const & SurfaceFlowFrac, // Fraction of flow/pipe length for a particular surface
-			FArray1< Real64 > const & NumCircuits, // Number of fluid circuits in the surface
+			Array1_int const & SurfacePtr, // Pointer to the surface(s) in the Surface derived type
+			Array1_string const & SurfaceName, // Name of surfaces that are the radiant system (can be one or more)
+			Array1< Real64 > const & SurfaceFlowFrac, // Fraction of flow/pipe length for a particular surface
+			Array1< Real64 > const & NumCircuits, // Number of fluid circuits in the surface
 			Real64 const TotalSurfaceArea, // Total surface area for all surfaces that are part of this radiant system
 			Real64 const TubeDiameter, // tube diameter for embedded tubing
 			Real64 const TubeLength, // tube length embedded in radiant surface
@@ -678,9 +678,9 @@ namespace LowTempRadiantSystem {
 		int ZonePtr; // Point to this zone in the Zone derived type
 		std::string SurfListName; // Name of surface/surface list that is the radiant system
 		int NumOfSurfaces; // Number of surfaces included in this radiant system (coordinated control)
-		FArray1D_int SurfacePtr; // Pointer to the surface(s) in the Surface derived type
-		FArray1D_string SurfaceName; // Name of surfaces that are the radiant system (can be one or more)
-		FArray1D< Real64 > SurfacePowerFrac; // Fraction of total power input to surface
+		Array1D_int SurfacePtr; // Pointer to the surface(s) in the Surface derived type
+		Array1D_string SurfaceName; // Name of surfaces that are the radiant system (can be one or more)
+		Array1D< Real64 > SurfacePowerFrac; // Fraction of total power input to surface
 		Real64 TotalSurfaceArea; // Total surface area for all surfaces that are part of this radiant system
 		Real64 MaxElecPower; // Maximum electric power that can be supplied to surface, Watts
 		int ControlType; // Control type for the system (MAT, MRT, Op temp, ODB, OWB)
@@ -694,8 +694,8 @@ namespace LowTempRadiantSystem {
 		Real64 HeatPower; // heating sent to panel in Watts (same as ElecPower)
 		Real64 HeatEnergy; // heating sent to panel in Joules (same as ElecEnergy)
 		int HeatingCapMethod;    // - Method for Low Temp Radiant system heating capacity scaledsizing calculation
-		//- (HeatingDesignCapacity, CapacityPerFloorArea, FracOfAutosizedHeatingCapacity) 
-		Real64 ScaledHeatingCapacity;   // -  Low Temp Radiant system scaled maximum heating capacity {W} or scalable variable of zone HVAC equipment, {-}, or {W/m2} 
+		//- (HeatingDesignCapacity, CapacityPerFloorArea, FracOfAutosizedHeatingCapacity)
+		Real64 ScaledHeatingCapacity;   // -  Low Temp Radiant system scaled maximum heating capacity {W} or scalable variable of zone HVAC equipment, {-}, or {W/m2}
 
 		// Default Constructor
 		ElectricRadiantSystemData() :
@@ -724,9 +724,9 @@ namespace LowTempRadiantSystem {
 			int const ZonePtr, // Point to this zone in the Zone derived type
 			std::string const & SurfListName, // Name of surface/surface list that is the radiant system
 			int const NumOfSurfaces, // Number of surfaces included in this radiant system (coordinated control)
-			FArray1_int const & SurfacePtr, // Pointer to the surface(s) in the Surface derived type
-			FArray1_string const & SurfaceName, // Name of surfaces that are the radiant system (can be one or more)
-			FArray1< Real64 > const & SurfacePowerFrac, // Fraction of total power input to surface
+			Array1_int const & SurfacePtr, // Pointer to the surface(s) in the Surface derived type
+			Array1_string const & SurfaceName, // Name of surfaces that are the radiant system (can be one or more)
+			Array1< Real64 > const & SurfacePowerFrac, // Fraction of total power input to surface
 			Real64 const TotalSurfaceArea, // Total surface area for all surfaces that are part of this radiant system
 			Real64 const MaxElecPower, // Maximum electric power that can be supplied to surface, Watts
 			int const ControlType, // Control type for the system (MAT, MRT, Op temp, ODB, OWB)
@@ -738,8 +738,8 @@ namespace LowTempRadiantSystem {
 			Real64 const HeatPower, // heating sent to panel in Watts (same as ElecPower)
 			Real64 const HeatEnergy, // heating sent to panel in Joules (same as ElecEnergy)
 			int const HeatingCapMethod,     // - Method for Low Temp Radiant system heating capacity scalable sizing calculation
-			//- (HeatingDesignCapacity, CapacityPerFloorArea, FracOfAutosizedHeatingCapacity) 
-			Real64 const ScaledHeatingCapacity   // - Low Temp Radiant system scaled maximum heating capacity {W} or scalable variable of zone HVAC equipment, {-}, or {W/m2} 
+			//- (HeatingDesignCapacity, CapacityPerFloorArea, FracOfAutosizedHeatingCapacity)
+			Real64 const ScaledHeatingCapacity   // - Low Temp Radiant system scaled maximum heating capacity {W} or scalable variable of zone HVAC equipment, {-}, or {W/m2}
 		) :
 			Name( Name ),
 			SchedName( SchedName ),
@@ -760,7 +760,7 @@ namespace LowTempRadiantSystem {
 			ElecPower( ElecPower ),
 			ElecEnergy( ElecEnergy ),
 			HeatPower( HeatPower ),
-			HeatEnergy( HeatEnergy ), 
+			HeatEnergy( HeatEnergy ),
 			HeatingCapMethod( HeatingCapMethod ),
 			ScaledHeatingCapacity( ScaledHeatingCapacity )
 		{}
@@ -797,7 +797,7 @@ namespace LowTempRadiantSystem {
 	struct ElecRadSysNumericFieldData
 	{
 		// Members
-		FArray1D_string FieldNames;
+		Array1D_string FieldNames;
 
 		// Default Constructor
 		ElecRadSysNumericFieldData()
@@ -805,7 +805,7 @@ namespace LowTempRadiantSystem {
 
 		// Member Constructor
 		ElecRadSysNumericFieldData(
-			FArray1_string const & FieldNames // Name of the HeatingCoil numeric field descriptions
+			Array1_string const & FieldNames // Name of the HeatingCoil numeric field descriptions
 			) :
 			FieldNames(FieldNames)
 		{}
@@ -814,7 +814,7 @@ namespace LowTempRadiantSystem {
 	struct HydronicRadiantSysNumericFieldData
 	{
 		// Members
-		FArray1D_string FieldNames;
+		Array1D_string FieldNames;
 
 		// Default Constructor
 		HydronicRadiantSysNumericFieldData()
@@ -822,19 +822,19 @@ namespace LowTempRadiantSystem {
 
 		// Member Constructor
 		HydronicRadiantSysNumericFieldData(
-			FArray1_string const & FieldNames // Name of the HeatingCoil numeric field descriptions
+			Array1_string const & FieldNames // Name of the HeatingCoil numeric field descriptions
 			) :
 			FieldNames(FieldNames)
 		{}
 	};
 
 	// Object Data
-	extern FArray1D< HydronicRadiantSystemData > HydrRadSys;
-	extern FArray1D< ConstantFlowRadiantSystemData > CFloRadSys;
-	extern FArray1D< ElectricRadiantSystemData > ElecRadSys;
-	extern FArray1D< RadSysTypeData > RadSysTypes;
-	extern FArray1D< ElecRadSysNumericFieldData > ElecRadSysNumericFields;
-	extern FArray1D< HydronicRadiantSysNumericFieldData > HydronicRadiantSysNumericFields;
+	extern Array1D< HydronicRadiantSystemData > HydrRadSys;
+	extern Array1D< ConstantFlowRadiantSystemData > CFloRadSys;
+	extern Array1D< ElectricRadiantSystemData > ElecRadSys;
+	extern Array1D< RadSysTypeData > RadSysTypes;
+	extern Array1D< ElecRadSysNumericFieldData > ElecRadSysNumericFields;
+	extern Array1D< HydronicRadiantSysNumericFieldData > HydronicRadiantSysNumericFields;
 
 	// Functions
 

@@ -3,7 +3,7 @@
 #include <string>
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray.functions.hh>
+#include <ObjexxFCL/Array.functions.hh>
 #include <ObjexxFCL/Fmath.hh>
 #include <ObjexxFCL/gio.hh>
 
@@ -103,28 +103,28 @@ namespace HeatBalanceHAMTManager {
 	// DERIVED TYPE DEFINITIONS:
 
 	// MODULE VARIABLE DECLARATIONS:
-	FArray1D_int firstcell;
-	FArray1D_int lastcell;
-	FArray1D_int Extcell;
-	FArray1D_int ExtRadcell;
-	FArray1D_int ExtConcell;
-	FArray1D_int ExtSkycell;
-	FArray1D_int ExtGrncell;
-	FArray1D_int Intcell;
-	FArray1D_int IntConcell;
+	Array1D_int firstcell;
+	Array1D_int lastcell;
+	Array1D_int Extcell;
+	Array1D_int ExtRadcell;
+	Array1D_int ExtConcell;
+	Array1D_int ExtSkycell;
+	Array1D_int ExtGrncell;
+	Array1D_int Intcell;
+	Array1D_int IntConcell;
 
-	FArray1D< Real64 > watertot;
-	FArray1D< Real64 > surfrh;
-	FArray1D< Real64 > surfextrh;
-	FArray1D< Real64 > surftemp;
-	FArray1D< Real64 > surfexttemp;
-	FArray1D< Real64 > surfvp;
+	Array1D< Real64 > watertot;
+	Array1D< Real64 > surfrh;
+	Array1D< Real64 > surfextrh;
+	Array1D< Real64 > surftemp;
+	Array1D< Real64 > surfexttemp;
+	Array1D< Real64 > surfvp;
 
-	FArray1D< Real64 > extvtc; // External Surface vapor transfer coefficient
-	FArray1D< Real64 > intvtc; // Internal Surface Vapor Transfer Coefficient
-	FArray1D_bool extvtcflag; // External Surface vapor transfer coefficient flag
-	FArray1D_bool intvtcflag; // Internal Surface Vapor Transfer Coefficient flag
-	FArray1D_bool MyEnvrnFlag; // Flag to reset surface properties.
+	Array1D< Real64 > extvtc; // External Surface vapor transfer coefficient
+	Array1D< Real64 > intvtc; // Internal Surface Vapor Transfer Coefficient
+	Array1D_bool extvtcflag; // External Surface vapor transfer coefficient flag
+	Array1D_bool intvtcflag; // Internal Surface Vapor Transfer Coefficient flag
+	Array1D_bool MyEnvrnFlag; // Flag to reset surface properties.
 
 	Real64 deltat( 0.0 ); // time step in seconds
 
@@ -136,7 +136,7 @@ namespace HeatBalanceHAMTManager {
 	// SUBROUTINE SPECIFICATIONS FOR MODULE HeatBalanceHAMTManager:
 
 	// Object Data
-	FArray1D< subcell > cells;
+	Array1D< subcell > cells;
 
 	// Functions
 
@@ -236,14 +236,14 @@ namespace HeatBalanceHAMTManager {
 
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 
-		FArray1D_string AlphaArray;
-		FArray1D_string cAlphaFieldNames;
-		FArray1D_string cNumericFieldNames;
+		Array1D_string AlphaArray;
+		Array1D_string cAlphaFieldNames;
+		Array1D_string cNumericFieldNames;
 
-		FArray1D_bool lAlphaBlanks;
-		FArray1D_bool lNumericBlanks;
+		Array1D_bool lAlphaBlanks;
+		Array1D_bool lNumericBlanks;
 
-		FArray1D< Real64 > NumArray;
+		Array1D< Real64 > NumArray;
 
 		Real64 dumrh;
 		Real64 dumdata;
@@ -346,7 +346,7 @@ namespace HeatBalanceHAMTManager {
 
 			if ( matid == 0 ) {
 				ShowSevereError( cHAMTObject1 + ' ' + cAlphaFieldNames( 1 ) + "=\"" + AlphaArray( 1 ) + "\" is invalid (undefined)." );
-				ShowContinueError( "The basic material must be defined in addition to specifying " "HeatAndMoistureTransfer properties." );
+				ShowContinueError( "The basic material must be defined in addition to specifying HeatAndMoistureTransfer properties." );
 				ErrorsFound = true;
 				continue;
 			}
@@ -368,7 +368,7 @@ namespace HeatBalanceHAMTManager {
 
 			if ( matid == 0 ) {
 				ShowSevereError( cHAMTObject2 + ' ' + cAlphaFieldNames( 1 ) + "=\"" + AlphaArray( 1 ) + "\" is invalid (undefined)." );
-				ShowContinueError( "The basic material must be defined in addition to specifying " "HeatAndMoistureTransfer properties." );
+				ShowContinueError( "The basic material must be defined in addition to specifying HeatAndMoistureTransfer properties." );
 				ErrorsFound = true;
 				continue;
 			}
@@ -447,7 +447,7 @@ namespace HeatBalanceHAMTManager {
 
 			if ( matid == 0 ) {
 				ShowSevereError( cHAMTObject3 + ' ' + cAlphaFieldNames( 1 ) + "=\"" + AlphaArray( 1 ) + "\" is invalid (undefined)." );
-				ShowContinueError( "The basic material must be defined in addition to specifying " "HeatAndMoistureTransfer properties." );
+				ShowContinueError( "The basic material must be defined in addition to specifying HeatAndMoistureTransfer properties." );
 				ErrorsFound = true;
 				continue;
 			}
@@ -479,7 +479,7 @@ namespace HeatBalanceHAMTManager {
 			matid = FindItemInList( AlphaArray( 1 ), Material.Name(), TotMaterials );
 			if ( matid == 0 ) {
 				ShowSevereError( cHAMTObject4 + ' ' + cAlphaFieldNames( 1 ) + "=\"" + AlphaArray( 1 ) + "\" is invalid (undefined)." );
-				ShowContinueError( "The basic material must be defined in addition to specifying " "HeatAndMoistureTransfer properties." );
+				ShowContinueError( "The basic material must be defined in addition to specifying HeatAndMoistureTransfer properties." );
 				ErrorsFound = true;
 				continue;
 			}
@@ -510,7 +510,7 @@ namespace HeatBalanceHAMTManager {
 			matid = FindItemInList( AlphaArray( 1 ), Material.Name(), TotMaterials );
 			if ( matid == 0 ) {
 				ShowSevereError( cHAMTObject5 + ' ' + cAlphaFieldNames( 1 ) + "=\"" + AlphaArray( 1 ) + "\" is invalid (undefined)." );
-				ShowContinueError( "The basic material must be defined in addition to specifying " "HeatAndMoistureTransfer properties." );
+				ShowContinueError( "The basic material must be defined in addition to specifying HeatAndMoistureTransfer properties." );
 				ErrorsFound = true;
 				continue;
 			}
@@ -544,7 +544,7 @@ namespace HeatBalanceHAMTManager {
 			matid = FindItemInList( AlphaArray( 1 ), Material.Name(), TotMaterials );
 			if ( matid == 0 ) {
 				ShowSevereError( cHAMTObject6 + ' ' + cAlphaFieldNames( 1 ) + "=\"" + AlphaArray( 1 ) + "\" is invalid (undefined)." );
-				ShowContinueError( "The basic material must be defined in addition to specifying " "HeatAndMoistureTransfer properties." );
+				ShowContinueError( "The basic material must be defined in addition to specifying HeatAndMoistureTransfer properties." );
 				ErrorsFound = true;
 				continue;
 			}
@@ -578,7 +578,7 @@ namespace HeatBalanceHAMTManager {
 			vtcsid = FindItemInList( AlphaArray( 1 ), Surface.Name(), TotSurfaces );
 			if ( vtcsid == 0 ) {
 				ShowSevereError( cHAMTObject7 + ' ' + cAlphaFieldNames( 1 ) + "=\"" + AlphaArray( 1 ) + "\" is invalid (undefined)." );
-				ShowContinueError( "The basic material must be defined in addition to specifying " "HeatAndMoistureTransfer properties." );
+				ShowContinueError( "The basic material must be defined in addition to specifying HeatAndMoistureTransfer properties." );
 				ErrorsFound = true;
 				continue;
 			}
@@ -697,29 +697,29 @@ namespace HeatBalanceHAMTManager {
 
 				if ( Material( matid ).nmu < 0 ) {
 					ShowSevereError( RoutineName + "Construction=" + Construct( conid ).Name );
-					ShowContinueError( "Reference Material=\"" + Material( matid ).Name + "\"" " does not have required Water Vapor Diffusion Resistance Factor (mu) data." );
+					ShowContinueError( "Reference Material=\"" + Material( matid ).Name + "\" does not have required Water Vapor Diffusion Resistance Factor (mu) data." );
 					++errorCount;
 				}
 
 				if ( Material( matid ).niso < 0 ) {
 					ShowSevereError( RoutineName + "Construction=" + Construct( conid ).Name );
-					ShowContinueError( "Reference Material=\"" + Material( matid ).Name + "\"" " does not have required isotherm data." );
+					ShowContinueError( "Reference Material=\"" + Material( matid ).Name + "\" does not have required isotherm data." );
 					++errorCount;
 				}
 				if ( Material( matid ).nsuc < 0 ) {
 					ShowSevereError( RoutineName + "Construction=" + Construct( conid ).Name );
-					ShowContinueError( "Reference Material=\"" + Material( matid ).Name + "\"" " does not have required liquid transport coefficient (suction) data." );
+					ShowContinueError( "Reference Material=\"" + Material( matid ).Name + "\" does not have required liquid transport coefficient (suction) data." );
 					++errorCount;
 				}
 				if ( Material( matid ).nred < 0 ) {
 					ShowSevereError( RoutineName + "Construction=" + Construct( conid ).Name );
-					ShowContinueError( "Reference Material=\"" + Material( matid ).Name + "\"" " does not have required liquid transport coefficient (redistribution) data." );
+					ShowContinueError( "Reference Material=\"" + Material( matid ).Name + "\" does not have required liquid transport coefficient (redistribution) data." );
 					++errorCount;
 				}
 				if ( Material( matid ).ntc < 0 ) {
 					if ( Material( matid ).Conductivity > 0 ) {
 						ShowWarningError( RoutineName + "Construction=" + Construct( conid ).Name );
-						ShowContinueError( "Reference Material=\"" + Material( matid ).Name + "\"" " does not have thermal conductivity data. Using fixed value." );
+						ShowContinueError( "Reference Material=\"" + Material( matid ).Name + "\" does not have thermal conductivity data. Using fixed value." );
 						Material( matid ).ntc = 2;
 						Material( matid ).tcwater( 1 ) = 0.0;
 						Material( matid ).tcdata( 1 ) = Material( matid ).Conductivity;
@@ -727,7 +727,7 @@ namespace HeatBalanceHAMTManager {
 						Material( matid ).tcdata( 2 ) = Material( matid ).Conductivity;
 					} else {
 						ShowSevereError( RoutineName + "Construction=" + Construct( conid ).Name );
-						ShowContinueError( "Reference Material=\"" + Material( matid ).Name + "\"" " does not have required thermal conductivity data." );
+						ShowContinueError( "Reference Material=\"" + Material( matid ).Name + "\" does not have required thermal conductivity data." );
 						++errorCount;
 					}
 				}
@@ -748,7 +748,7 @@ namespace HeatBalanceHAMTManager {
 					--Material( matid ).divs;
 					if ( Material( matid ).divs < 1 ) {
 						ShowSevereError( RoutineName + "Construction=" + Construct( conid ).Name );
-						ShowContinueError( "Reference Material=\"" + Material( matid ).Name + "\"" " is too thin." );
+						ShowContinueError( "Reference Material=\"" + Material( matid ).Name + "\" is too thin." );
 						++errorCount;
 						break;
 					}
@@ -1474,8 +1474,8 @@ namespace HeatBalanceHAMTManager {
 	void
 	interp(
 		int const ndata,
-		FArray1A< Real64 > const xx,
-		FArray1A< Real64 > const yy,
+		Array1A< Real64 > const xx,
+		Array1A< Real64 > const yy,
 		Real64 const invalue,
 		Real64 & outvalue,
 		Optional< Real64 > outgrad

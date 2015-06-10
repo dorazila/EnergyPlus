@@ -1,7 +1,7 @@
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray.functions.hh>
-#include <ObjexxFCL/FArrayS.functions.hh>
-#include <ObjexxFCL/FArray1D.hh>
+#include <ObjexxFCL/Array.functions.hh>
+#include <ObjexxFCL/ArrayS.functions.hh>
+#include <ObjexxFCL/Array1D.hh>
 #include <ObjexxFCL/Fmath.hh>
 #include <ObjexxFCL/MArray.functions.hh>
 
@@ -177,7 +177,7 @@ namespace RoomAirModelUserTempPattern {
 		// na
 
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
-		static FArray1D_bool MyEnvrnFlag; // flag for init once at start of environment
+		static Array1D_bool MyEnvrnFlag; // flag for init once at start of environment
 		static bool MyOneTimeFlag( true ); // one time setup flag
 		int SurfNum; // do loop counter
 
@@ -232,7 +232,6 @@ namespace RoomAirModelUserTempPattern {
 		using DataHeatBalFanSys::MAT;
 		using DataHeatBalFanSys::ZT;
 		using DataHeatBalFanSys::ZTAV;
-		using DataHeatBalance::Zone;
 		using InputProcessor::FindItem;
 
 		// Locals
@@ -283,11 +282,8 @@ namespace RoomAirModelUserTempPattern {
 		// na
 
 		// Using/Aliasing
-		using DataSurfaces::Surface;
-		using DataSurfaces::AdjacentAirTemp;
 		using DataSurfaces::ZoneMeanAirTemp;
 		using ScheduleManager::GetCurrentScheduleValue;
-		using DataHeatBalance::Zone;
 		using InputProcessor::FindItem;
 		using OutputReportTabular::IntToStr;
 		using General::FindNumberInList;
@@ -573,7 +569,7 @@ namespace RoomAirModelUserTempPattern {
 		Real64 thisZeta; // non-dimensional height
 		Real64 DeltaHeight; // height difference in m
 		Real64 tempDeltaTai; // temporary temperature difference
-		static FArray1D_bool SetupOutputFlag; // flag to set up output variable one-time if 2-grad model used
+		static Array1D_bool SetupOutputFlag; // flag to set up output variable one-time if 2-grad model used
 		static bool MyOneTimeFlag( true );
 
 		if ( MyOneTimeFlag ) {
@@ -949,9 +945,7 @@ namespace RoomAirModelUserTempPattern {
 		using DataSurfaces::AirFlowWindow_Destination_ReturnAir;
 		using DataHeatBalance::Zone;
 		using DataHeatBalance::TempEffBulkAir;
-		using DataHeatBalance::ZoneIntGain;
 		using DataHeatBalance::RefrigCaseCredit;
-		using DataZoneEquipment::ZoneEquipConfig;
 		using DataHeatBalFanSys::MAT;
 		using DataHeatBalFanSys::ZT;
 		using DataHeatBalFanSys::TempZoneThermostatSetPoint;

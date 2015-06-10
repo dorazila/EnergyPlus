@@ -2,7 +2,7 @@
 #include <cmath>
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray.functions.hh>
+#include <ObjexxFCL/Array.functions.hh>
 
 // EnergyPlus Headers
 #include <ElectricBaseboardRadiator.hh>
@@ -74,27 +74,27 @@ namespace ElectricBaseboardRadiator {
 
 	//MODULE VARIABLE DECLARATIONS:
 	int NumElecBaseboards( 0 );
-	FArray1D< Real64 > QBBElecRadSource; // Need to keep the last value in case we are still iterating
-	FArray1D< Real64 > QBBElecRadSrcAvg; // Need to keep the last value in case we are still iterating
-	FArray1D< Real64 > ZeroSourceSumHATsurf; // Equal to the SumHATsurf for all the walls in a zone with no source
+	Array1D< Real64 > QBBElecRadSource; // Need to keep the last value in case we are still iterating
+	Array1D< Real64 > QBBElecRadSrcAvg; // Need to keep the last value in case we are still iterating
+	Array1D< Real64 > ZeroSourceSumHATsurf; // Equal to the SumHATsurf for all the walls in a zone with no source
 	// Record keeping variables used to calculate QBBRadSrcAvg locally
-	FArray1D< Real64 > LastQBBElecRadSrc; // Need to keep the last value in case we are still iterating
-	FArray1D< Real64 > LastSysTimeElapsed; // Need to keep the last value in case we are still iterating
-	FArray1D< Real64 > LastTimeStepSys; // Need to keep the last value in case we are still iterating
-	FArray1D_bool MySizeFlag;
-	FArray1D_bool CheckEquipName;
+	Array1D< Real64 > LastQBBElecRadSrc; // Need to keep the last value in case we are still iterating
+	Array1D< Real64 > LastSysTimeElapsed; // Need to keep the last value in case we are still iterating
+	Array1D< Real64 > LastTimeStepSys; // Need to keep the last value in case we are still iterating
+	Array1D_bool MySizeFlag;
+	Array1D_bool CheckEquipName;
 	//SUBROUTINE SPECIFICATIONS FOR MODULE BaseboardRadiator
 
 	// Object Data
-	FArray1D< ElecBaseboardParams > ElecBaseboard;
-	FArray1D< ElecBaseboardNumericFieldData > ElecBaseboardNumericFields;
+	Array1D< ElecBaseboardParams > ElecBaseboard;
+	Array1D< ElecBaseboardNumericFieldData > ElecBaseboardNumericFields;
 
 	// Functions
 
 	void
 	SimElecBaseboard(
 		std::string const & EquipName,
-		int const ActualZoneNum,
+		int const EP_UNUSED( ActualZoneNum ),
 		int const ControlledZoneNum,
 		bool const FirstHVACIteration,
 		Real64 & PowerMet,
@@ -217,7 +217,6 @@ namespace ElectricBaseboardRadiator {
 		using namespace DataIPShortCuts;
 		using General::TrimSigDigits;
 		using DataSizing::AutoSize;
-		using DataSizing::FinalZoneSizing;
 		using DataSizing::HeatingDesignCapacity;
 		using DataSizing::CapacityPerFloorArea;
 		using DataSizing::FractionOfAutosizedHeatingCapacity;
@@ -246,7 +245,6 @@ namespace ElectricBaseboardRadiator {
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 		Real64 AllFracsSummed; // Sum of the fractions radiant
 		int BaseboardNum;
-		int ElecBBNum;
 		int NumAlphas;
 		int NumNumbers;
 		int SurfNum; // surface number that radiant heat delivered
@@ -326,8 +324,7 @@ namespace ElectricBaseboardRadiator {
 						ShowContinueError( "Input for " + cAlphaFieldNames( iHeatCAPMAlphaNum ) + " = " + cAlphaArgs( iHeatCAPMAlphaNum ) );
 						ShowContinueError( "Illegal " + cNumericFieldNames (iHeatCapacityPerFloorAreaNumericNum ) + " = " + TrimSigDigits( rNumericArgs( iHeatCapacityPerFloorAreaNumericNum ), 7 ) );
 						ErrorsFound = true;
-					}
-					else if ( ElecBaseboard( BaseboardNum ).ScaledHeatingCapacity == AutoSize ) {
+					} else if ( ElecBaseboard( BaseboardNum ).ScaledHeatingCapacity == AutoSize ) {
 						ShowSevereError( cCurrentModuleObject + " = " + ElecBaseboard( BaseboardNum ).EquipName );
 						ShowContinueError( "Input for " + cAlphaFieldNames( iHeatCAPMAlphaNum ) + " = " + cAlphaArgs( iHeatCAPMAlphaNum ) );
 						ShowContinueError( "Illegal " + cNumericFieldNames( iHeatCapacityPerFloorAreaNumericNum ) + " = Autosize" );
@@ -339,8 +336,7 @@ namespace ElectricBaseboardRadiator {
 					ShowContinueError( "Blank field not allowed for " + cNumericFieldNames( iHeatCapacityPerFloorAreaNumericNum ) );
 					ErrorsFound = true;
 				}
-			}
-			else if ( SameString( cAlphaArgs( iHeatCAPMAlphaNum ), "FractionOfAutosizedHeatingCapacity" ) ){
+			} else if ( SameString( cAlphaArgs( iHeatCAPMAlphaNum ), "FractionOfAutosizedHeatingCapacity" ) ) {
 				ElecBaseboard( BaseboardNum ).HeatingCapMethod = FractionOfAutosizedHeatingCapacity;
 				if ( !lNumericFieldBlanks( iHeatFracOfAutosizedCapacityNumericNum ) ) {
 					ElecBaseboard( BaseboardNum ).ScaledHeatingCapacity = rNumericArgs( iHeatFracOfAutosizedCapacityNumericNum );
@@ -524,7 +520,7 @@ namespace ElectricBaseboardRadiator {
 		static bool ZoneEquipmentListChecked( false ); // True after the Zone Equipment List has been checked for items
 		int ZoneNum;
 		int Loop;
-		static FArray1D_bool MyEnvrnFlag;
+		static Array1D_bool MyEnvrnFlag;
 
 		// Do the one time initializations
 		if ( MyOneTimeFlag ) {
@@ -685,7 +681,7 @@ namespace ElectricBaseboardRadiator {
 			CapSizingMethod = ElecBaseboard( BaseboardNum ).HeatingCapMethod;
 			ZoneEqSizing( CurZoneEqNum ).SizingMethod( SizingMethod ) = CapSizingMethod;
 			if ( CapSizingMethod == HeatingDesignCapacity || CapSizingMethod == CapacityPerFloorArea || CapSizingMethod == FractionOfAutosizedHeatingCapacity ) {
-				if ( CapSizingMethod == HeatingDesignCapacity ){
+				if ( CapSizingMethod == HeatingDesignCapacity ) {
 					if ( ElecBaseboard( BaseboardNum ).ScaledHeatingCapacity == AutoSize ) {
 						CheckZoneSizing(CompType, CompName);
 						ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad = CalcFinalZoneSizing( CurZoneEqNum ).DesHeatLoad * CalcFinalZoneSizing( CurZoneEqNum ).HeatSizingFactor;
@@ -694,12 +690,12 @@ namespace ElectricBaseboardRadiator {
 					}
 					ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 					TempSize = ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad;
-				} else if ( CapSizingMethod == CapacityPerFloorArea ){
+				} else if ( CapSizingMethod == CapacityPerFloorArea ) {
 					ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 					ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad = ElecBaseboard( BaseboardNum ).ScaledHeatingCapacity * Zone( DataZoneNumber ).FloorArea;
 					TempSize = ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad;
 					DataScalableCapSizingON = true;
-				} else if ( CapSizingMethod == FractionOfAutosizedHeatingCapacity ){
+				} else if ( CapSizingMethod == FractionOfAutosizedHeatingCapacity ) {
 					CheckZoneSizing(CompType, CompName);
 					ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 					DataFracOfAutosizedHeatingCapacity = ElecBaseboard( BaseboardNum ).ScaledHeatingCapacity;
@@ -721,7 +717,7 @@ namespace ElectricBaseboardRadiator {
 	void
 	CalcElectricBaseboard(
 		int const BaseboardNum,
-		int const ControlledZoneNum
+		int const EP_UNUSED( ControlledZoneNum )
 	)
 	{
 		// SUBROUTINE INFORMATION:
@@ -958,7 +954,6 @@ namespace ElectricBaseboardRadiator {
 
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 		int BaseboardNum; // DO loop counter for surface index
-		int ZoneNum; // DO loop counter for surface index
 
 		// FLOW:
 		ElecBaseboardSysOn = false;

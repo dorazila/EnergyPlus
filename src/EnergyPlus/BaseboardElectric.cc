@@ -2,7 +2,7 @@
 #include <cmath>
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray.functions.hh>
+#include <ObjexxFCL/Array.functions.hh>
 
 // EnergyPlus Headers
 #include <BaseboardElectric.hh>
@@ -60,14 +60,14 @@ namespace BaseboardElectric {
 
 	//MODULE VARIABLE DECLARATIONS:
 	int NumBaseboards( 0 );
-	FArray1D_bool MySizeFlag;
-	FArray1D_bool CheckEquipName;
+	Array1D_bool MySizeFlag;
+	Array1D_bool CheckEquipName;
 
 	//SUBROUTINE SPECIFICATIONS FOR MODULE BaseboardRadiator
 
 	// Object Data
-	FArray1D< BaseboardParams > Baseboard;
-	FArray1D< BaseboardNumericFieldData > BaseboardNumericFields;
+	Array1D< BaseboardParams > Baseboard;
+	Array1D< BaseboardNumericFieldData > BaseboardNumericFields;
 
 	// Functions
 
@@ -97,7 +97,6 @@ namespace BaseboardElectric {
 		// na
 
 		// Using/Aliasing
-		using DataLoopNode::Node;
 		using InputProcessor::FindItemInList;
 		using DataZoneEnergyDemands::ZoneSysEnergyDemand;
 		using General::TrimSigDigits;
@@ -243,7 +242,7 @@ namespace BaseboardElectric {
 			for ( ConvElecBBNum = 1; ConvElecBBNum <= NumConvElecBaseboards; ++ConvElecBBNum ) {
 
 				GetObjectItem( cCurrentModuleObject, ConvElecBBNum, cAlphaArgs, NumAlphas, rNumericArgs, NumNums, IOStat, lNumericFieldBlanks, lAlphaFieldBlanks, cAlphaFieldNames, cNumericFieldNames );
-				
+
 				BaseboardNumericFields( ConvElecBBNum ).FieldNames.allocate( NumNums);
 				BaseboardNumericFields( ConvElecBBNum ).FieldNames = "";
 				BaseboardNumericFields( ConvElecBBNum ).FieldNames = cNumericFieldNames;
@@ -312,7 +311,7 @@ namespace BaseboardElectric {
 						ShowContinueError( "Blank field not allowed for " + cNumericFieldNames( iHeatCapacityPerFloorAreaNumericNum ) );
 						ErrorsFound = true;
 					}
-				} else if ( SameString( cAlphaArgs( iHeatCAPMAlphaNum ), "FractionOfAutosizedHeatingCapacity" ) ){
+				} else if ( SameString( cAlphaArgs( iHeatCAPMAlphaNum ), "FractionOfAutosizedHeatingCapacity" ) ) {
 					Baseboard( BaseboardNum ).HeatingCapMethod = FractionOfAutosizedHeatingCapacity;
 					if ( !lNumericFieldBlanks( iHeatFracOfAutosizedCapacityNumericNum ) ) {
 						Baseboard( BaseboardNum ).ScaledHeatingCapacity = rNumericArgs( iHeatFracOfAutosizedCapacityNumericNum );
@@ -408,7 +407,7 @@ namespace BaseboardElectric {
 		static bool MyOneTimeFlag( true );
 		static bool ZoneEquipmentListChecked( false ); // True after the Zone Equipment List has been checked for items
 		int Loop;
-		static FArray1D_bool MyEnvrnFlag;
+		static Array1D_bool MyEnvrnFlag;
 
 		// Do the one time initializations
 		if ( MyOneTimeFlag ) {
@@ -525,19 +524,19 @@ namespace BaseboardElectric {
 			CapSizingMethod = Baseboard( BaseboardNum ).HeatingCapMethod;
 			ZoneEqSizing(CurZoneEqNum).SizingMethod(SizingMethod) = CapSizingMethod;
 			if ( CapSizingMethod == HeatingDesignCapacity || CapSizingMethod == CapacityPerFloorArea || CapSizingMethod == FractionOfAutosizedHeatingCapacity ) {
-				if ( CapSizingMethod == HeatingDesignCapacity ){
+				if ( CapSizingMethod == HeatingDesignCapacity ) {
 					if ( Baseboard( BaseboardNum ).ScaledHeatingCapacity == AutoSize ) {
 						CheckZoneSizing(CompType, CompName);
 						ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 						ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad = CalcFinalZoneSizing( CurZoneEqNum ).DesHeatLoad * CalcFinalZoneSizing( CurZoneEqNum ).HeatSizingFactor;
-					} 
-					TempSize = Baseboard( BaseboardNum ).ScaledHeatingCapacity;					
-				} else if ( CapSizingMethod == CapacityPerFloorArea ){
+					}
+					TempSize = Baseboard( BaseboardNum ).ScaledHeatingCapacity;
+				} else if ( CapSizingMethod == CapacityPerFloorArea ) {
 					ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 					ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad = Baseboard( BaseboardNum ).ScaledHeatingCapacity * Zone( DataZoneNumber ).FloorArea;
 					TempSize = ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad;
 					DataScalableCapSizingON = true;
-				} else if ( CapSizingMethod == FractionOfAutosizedHeatingCapacity ){	
+				} else if ( CapSizingMethod == FractionOfAutosizedHeatingCapacity ) {
 					CheckZoneSizing( CompType, CompName );
 					ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 					DataFracOfAutosizedHeatingCapacity = Baseboard( BaseboardNum ).ScaledHeatingCapacity;
@@ -550,7 +549,7 @@ namespace BaseboardElectric {
 				RequestSizing( CompType, CompName, SizingMethod, SizingString, TempSize, PrintFlag, RoutineName );
 				Baseboard( BaseboardNum ).NominalCapacity = TempSize;
 				DataScalableCapSizingON = false;
-			}		
+			}
 		}
 	}
 

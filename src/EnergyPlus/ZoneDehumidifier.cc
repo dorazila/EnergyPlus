@@ -2,7 +2,7 @@
 #include <cmath>
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray.functions.hh>
+#include <ObjexxFCL/Array.functions.hh>
 #include <ObjexxFCL/Fmath.hh>
 
 // EnergyPlus Headers
@@ -92,7 +92,7 @@ namespace ZoneDehumidifier {
 	int NumDehumidifiers( 0 ); // Number of zone dehumidifier objects in the input file
 
 	bool GetInputFlag( true ); // Set to FALSE after first time input is "gotten"
-	FArray1D_bool CheckEquipName;
+	Array1D_bool CheckEquipName;
 
 	// SUBROUTINE SPECIFICATIONS FOR MODULE:
 	// Driver/Manager Routines
@@ -110,7 +110,7 @@ namespace ZoneDehumidifier {
 	// Get either inlet or outlet node number
 
 	// Object Data
-	FArray1D< ZoneDehumidifierData > ZoneDehumid;
+	Array1D< ZoneDehumidifierData > ZoneDehumid;
 
 	// Functions
 
@@ -118,7 +118,7 @@ namespace ZoneDehumidifier {
 	SimZoneDehumidifier(
 		std::string const & CompName, // Name of the zone dehumidifier
 		int const ZoneNum, // Number of zone being served
-		bool const FirstHVACIteration, // TRUE if 1st HVAC simulation of system timestep
+		bool const EP_UNUSED( FirstHVACIteration ), // TRUE if 1st HVAC simulation of system timestep
 		Real64 & QSensOut, // Sensible capacity delivered to zone (W)
 		Real64 & QLatOut, // Latent capacity delivered to zone (kg/s), dehumidify = negative
 		int & CompIndex // Index to the zone dehumidifier
@@ -256,12 +256,12 @@ namespace ZoneDehumidifier {
 		static bool ErrorsFound( false ); // Set to true if errors in input, fatal at end of routine
 		bool IsNotOK; // Flag to verify name
 		bool IsBlank; // Flag for blank name
-		FArray1D_string Alphas; // Alpha input items for object
-		FArray1D_string cAlphaFields; // Alpha field names
-		FArray1D_string cNumericFields; // Numeric field names
-		FArray1D< Real64 > Numbers; // Numeric input items for object
-		FArray1D_bool lAlphaBlanks; // Logical array, alpha field input BLANK = .TRUE.
-		FArray1D_bool lNumericBlanks; // Logical array, numeric field input BLANK = .TRUE.
+		Array1D_string Alphas; // Alpha input items for object
+		Array1D_string cAlphaFields; // Alpha field names
+		Array1D_string cNumericFields; // Numeric field names
+		Array1D< Real64 > Numbers; // Numeric input items for object
+		Array1D_bool lAlphaBlanks; // Logical array, alpha field input BLANK = .TRUE.
+		Array1D_bool lNumericBlanks; // Logical array, numeric field input BLANK = .TRUE.
 		static int TotalArgs( 0 ); // Total number of alpha and numeric arguments (max)
 		Real64 CurveVal; // Output from curve object (water removal or energy factor curves)
 
@@ -531,7 +531,7 @@ namespace ZoneDehumidifier {
 		// na
 
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
-		static FArray1D_bool MyEnvrnFlag; // Used for initializations each begin environment flag
+		static Array1D_bool MyEnvrnFlag; // Used for initializations each begin environment flag
 		//  LOGICAL, ALLOCATABLE, SAVE, DIMENSION(:) :: MySizeFlag  ! Used for sizing zone dehumidifier inputs one time
 		static bool MyOneTimeFlag( true ); // initialization flag
 		static bool ZoneEquipmentListChecked( false ); // True after the Zone Equipment List has been checked for items
@@ -790,7 +790,7 @@ namespace ZoneDehumidifier {
 						++ZoneDehumid( ZoneDehumNum ).LowPLFErrorCount;
 						ShowWarningError( ZoneDehumid( ZoneDehumNum ).UnitType + " \"" + ZoneDehumid( ZoneDehumNum ).Name + "\":" );
 						ShowContinueError( " The Part Load Fraction Correlation Curve output is (" + TrimSigDigits( PLF, 2 ) + ") at a part-load ratio =" + TrimSigDigits( PLR, 3 ) );
-						ShowContinueErrorTimeStamp( " PLF curve values must be >= 0.7. " " PLF has been reset to 0.7 and simulation is continuing." );
+						ShowContinueErrorTimeStamp( " PLF curve values must be >= 0.7.  PLF has been reset to 0.7 and simulation is continuing." );
 					} else {
 						ShowRecurringWarningErrorAtEnd( ZoneDehumid( ZoneDehumNum ).UnitType + " \"" + ZoneDehumid( ZoneDehumNum ).Name + "\": Part Load Fraction Correlation Curve output < 0.7 warning continues...", ZoneDehumid( ZoneDehumNum ).LowPLFErrorIndex, PLF, PLF );
 					}
@@ -802,7 +802,7 @@ namespace ZoneDehumidifier {
 						++ZoneDehumid( ZoneDehumNum ).HighPLFErrorCount;
 						ShowWarningError( ZoneDehumid( ZoneDehumNum ).UnitType + " \"" + ZoneDehumid( ZoneDehumNum ).Name + "\":" );
 						ShowContinueError( " The Part Load Fraction Correlation Curve output is (" + TrimSigDigits( PLF, 2 ) + ") at a part-load ratio =" + TrimSigDigits( PLR, 3 ) );
-						ShowContinueErrorTimeStamp( " PLF curve values must be < 1.0. " " PLF has been reset to 1.0 and simulation is continuing." );
+						ShowContinueErrorTimeStamp( " PLF curve values must be < 1.0.  PLF has been reset to 1.0 and simulation is continuing." );
 					} else {
 						ShowRecurringWarningErrorAtEnd( ZoneDehumid( ZoneDehumNum ).UnitType + " \"" + ZoneDehumid( ZoneDehumNum ).Name + "\": Part Load Fraction Correlation Curve output > 1.0 warning continues...", ZoneDehumid( ZoneDehumNum ).HighPLFErrorIndex, PLF, PLF );
 					}
@@ -815,7 +815,7 @@ namespace ZoneDehumidifier {
 					if ( ZoneDehumid( ZoneDehumNum ).PLFPLRErrorCount < 1 ) {
 						++ZoneDehumid( ZoneDehumNum ).PLFPLRErrorCount;
 						ShowWarningError( ZoneDehumid( ZoneDehumNum ).UnitType + " \"" + ZoneDehumid( ZoneDehumNum ).Name + "\":" );
-						ShowContinueError( "The part load fraction was less than the part load ratio calculated" " for this time step [PLR=" + TrimSigDigits( PLR, 4 ) + ", PLF=" + TrimSigDigits( PLF, 4 ) + "]." );
+						ShowContinueError( "The part load fraction was less than the part load ratio calculated for this time step [PLR=" + TrimSigDigits( PLR, 4 ) + ", PLF=" + TrimSigDigits( PLF, 4 ) + "]." );
 						ShowContinueError( "Runtime fraction reset to 1 and the simulation will continue." );
 						ShowContinueErrorTimeStamp( "" );
 					} else {
@@ -828,7 +828,7 @@ namespace ZoneDehumidifier {
 					if ( ZoneDehumid( ZoneDehumNum ).HighRTFErrorCount < 1 ) {
 						++ZoneDehumid( ZoneDehumNum ).HighRTFErrorCount;
 						ShowWarningError( ZoneDehumid( ZoneDehumNum ).UnitType + " \"" + ZoneDehumid( ZoneDehumNum ).Name + "\":" );
-						ShowContinueError( "The runtime fraction for this zone dehumidifier" " exceeded 1.0 [" + TrimSigDigits( RunTimeFraction, 4 ) + "]." );
+						ShowContinueError( "The runtime fraction for this zone dehumidifier exceeded 1.0 [" + TrimSigDigits( RunTimeFraction, 4 ) + "]." );
 						ShowContinueError( "Runtime fraction reset to 1 and the simulation will continue." );
 						ShowContinueErrorTimeStamp( "" );
 					} else {

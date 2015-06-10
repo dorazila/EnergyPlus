@@ -2,7 +2,7 @@
 #include <cmath>
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray.functions.hh>
+#include <ObjexxFCL/Array.functions.hh>
 #include <ObjexxFCL/Fmath.hh>
 
 // EnergyPlus Headers
@@ -104,11 +104,11 @@ namespace Fans {
 	int NumFans( 0 ); // The Number of Fans found in the Input
 	int NumNightVentPerf( 0 ); // number of FAN:NIGHT VENT PERFORMANCE objects found in the input
 	bool GetFanInputFlag( true ); // Flag set to make sure you get input once
-	FArray1D_bool CheckEquipName;
+	Array1D_bool CheckEquipName;
 	bool LocalTurnFansOn( false ); // If True, overrides fan schedule and cycles ZoneHVAC component fans on
 	bool LocalTurnFansOff( false ); // If True, overrides fan schedule and LocalTurnFansOn and
 	// forces ZoneHVAC comp fans off
-	static FArray1D_bool MySizeFlag;
+	static Array1D_bool MySizeFlag;
 
 	// Subroutine Specifications for the Module
 	// Driver/Manager Routines
@@ -126,9 +126,9 @@ namespace Fans {
 	// Utility routines for module
 
 	// Object Data
-	FArray1D< FanEquipConditions > Fan;
-	FArray1D< NightVentPerfData > NightVentPerf;
-	FArray1D< FanNumericFieldData > FanNumericFields;
+	Array1D< FanEquipConditions > Fan;
+	Array1D< NightVentPerfData > NightVentPerf;
+	Array1D< FanNumericFieldData > FanNumericFields;
 
 	// MODULE SUBROUTINES:
 	//*************************************************************************
@@ -317,12 +317,12 @@ namespace Fans {
 		bool IsNotOK; // Flag to verify name
 		bool IsBlank; // Flag for blank name
 		static std::string const RoutineName( "GetFanInput: " ); // include trailing blank space
-		FArray1D_string cAlphaFieldNames;
-		FArray1D_string cNumericFieldNames;
-		FArray1D_bool lNumericFieldBlanks;
-		FArray1D_bool lAlphaFieldBlanks;
-		FArray1D_string cAlphaArgs;
-		FArray1D< Real64 > rNumericArgs;
+		Array1D_string cAlphaFieldNames;
+		Array1D_string cNumericFieldNames;
+		Array1D_bool lNumericFieldBlanks;
+		Array1D_bool lAlphaFieldBlanks;
+		Array1D_string cAlphaArgs;
+		Array1D< Real64 > rNumericArgs;
 		std::string cCurrentModuleObject;
 		int NumParams;
 		int MaxAlphas;
@@ -900,7 +900,7 @@ namespace Fans {
 	void
 	InitFan(
 		int const FanNum,
-		bool const FirstHVACIteration // unused1208
+		bool const EP_UNUSED( FirstHVACIteration ) // unused1208
 	)
 	{
 
@@ -945,7 +945,7 @@ namespace Fans {
 		int OutNode;
 		static bool MyOneTimeFlag( true );
 		static bool ZoneEquipmentListChecked( false ); // True after the Zone Equipment List has been checked for items
-		static FArray1D_bool MyEnvrnFlag;
+		static Array1D_bool MyEnvrnFlag;
 		int Loop;
 
 		// FLOW:
@@ -2341,6 +2341,7 @@ namespace Fans {
 				UnbalExhMassFlow = Fan( FanNum ).InletAirMassFlowRate;
 				if ( Fan( FanNum ).BalancedFractSchedNum > 0 ) {
 					BalancedExhMassFlow = UnbalExhMassFlow * GetCurrentScheduleValue( Fan( FanNum ).BalancedFractSchedNum );
+					UnbalExhMassFlow = UnbalExhMassFlow - BalancedExhMassFlow;
 				} else {
 					BalancedExhMassFlow = 0.0;
 				}
@@ -2348,7 +2349,7 @@ namespace Fans {
 				UnbalExhMassFlow = 0.0;
 				BalancedExhMassFlow = 0.0;
 			}
-			Fan( FanNum ).UnbalancedOutletMassFlowRate = UnbalExhMassFlow - BalancedExhMassFlow;
+			Fan( FanNum ).UnbalancedOutletMassFlowRate = UnbalExhMassFlow;
 			Fan( FanNum ).BalancedOutletMassFlowRate = BalancedExhMassFlow;
 		}
 
@@ -2632,7 +2633,7 @@ namespace Fans {
 		FanIndex = FindItemInList( FanName, Fan.FanName(), NumFans );
 		if ( FanIndex == 0 ) {
 			if ( present( ThisObjectType ) && present( ThisObjectName ) ) {
-				ShowSevereError( "GetFanType: " + ThisObjectType() + "=\"" + ThisObjectName() + "\"," " invalid Fan specified=\"" + FanName + "\"." );
+				ShowSevereError( "GetFanType: " + ThisObjectType() + "=\"" + ThisObjectName() + "\", invalid Fan specified=\"" + FanName + "\"." );
 			} else if ( present( ThisObjectType ) ) {
 				ShowSevereError( ThisObjectType() + ", GetFanType: Fan not found=" + FanName );
 			} else {
@@ -3065,7 +3066,7 @@ namespace Fans {
 	Real64
 	FanDesDT(
 		int const FanNum, // index of fan in Fan array
-		Real64 const FanVolFlow // fan volumetric flow rate [m3/s]
+		Real64 const EP_UNUSED( FanVolFlow ) // fan volumetric flow rate [m3/s]
 	)
 	{
 		// FUNCTION INFORMATION:
@@ -3097,12 +3098,10 @@ namespace Fans {
 		Real64 TotEff; // fan design total efficiency
 		Real64 MotEff; // fan design motor efficiency
 		Real64 MotInAirFrac; // fraction of motor in the air stream
-		Real64 PowerLossToAir; // fan and motor loss to air stream (W)
 		//
 		if ( FanNum == 0 ) {
 			DesignDeltaT = 0.0;
-		}
-		else if ( Fan( FanNum ).FanType_Num != FanType_ComponentModel ) {
+		} else if ( Fan( FanNum ).FanType_Num != FanType_ComponentModel ) {
 			DeltaP = Fan( FanNum ).DeltaPress;
 			TotEff = Fan( FanNum ).FanEff;
 			MotEff = Fan( FanNum ).MotEff;
@@ -3110,8 +3109,7 @@ namespace Fans {
 			RhoAir = StdRhoAir;
 			CpAir = PsyCpAirFnWTdb( constant_zero, constant_twenty );
 			DesignDeltaT = ( DeltaP / ( RhoAir * CpAir * TotEff ) ) * ( MotEff + MotInAirFrac * ( 1.0 - MotEff ) );
-		}
-		else {
+		} else {
 			DesignDeltaT = 0.0;
 		}
 
@@ -3149,8 +3147,6 @@ namespace Fans {
 		Real64 DesignHeatGain; // returned heat gain of matched fan [W]
 
 		// FUNCTION LOCAL VARIABLE DECLARATIONS:
-		Real64 RhoAir; // density of air [kg/m3]
-		Real64 CpAir;  // specific heat of air [J/kg-K]
 		Real64 DeltaP; // fan design pressure rise [N/m2]
 		Real64 TotEff; // fan design total efficiency
 		Real64 MotEff; // fan design motor efficiency

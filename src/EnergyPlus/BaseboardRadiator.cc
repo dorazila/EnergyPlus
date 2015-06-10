@@ -2,7 +2,7 @@
 #include <cmath>
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray.functions.hh>
+#include <ObjexxFCL/Array.functions.hh>
 #include <ObjexxFCL/Fmath.hh>
 
 // EnergyPlus Headers
@@ -83,15 +83,15 @@ namespace BaseboardRadiator {
 
 	//MODULE VARIABLE DECLARATIONS:
 	int NumBaseboards( 0 );
-	FArray1D_bool MySizeFlag;
-	FArray1D_bool CheckEquipName;
-	FArray1D_bool SetLoopIndexFlag; // get loop number flag
+	Array1D_bool MySizeFlag;
+	Array1D_bool CheckEquipName;
+	Array1D_bool SetLoopIndexFlag; // get loop number flag
 
 	//SUBROUTINE SPECIFICATIONS FOR MODULE BaseboardRadiator
 
 	// Object Data
-	FArray1D< BaseboardParams > Baseboard;
-	FArray1D< BaseboardParamsNumericFieldData > BaseboardParamsNumericFields;
+	Array1D< BaseboardParams > Baseboard;
+	Array1D< BaseboardParamsNumericFieldData > BaseboardParamsNumericFields;
 
 	// Functions
 
@@ -127,17 +127,6 @@ namespace BaseboardRadiator {
 		using DataZoneEnergyDemands::ZoneSysEnergyDemand;
 		using General::TrimSigDigits;
 		using PlantUtilities::SetActuatedBranchFlowRate;
-
-		// Locals
-		// SUBROUTINE ARGUMENT DEFINITIONS:
-
-		// SUBROUTINE PARAMETER DEFINITIONS:
-		int const MaxIter( 30 );
-
-		// INTERFACE BLOCK SPECIFICATIONS
-
-		// DERIVED TYPE DEFINITIONS
-		// na
 
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 
@@ -366,7 +355,7 @@ namespace BaseboardRadiator {
 						ShowContinueError("Blank field not allowed for " + cNumericFieldNames(iHeatCapacityPerFloorAreaNumericNum));
 						ErrorsFound = true;
 					}
-				} else if ( SameString( cAlphaArgs(iHeatCAPMAlphaNum), "FractionOfAutosizedHeatingCapacity" ) ){
+				} else if ( SameString( cAlphaArgs(iHeatCAPMAlphaNum), "FractionOfAutosizedHeatingCapacity" ) ) {
 					Baseboard( BaseboardNum ).HeatingCapMethod = FractionOfAutosizedHeatingCapacity;
 					if ( !lNumericFieldBlanks(iHeatFracOfAutosizedCapacityNumericNum) ) {
 						Baseboard( BaseboardNum ).ScaledHeatingCapacity = rNumericArgs(iHeatFracOfAutosizedCapacityNumericNum);
@@ -474,7 +463,7 @@ namespace BaseboardRadiator {
 		static bool MyOneTimeFlag( true );
 		static bool ZoneEquipmentListChecked( false ); // True after the Zone Equipment List has been checked for items
 		int Loop;
-		static FArray1D_bool MyEnvrnFlag;
+		static Array1D_bool MyEnvrnFlag;
 		Real64 RhoAirStdInit;
 		Real64 rho; // local fluid density
 		Real64 Cp; // local fluid specific heat
@@ -608,11 +597,10 @@ namespace BaseboardRadiator {
 		Real64 UA0; // lower bound for UA
 		Real64 UA1; // upper bound for UA
 		Real64 UA;
-		FArray1D< Real64 > Par( 2 );
+		Array1D< Real64 > Par( 2 );
 		bool ErrorsFound; // If errors detected in input
 		Real64 rho; // local fluid density
 		Real64 Cp; // local fluid specific heat
-		Real64 tmpWaterVolFlowRateMax; // local design plant fluid flow rate
 		bool FlowAutoSize; // Indicator to autosizing water volume flow
 		bool UAAutoSize; // Indicator to autosizing UA
 		Real64 WaterVolFlowRateMaxDes; // Design water volume flow for reproting
@@ -667,7 +655,7 @@ namespace BaseboardRadiator {
 					ZoneEqSizing(CurZoneEqNum).SizingMethod(SizingMethod) = CapSizingMethod;
 					if ( CapSizingMethod == HeatingDesignCapacity || CapSizingMethod == CapacityPerFloorArea || CapSizingMethod == FractionOfAutosizedHeatingCapacity ) {
 
-						if ( CapSizingMethod == HeatingDesignCapacity ){
+						if ( CapSizingMethod == HeatingDesignCapacity ) {
 							if ( Baseboard( BaseboardNum ).ScaledHeatingCapacity == AutoSize ) {
 								CheckZoneSizing(CompType, CompName);
 								ZoneEqSizing(CurZoneEqNum).DesHeatingLoad = CalcFinalZoneSizing( CurZoneEqNum ).DesHeatLoad * CalcFinalZoneSizing( CurZoneEqNum ).HeatSizingFactor;
@@ -676,12 +664,12 @@ namespace BaseboardRadiator {
 							}
 							ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 							TempSize = ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad;
-						} else if ( CapSizingMethod == CapacityPerFloorArea ){
+						} else if ( CapSizingMethod == CapacityPerFloorArea ) {
 							ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 							ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad = Baseboard( BaseboardNum ).ScaledHeatingCapacity * Zone( DataZoneNumber ).FloorArea;
 							TempSize = ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad;
 							DataScalableCapSizingON = true;
-						} else if ( CapSizingMethod == FractionOfAutosizedHeatingCapacity ){
+						} else if ( CapSizingMethod == FractionOfAutosizedHeatingCapacity ) {
 							CheckZoneSizing(CompType, CompName);
 							ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 							DataFracOfAutosizedHeatingCapacity = Baseboard( BaseboardNum ).ScaledHeatingCapacity;
@@ -757,7 +745,7 @@ namespace BaseboardRadiator {
 					CapSizingMethod = Baseboard( BaseboardNum ).HeatingCapMethod;
 					ZoneEqSizing(CurZoneEqNum).SizingMethod(SizingMethod) = CapSizingMethod;
 					if ( CapSizingMethod == HeatingDesignCapacity || CapSizingMethod == CapacityPerFloorArea || CapSizingMethod == FractionOfAutosizedHeatingCapacity ) {
-						if ( CapSizingMethod == HeatingDesignCapacity ){
+						if ( CapSizingMethod == HeatingDesignCapacity ) {
 							if ( Baseboard( BaseboardNum ).ScaledHeatingCapacity == AutoSize ) {
 								CheckZoneSizing(CompType, CompName);
 								ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad = CalcFinalZoneSizing( CurZoneEqNum ).DesHeatLoad * CalcFinalZoneSizing( CurZoneEqNum ).HeatSizingFactor;
@@ -766,12 +754,12 @@ namespace BaseboardRadiator {
 							}
 							ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 							TempSize = ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad;
-						} else if ( CapSizingMethod == CapacityPerFloorArea ){
+						} else if ( CapSizingMethod == CapacityPerFloorArea ) {
 							ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 							ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad = Baseboard( BaseboardNum ).ScaledHeatingCapacity * Zone( DataZoneNumber ).FloorArea;
 							TempSize = ZoneEqSizing( CurZoneEqNum ).DesHeatingLoad;
 							DataScalableCapSizingON = true;
-						} else if (CapSizingMethod == FractionOfAutosizedHeatingCapacity){
+						} else if (CapSizingMethod == FractionOfAutosizedHeatingCapacity) {
 							CheckZoneSizing(CompType, CompName);
 							ZoneEqSizing( CurZoneEqNum ).HeatingCapacity = true;
 							DataFracOfAutosizedHeatingCapacity = Baseboard(BaseboardNum).ScaledHeatingCapacity;
@@ -1107,7 +1095,7 @@ namespace BaseboardRadiator {
 	Real64
 	HWBaseboardUAResidual(
 		Real64 const UA, // UA of coil
-		Optional< FArray1S< Real64 > const > Par // par(1) = design coil load [W]
+		Array1< Real64 > const & Par // par(1) = design coil load [W]
 	)
 	{
 
@@ -1151,10 +1139,10 @@ namespace BaseboardRadiator {
 		int BaseboardIndex;
 		Real64 LoadMet;
 
-		BaseboardIndex = int( Par()( 2 ) );
+		BaseboardIndex = int( Par( 2 ) );
 		Baseboard( BaseboardIndex ).UA = UA;
 		SimHWConvective( BaseboardIndex, LoadMet );
-		Residuum = ( Par()( 1 ) - LoadMet ) / Par()( 1 );
+		Residuum = ( Par( 1 ) - LoadMet ) / Par( 1 );
 
 		return Residuum;
 	}
@@ -1163,11 +1151,11 @@ namespace BaseboardRadiator {
 	UpdateBaseboardPlantConnection(
 		int const BaseboardTypeNum, // type index
 		std::string const & BaseboardName, // component name
-		int const EquipFlowCtrl, // Flow control mode for the equipment
-		int const LoopNum, // Plant loop index for where called from
-		int const LoopSide, // Plant loop side index for where called from
+		int const EP_UNUSED( EquipFlowCtrl ), // Flow control mode for the equipment
+		int const EP_UNUSED( LoopNum ), // Plant loop index for where called from
+		int const EP_UNUSED( LoopSide ), // Plant loop side index for where called from
 		int & CompIndex, // Chiller number pointer
-		bool const FirstHVACIteration,
+		bool const EP_UNUSED( FirstHVACIteration ),
 		bool & InitLoopEquip // If not zero, calculate the max load for operating conditions
 	)
 	{
@@ -1214,8 +1202,6 @@ namespace BaseboardRadiator {
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 
 		int BaseboardNum;
-		int InletNodeNum;
-		int OutletNodeNum;
 
 		// Find the correct baseboard
 		if ( CompIndex == 0 ) {

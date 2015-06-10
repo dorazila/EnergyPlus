@@ -6,7 +6,7 @@
 #include <vector>
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray.functions.hh>
+#include <ObjexxFCL/Array.functions.hh>
 #include <ObjexxFCL/Fmath.hh>
 #include <ObjexxFCL/gio.hh>
 #include <ObjexxFCL/string.functions.hh>
@@ -31,7 +31,9 @@
 #include <DataZoneEquipment.hh>
 #include <FanCoilUnits.hh>
 #include <HVACStandAloneERV.hh>
+#include <HVACVariableRefrigerantFlow.hh>
 #include <InputProcessor.hh>
+#include <OutdoorAirUnit.hh>
 #include <OutputProcessor.hh>
 #include <PackagedTerminalHeatPump.hh>
 #include <Psychrometrics.hh>
@@ -91,79 +93,80 @@ namespace SystemReports {
 
 	// MODULE VARIABLE DECLARATIONS:
 	//Ventilation Report Variables
-	FArray1D< Real64 > MaxCoolingLoadMetByVent;
-	FArray1D< Real64 > MaxCoolingLoadAddedByVent;
-	FArray1D< Real64 > MaxOvercoolingByVent;
-	FArray1D< Real64 > MaxHeatingLoadMetByVent;
-	FArray1D< Real64 > MaxHeatingLoadAddedByVent;
-	FArray1D< Real64 > MaxOverheatingByVent;
-	FArray1D< Real64 > MaxNoLoadHeatingByVent;
-	FArray1D< Real64 > MaxNoLoadCoolingByVent;
+	Array1D< Real64 > MaxCoolingLoadMetByVent;
+	Array1D< Real64 > MaxCoolingLoadAddedByVent;
+	Array1D< Real64 > MaxOvercoolingByVent;
+	Array1D< Real64 > MaxHeatingLoadMetByVent;
+	Array1D< Real64 > MaxHeatingLoadAddedByVent;
+	Array1D< Real64 > MaxOverheatingByVent;
+	Array1D< Real64 > MaxNoLoadHeatingByVent;
+	Array1D< Real64 > MaxNoLoadCoolingByVent;
 
-	FArray1D< Real64 > RemMaxCoolingLoadMetByVent;
-	FArray1D< Real64 > RemMaxCoolingLoadAddedByVent;
-	FArray1D< Real64 > RemMaxOvercoolingByVent;
-	FArray1D< Real64 > RemMaxHeatingLoadMetByVent;
-	FArray1D< Real64 > RemMaxHeatingLoadAddedByVent;
-	FArray1D< Real64 > RemMaxOverheatingByVent;
-	FArray1D< Real64 > RemMaxNoLoadHeatingByVent;
-	FArray1D< Real64 > RemMaxNoLoadCoolingByVent;
+	Array1D< Real64 > RemMaxCoolingLoadMetByVent;
+	Array1D< Real64 > RemMaxCoolingLoadAddedByVent;
+	Array1D< Real64 > RemMaxOvercoolingByVent;
+	Array1D< Real64 > RemMaxHeatingLoadMetByVent;
+	Array1D< Real64 > RemMaxHeatingLoadAddedByVent;
+	Array1D< Real64 > RemMaxOverheatingByVent;
+	Array1D< Real64 > RemMaxNoLoadHeatingByVent;
+	Array1D< Real64 > RemMaxNoLoadCoolingByVent;
 
-	FArray1D< Real64 > LastMaxCoolingLoadMetByVent;
-	FArray1D< Real64 > LastMaxCoolingLoadAddedByVent;
-	FArray1D< Real64 > LastMaxOvercoolingByVent;
-	FArray1D< Real64 > LastMaxHeatingLoadMetByVent;
-	FArray1D< Real64 > LastMaxHeatingLoadAddedByVent;
-	FArray1D< Real64 > LastMaxOverheatingByVent;
-	FArray1D< Real64 > LastMaxNoLoadHeatingByVent;
-	FArray1D< Real64 > LastMaxNoLoadCoolingByVent;
+	Array1D< Real64 > LastMaxCoolingLoadMetByVent;
+	Array1D< Real64 > LastMaxCoolingLoadAddedByVent;
+	Array1D< Real64 > LastMaxOvercoolingByVent;
+	Array1D< Real64 > LastMaxHeatingLoadMetByVent;
+	Array1D< Real64 > LastMaxHeatingLoadAddedByVent;
+	Array1D< Real64 > LastMaxOverheatingByVent;
+	Array1D< Real64 > LastMaxNoLoadHeatingByVent;
+	Array1D< Real64 > LastMaxNoLoadCoolingByVent;
 
-	FArray1D< Real64 > SysTotZoneLoadHTNG;
-	FArray1D< Real64 > SysTotZoneLoadCLNG;
-	FArray1D< Real64 > SysOALoadHTNG;
-	FArray1D< Real64 > SysOALoadCLNG;
-	FArray1D< Real64 > SysTotHTNG;
-	FArray1D< Real64 > SysTotCLNG;
+	Array1D< Real64 > SysTotZoneLoadHTNG;
+	Array1D< Real64 > SysTotZoneLoadCLNG;
+	Array1D< Real64 > SysOALoadHTNG;
+	Array1D< Real64 > SysOALoadCLNG;
+	Array1D< Real64 > SysTotHTNG;
+	Array1D< Real64 > SysTotCLNG;
 
-	FArray1D< Real64 > SysTotH2OHOT;
-	FArray1D< Real64 > SysTotH2OCOLD;
-	FArray1D< Real64 > SysTotElec;
-	FArray1D< Real64 > SysTotGas;
-	FArray1D< Real64 > SysTotSteam;
+	Array1D< Real64 > SysTotH2OHOT;
+	Array1D< Real64 > SysTotH2OCOLD;
+	Array1D< Real64 > SysTotElec;
+	Array1D< Real64 > SysTotGas;
+	Array1D< Real64 > SysTotSteam;
 
-	FArray1D< Real64 > SysHumidHTNG;
-	FArray1D< Real64 > SysHumidElec;
-	FArray1D< Real64 > SysEvapCLNG;
-	FArray1D< Real64 > SysEvapElec;
-	FArray1D< Real64 > SysHeatExHTNG;
-	FArray1D< Real64 > SysHeatExCLNG;
-	FArray1D< Real64 > DesDehumidCLNG;
-	FArray1D< Real64 > DesDehumidElec;
-	FArray1D< Real64 > SysSolarCollectHeating;
-	FArray1D< Real64 > SysSolarCollectCooling;
-	FArray1D< Real64 > SysUserDefinedTerminalHeating;
-	FArray1D< Real64 > SysUserDefinedTerminalCooling;
+	Array1D< Real64 > SysHumidHTNG;
+	Array1D< Real64 > SysHumidElec;
+	Array1D< Real64 > SysHumidGas;
+	Array1D< Real64 > SysEvapCLNG;
+	Array1D< Real64 > SysEvapElec;
+	Array1D< Real64 > SysHeatExHTNG;
+	Array1D< Real64 > SysHeatExCLNG;
+	Array1D< Real64 > DesDehumidCLNG;
+	Array1D< Real64 > DesDehumidElec;
+	Array1D< Real64 > SysSolarCollectHeating;
+	Array1D< Real64 > SysSolarCollectCooling;
+	Array1D< Real64 > SysUserDefinedTerminalHeating;
+	Array1D< Real64 > SysUserDefinedTerminalCooling;
 
-	FArray1D< Real64 > SysFANCompHTNG;
-	FArray1D< Real64 > SysFANCompElec;
-	FArray1D< Real64 > SysCCCompCLNG;
-	FArray1D< Real64 > SysCCCompH2OCOLD;
-	FArray1D< Real64 > SysCCCompElec;
-	FArray1D< Real64 > SysHCCompH2OHOT;
-	FArray1D< Real64 > SysHCCompElec;
-	FArray1D< Real64 > SysHCCompElecRes;
-	FArray1D< Real64 > SysHCCompHTNG;
-	FArray1D< Real64 > SysHCCompGas;
-	FArray1D< Real64 > SysHCCompSteam;
-	FArray1D< Real64 > SysDomesticH20;
+	Array1D< Real64 > SysFANCompHTNG;
+	Array1D< Real64 > SysFANCompElec;
+	Array1D< Real64 > SysCCCompCLNG;
+	Array1D< Real64 > SysCCCompH2OCOLD;
+	Array1D< Real64 > SysCCCompElec;
+	Array1D< Real64 > SysHCCompH2OHOT;
+	Array1D< Real64 > SysHCCompElec;
+	Array1D< Real64 > SysHCCompElecRes;
+	Array1D< Real64 > SysHCCompHTNG;
+	Array1D< Real64 > SysHCCompGas;
+	Array1D< Real64 > SysHCCompSteam;
+	Array1D< Real64 > SysDomesticH20;
 
-	FArray1D< Real64 > ZoneOAMassFlow; // zone mech vent mass flow rate {kg/s}
-	FArray1D< Real64 > ZoneOAMass; // zone mech vent total mass for time {kg}
-	FArray1D< Real64 > ZoneOAVolFlowStdRho; // zone mech vent volume flow rate at standard density {m3/s}
-	FArray1D< Real64 > ZoneOAVolStdRho; // zone mech vent total volume OA at standard density {m3/s}
-	FArray1D< Real64 > ZoneOAVolFlowCrntRho; // zone mech vent volume flow rate at current density {m3/s}
-	FArray1D< Real64 > ZoneOAVolCrntRho; // zone mech vent total volume OA at current density {m3/s}
-	FArray1D< Real64 > ZoneMechACH; // zone mech vent air changes per hour {ACH}
+	Array1D< Real64 > ZoneOAMassFlow; // zone mech vent mass flow rate {kg/s}
+	Array1D< Real64 > ZoneOAMass; // zone mech vent total mass for time {kg}
+	Array1D< Real64 > ZoneOAVolFlowStdRho; // zone mech vent volume flow rate at standard density {m3/s}
+	Array1D< Real64 > ZoneOAVolStdRho; // zone mech vent total volume OA at standard density {m3/s}
+	Array1D< Real64 > ZoneOAVolFlowCrntRho; // zone mech vent volume flow rate at current density {m3/s}
+	Array1D< Real64 > ZoneOAVolCrntRho; // zone mech vent total volume OA at current density {m3/s}
+	Array1D< Real64 > ZoneMechACH; // zone mech vent air changes per hour {ACH}
 
 	bool AirLoopLoadsReportEnabled( true );
 	bool VentLoadsReportEnabled( true );
@@ -174,15 +177,15 @@ namespace SystemReports {
 	int MaxCompArraySize( 500 );
 	int DBFlag( 0 );
 
-	FArray1D_int SetBackCounter;
-	FArray1D_int HeatCoolFlag;
-	FArray1D_int FirstHeatCoolFlag;
-	FArray1D_int FirstHeatCoolHour;
-	FArray1D_int LastHeatCoolFlag;
-	FArray1D_int LastHeatCoolHour;
-	FArray1D_bool AirLoopCalcDone;
-	FArray1D_bool NoLoadFlag;
-	FArray1D_bool UnmetLoadFlag;
+	Array1D_int SetBackCounter;
+	Array1D_int HeatCoolFlag;
+	Array1D_int FirstHeatCoolFlag;
+	Array1D_int FirstHeatCoolHour;
+	Array1D_int LastHeatCoolFlag;
+	Array1D_int LastHeatCoolHour;
+	Array1D_bool AirLoopCalcDone;
+	Array1D_bool NoLoadFlag;
+	Array1D_bool UnmetLoadFlag;
 
 	static gio::Fmt fmtLD( "*" );
 	static gio::Fmt fmtA( "(A)" );
@@ -194,7 +197,7 @@ namespace SystemReports {
 	// Reporting routines for module
 
 	// Object Data
-	FArray1D< SummarizeLoads > Vent;
+	Array1D< SummarizeLoads > Vent;
 
 	// MODULE SUBROUTINES:
 	//*************************************************************************
@@ -222,25 +225,15 @@ namespace SystemReports {
 		// na
 
 		// Using/Aliasing
-		using DataEnvironment::StdBaroPress;
-		using DataEnvironment::OutHumRat;
-		using SplitterComponent::SplitterCond;
-		using SplitterComponent::NumSplitters;
 		using InputProcessor::FindItemInList;
 		using Psychrometrics::PsyHFnTdbW;
 		using Psychrometrics::PsyRhoAirFnPbTdbW;
-		using ZonePlenum::ZoneSupPlenCond;
-		using ZonePlenum::NumZoneSupplyPlenums;
-		using DataConvergParams::HVACFlowRateToler;
 		using namespace DataGlobalConstants;
 
 		// Locals
 		// SUBROUTINE ARGUMENT DEFINITIONS
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		int const TypeComp( 1 );
-		int const TypeSubComp( 2 );
-		int const TypeSubSubComp( 3 );
 		int const EnergyTransfer( 1 );
 
 		// INTERFACE BLOCK SPECIFICATIONS
@@ -1089,10 +1082,6 @@ namespace SystemReports {
 		// SUBROUTINE ARGUMENT DEFINITIONS
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		int const TypeComp( 1 );
-		int const TypeSubComp( 2 );
-		int const TypeSubSubComp( 3 );
-		int const EnergyTransfer( 1 );
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -1136,7 +1125,7 @@ namespace SystemReports {
 		};
 
 		// Object Data
-		static FArray1D< IdentifyLoop > LoopStack;
+		static Array1D< IdentifyLoop > LoopStack;
 
 		return; //Autodesk:? Is this routine now an intentional NOOP?
 
@@ -1845,6 +1834,7 @@ namespace SystemReports {
 
 		SysHumidHTNG.allocate( NumPrimaryAirSys );
 		SysHumidElec.allocate( NumPrimaryAirSys );
+		SysHumidGas.allocate( NumPrimaryAirSys );
 		DesDehumidCLNG.allocate( NumPrimaryAirSys );
 		DesDehumidElec.allocate( NumPrimaryAirSys );
 		SysEvapCLNG.allocate( NumPrimaryAirSys );
@@ -1943,6 +1933,7 @@ namespace SystemReports {
 		SysHCCompGas = 0.0;
 		SysHCCompSteam = 0.0;
 		SysHumidElec = 0.0;
+		SysHumidGas = 0.0;
 		DesDehumidElec = 0.0;
 		SysEvapElec = 0.0;
 
@@ -2011,6 +2002,8 @@ namespace SystemReports {
 				SetupOutputVariable( "Air System Heating Coil Steam Energy [J]", SysHCCompSteam( SysIndex ), "HVAC", "Sum", PrimaryAirSystem( SysIndex ).Name );
 
 				SetupOutputVariable( "Air System Humidifier Electric Energy [J]", SysHumidElec( SysIndex ), "HVAC", "Sum", PrimaryAirSystem( SysIndex ).Name );
+
+				SetupOutputVariable( "Air System Humidifier Gas Energy [J]", SysHumidGas( SysIndex ), "HVAC", "Sum", PrimaryAirSystem( SysIndex ).Name );
 
 				SetupOutputVariable( "Air System Evaporative Cooler Electric Energy [J]", SysEvapElec( SysIndex ), "HVAC", "Sum", PrimaryAirSystem( SysIndex ).Name );
 
@@ -2116,27 +2109,27 @@ namespace SystemReports {
 		int PlantLoopNum;
 
 		//Dimension GetChildrenData arrays
-		FArray1D_string SubCompTypes;
-		FArray1D_string SubCompNames;
-		FArray1D_string InletNodeNames;
-		FArray1D_int InletNodeNumbers;
-		FArray1D_int InletFluidStreams;
-		FArray1D_string OutletNodeNames;
-		FArray1D_int OutletNodeNumbers;
-		FArray1D_int OutletFluidStreams;
+		Array1D_string SubCompTypes;
+		Array1D_string SubCompNames;
+		Array1D_string InletNodeNames;
+		Array1D_int InletNodeNumbers;
+		Array1D_int InletFluidStreams;
+		Array1D_string OutletNodeNames;
+		Array1D_int OutletNodeNumbers;
+		Array1D_int OutletFluidStreams;
 		int NumChildren;
 		int NumGrandChildren;
 		bool IsParent;
 
 		//Dimension GetMeteredVariables arrays
-		FArray1D_int VarIndexes; // Variable Numbers
-		FArray1D_int VarTypes; // Variable Types (1=integer, 2=real, 3=meter)
-		FArray1D_int IndexTypes; // Variable Idx Types (1=Zone,2=HVAC)
-		FArray1D_string UnitsStrings; // UnitsStrings for each variable
-		FArray1D_int ResourceTypes; // ResourceTypes for each variable
-		FArray1D_string EndUses; // EndUses for each variable
-		FArray1D_string Groups; // Groups for each variable
-		FArray1D_string Names; // Variable Names for each variable
+		Array1D_int VarIndexes; // Variable Numbers
+		Array1D_int VarTypes; // Variable Types (1=integer, 2=real, 3=meter)
+		Array1D_int IndexTypes; // Variable Idx Types (1=Zone,2=HVAC)
+		Array1D_string UnitsStrings; // UnitsStrings for each variable
+		Array1D_int ResourceTypes; // ResourceTypes for each variable
+		Array1D_string EndUses; // EndUses for each variable
+		Array1D_string Groups; // Groups for each variable
+		Array1D_string Names; // Variable Names for each variable
 		int NumFound; // Number Found
 		int NumVariables;
 		int NumLeft; // Counter for deeper components
@@ -3036,6 +3029,7 @@ namespace SystemReports {
 		SysHCCompGas = 0.0;
 		SysHCCompSteam = 0.0;
 		SysHumidElec = 0.0;
+		SysHumidGas = 0.0;
 		DesDehumidElec = 0.0;
 		SysEvapElec = 0.0;
 
@@ -3233,7 +3227,7 @@ namespace SystemReports {
 			SysTotHTNG( AirLoopNum ) = SysFANCompHTNG( AirLoopNum ) + SysHCCompHTNG( AirLoopNum ) + SysHeatExHTNG( AirLoopNum ) + SysHumidHTNG( AirLoopNum ) + SysSolarCollectHeating( AirLoopNum ) + SysUserDefinedTerminalHeating( AirLoopNum );
 			SysTotCLNG( AirLoopNum ) = SysCCCompCLNG( AirLoopNum ) + SysHeatExCLNG( AirLoopNum ) + SysEvapCLNG( AirLoopNum ) + DesDehumidCLNG( AirLoopNum ) + SysSolarCollectCooling( AirLoopNum ) + SysUserDefinedTerminalCooling( AirLoopNum );
 			SysTotElec( AirLoopNum ) = SysFANCompElec( AirLoopNum ) + SysHCCompElec( AirLoopNum ) + SysCCCompElec( AirLoopNum ) + SysHCCompElecRes( AirLoopNum ) + SysHumidElec( AirLoopNum ) + DesDehumidElec( AirLoopNum ) + SysEvapElec( AirLoopNum );
-			SysTotGas( AirLoopNum ) = SysHCCompGas( AirLoopNum );
+			SysTotGas( AirLoopNum ) = SysHCCompGas( AirLoopNum ) + SysHumidGas( AirLoopNum );
 			SysTotSteam( AirLoopNum ) = SysHCCompSteam( AirLoopNum );
 			SysTotH2OCOLD( AirLoopNum ) = SysCCCompH2OCOLD( AirLoopNum );
 			SysTotH2OHOT( AirLoopNum ) = SysHCCompH2OHOT( AirLoopNum );
@@ -3403,6 +3397,7 @@ namespace SystemReports {
 			HEATEXCHANGER_AIRTOAIR_SENSIBLEANDLATENT,
 			HEATEXCHANGER_DESICCANT_BALANCEDFLOW,
 			HUMIDIFIER_STEAM_ELECTRIC,
+			HUMIDIFIER_STEAM_GAS,
 			OUTDOORAIR_MIXER,
 			SOLARCOLLECTOR_FLATPLATE_PHOTOVOLTAICTHERMAL,
 			SOLARCOLLECTOR_UNGLAZEDTRANSPIRED,
@@ -3487,6 +3482,7 @@ namespace SystemReports {
 			"HEATEXCHANGER:AIRTOAIR:SENSIBLEANDLATENT",
 			"HEATEXCHANGER:DESICCANT:BALANCEDFLOW",
 			"HUMIDIFIER:STEAM:ELECTRIC",
+			"HUMIDIFIER:STEAM:GAS",
 			"OUTDOORAIR:MIXER",
 			"SOLARCOLLECTOR:FLATPLATE:PHOTOVOLTAICTHERMAL",
 			"SOLARCOLLECTOR:UNGLAZEDTRANSPIRED",
@@ -3495,8 +3491,6 @@ namespace SystemReports {
 		assert( std::is_sorted( component_strings.begin(), component_strings.end() ) );
 		assert( component_strings.size() == n_ComponentTypes );
 
-		Real64 const SmallLoad( 0.1 ); // (W)
-		Real64 const KJperJ( 0.001 ); // kilojoules per joules
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -3530,7 +3524,7 @@ namespace SystemReports {
 		};
 
 		// Object Data
-		static FArray1D< CompTypeError > CompTypeErrors( 100 );
+		static Array1D< CompTypeError > CompTypeErrors( 100 );
 
 		if ( ! AirLoopLoadsReportEnabled ) return;
 
@@ -3697,12 +3691,15 @@ namespace SystemReports {
 
 			// Humidifier Types for the air system simulation
 			break;
+		case HUMIDIFIER_STEAM_GAS:
 		case HUMIDIFIER_STEAM_ELECTRIC:
 			if ( CompLoadFlag ) SysHumidHTNG( AirLoopNum ) += std::abs( CompLoad );
 			if ( EnergyType == iRT_Water ) {
 				SysDomesticH20( AirLoopNum ) += std::abs( CompEnergy );
 			} else if ( EnergyType == iRT_Electricity ) {
 				SysHumidElec( AirLoopNum ) += CompEnergy;
+			} else if ( ( EnergyType == iRT_Natural_Gas ) || ( EnergyType == iRT_Propane ) ) {
+				SysHumidGas( AirLoopNum ) += CompEnergy;
 			}
 
 			// Evap Cooler Types for the air system simulation
@@ -3859,15 +3856,20 @@ namespace SystemReports {
 		using DataHeatBalance::ZonePreDefRep;
 		using DataHeatBalFanSys::MAT;
 		using DataHeatBalFanSys::ZoneAirHumRatAvg;
-		using DataEnvironment::StdBaroPress;
 		using DataEnvironment::StdRhoAir;
-		using DataEnvironment::OutAirDensity;
 		using DataEnvironment::OutBaroPress;
 
 		using WindowAC::GetWindowACOutAirNode;
 		using WindowAC::GetWindowACMixedAirNode;
 		using WindowAC::GetWindowACZoneInletAirNode;
 		using WindowAC::GetWindowACReturnAirNode;
+		using HVACVariableRefrigerantFlow::GetVRFTUOutAirNode;
+		using HVACVariableRefrigerantFlow::GetVRFTUMixedAirNode;
+		using HVACVariableRefrigerantFlow::GetVRFTUZoneInletAirNode;
+		using HVACVariableRefrigerantFlow::GetVRFTUReturnAirNode;
+		using OutdoorAirUnit::GetOutdoorAirUnitOutAirNode;
+		using OutdoorAirUnit::GetOutdoorAirUnitZoneInletNode;
+		using OutdoorAirUnit::GetOutdoorAirUnitReturnAirNode;
 		using PackagedTerminalHeatPump::GetPTUnitOutAirNode;
 		using PackagedTerminalHeatPump::GetPTUnitMixedAirNode;
 		using PackagedTerminalHeatPump::GetPTUnitZoneInletAirNode;
@@ -3895,7 +3897,6 @@ namespace SystemReports {
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
 		Real64 const SmallLoad( 0.1 ); // (W)
-		Real64 const KJperJ( 0.001 ); // kilojoules per joules
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -3908,36 +3909,37 @@ namespace SystemReports {
 		int ZoneInNum; // counter for zone air distribution inlets
 		int ReturnAirNode; // node number for return node on primary air loop
 		int MixedAirNode; // mixed air node number (right after the mixing box) on primary air loop
-		int AirLoopNum;
-		int AirDistCoolInletNodeNum;
-		int AirDistHeatInletNodeNum;
+		int AirLoopNum; // index to AirloopHVAC
+		int AirDistCoolInletNodeNum; // Air distribution unit inlet node number
+		int AirDistHeatInletNodeNum; // Air distribution unit outlet node number
 
-		Real64 AirSysEnthReturnAir; // enthalpy of the return air (mixing box inlet node, return side)
-		Real64 AirSysEnthMixedAir; // enthalpy of the mixed air (mixing box outlet node, mixed air side)
-		Real64 AirSysZoneVentLoad; // ventilation load attributed to a particular zone from primary air system
-		Real64 ADUCoolFlowrate;
-		Real64 ADUHeatFlowrate;
-		Real64 AirSysTotalMixFlowRate; // Mixed air flow
-		Real64 AirSysOutAirFlow; // outside air flow rate for zone from primary air system
+		Real64 AirSysEnthReturnAir; // enthalpy of the return air (mixing box inlet node, return side) [kJ/kgK]
+		Real64 AirSysEnthMixedAir; // enthalpy of the mixed air (mixing box outlet node, mixed air side) [kJ/kgK]
+		Real64 AirSysZoneVentLoad; // ventilation load attributed to a particular zone from primary air system [J]
+		Real64 ADUCoolFlowrate; // Air distribution unit cooling air mass flow rate [kg/s]
+		Real64 ADUHeatFlowrate; // Air distribution unit heating air mass flow rate [kg/s]
+		Real64 AirSysTotalMixFlowRate; // Mixed air mass flow rate [kg/s]
+		Real64 AirSysOutAirFlow; // outside air flow rate for zone from primary air system [kg/s]
 
-		Real64 ZFAUEnthReturnAir; // Zone forced Air unit enthalpy of the return air
-		Real64 ZFAUTempMixedAir; // Zone forced Air unit dry-bulb temperature of the mixed air
-		Real64 ZFAUHumRatMixedAir; // Zone forced Air unit humidity ratio of the mixed air
-		Real64 ZFAUEnthMixedAir; // Zone forced Air unit enthalpy of the mixed air
-		Real64 ZFAUFlowRate;
-		Real64 ZFAUZoneVentLoad; // ventilation load attributed to a particular zone from zone forced air units
+		Real64 ZFAUEnthReturnAir; // Zone forced Air unit enthalpy of the return air [kJ/kgK]
+		Real64 ZFAUTempMixedAir; // Zone forced Air unit dry-bulb temperature of the mixed air [C]
+		Real64 ZFAUHumRatMixedAir; // Zone forced Air unit humidity ratio of the mixed air [kg/kg]
+		Real64 ZFAUEnthMixedAir; // Zone forced Air unit enthalpy of the mixed air [kJ/kgK]
+		Real64 ZFAUEnthOutdoorAir; // Zone forced Air unit enthalpy of the outdoor air [kJ/kgK]
+		Real64 ZFAUFlowRate; // Zone forced Air unit air mass flow rate [kg/s]
+		Real64 ZFAUZoneVentLoad; // ventilation load attributed to a particular zone from zone forced air units [J]
 		Real64 ZFAUOutAirFlow; // outside air flow rate for zone from zone forced air units.
-		int ZoneInletAirNode;
+		int ZoneInletAirNode; // Zone forced Air unit zone inlet node number
 
 		Real64 ZoneVentLoad; // ventilation load attributed to a particular zone
 		Real64 ZoneLoad; // ventilation load attributed to a particular zone
-		Real64 OutAirFlow; // Total outside air flow
+		Real64 OutAirFlow; // Total outside air mass flow from zone equipment and air loop equipment [kg/s]
 		Real64 ZoneFlowFrac; // fraction of mixed air flowing to a zone
-		Real64 ZoneVolume; // Volume of zone
-		Real64 currentZoneAirDensity; // current zone air density (outside barometric pressure)
+		Real64 ZoneVolume; // Volume of zone [m3]
+		Real64 currentZoneAirDensity; // current zone air density (outside barometric pressure) [kg/m3]
 
-		int ActualZoneNum;
-		int OutAirNode;
+		int ActualZoneNum; // Zone forced Air zone number
+		int OutAirNode; // Zone forced Air unit outdoor air node number
 		int thisZoneEquipNum; // loop counter
 
 		//  CALL GetComponentEnergyUse
@@ -3996,6 +3998,7 @@ namespace SystemReports {
 			for ( thisZoneEquipNum = 1; thisZoneEquipNum <= ZoneEquipList( ZoneEquipConfig( CtrlZoneNum ).EquipListIndex ).NumOfEquipTypes; ++thisZoneEquipNum ) {
 				{ auto const SELECT_CASE_var( ZoneEquipList( ZoneEquipConfig( CtrlZoneNum ).EquipListIndex ).EquipType_Num( thisZoneEquipNum ) );
 				// case statement to cover all possible zone forced air units that could have outside air
+
 				if ( SELECT_CASE_var == WindowAC_Num ) { // Window Air Conditioner
 					OutAirNode = GetWindowACOutAirNode( ZoneEquipList( ZoneEquipConfig( CtrlZoneNum ).EquipListIndex ).EquipIndex( thisZoneEquipNum ) );
 					if ( OutAirNode > 0 ) ZFAUOutAirFlow += Node( OutAirNode ).MassFlowRate;
@@ -4004,6 +4007,23 @@ namespace SystemReports {
 					if ( ZoneInletAirNode > 0 ) ZFAUFlowRate = max( Node( ZoneInletAirNode ).MassFlowRate, 0.0 );
 					MixedAirNode = GetWindowACMixedAirNode( ZoneEquipList( ZoneEquipConfig( CtrlZoneNum ).EquipListIndex ).EquipIndex( thisZoneEquipNum ) );
 					ReturnAirNode = GetWindowACReturnAirNode( ZoneEquipList( ZoneEquipConfig( CtrlZoneNum ).EquipListIndex ).EquipIndex( thisZoneEquipNum ) );
+					if ( ( MixedAirNode > 0 ) && ( ReturnAirNode > 0 ) ) {
+						ZFAUEnthMixedAir = PsyHFnTdbW( Node( MixedAirNode ).Temp, Node( MixedAirNode ).HumRat );
+						ZFAUEnthReturnAir = PsyHFnTdbW( Node( ReturnAirNode ).Temp, Node( ReturnAirNode ).HumRat );
+						//Calculate the zone ventilation load for this supply air path (i.e. zone inlet)
+						ZFAUZoneVentLoad += (ZFAUFlowRate)* ( ZFAUEnthMixedAir - ZFAUEnthReturnAir ) * TimeStepSys * SecInHour; //*KJperJ
+					} else {
+						ZFAUZoneVentLoad += 0.0;
+					}
+
+				} else if ( SELECT_CASE_var == VRFTerminalUnit_Num ) {
+					OutAirNode = GetVRFTUOutAirNode( ZoneEquipList( ZoneEquipConfig( CtrlZoneNum ).EquipListIndex ).EquipIndex( thisZoneEquipNum ) );
+					if ( OutAirNode > 0 ) ZFAUOutAirFlow += Node( OutAirNode ).MassFlowRate;
+
+					ZoneInletAirNode = GetVRFTUZoneInletAirNode( ZoneEquipList( ZoneEquipConfig( CtrlZoneNum ).EquipListIndex ).EquipIndex( thisZoneEquipNum ) );
+					if ( ZoneInletAirNode > 0 ) ZFAUFlowRate = max( Node( ZoneInletAirNode ).MassFlowRate, 0.0 );
+					MixedAirNode = GetVRFTUMixedAirNode( ZoneEquipList( ZoneEquipConfig( CtrlZoneNum ).EquipListIndex ).EquipIndex( thisZoneEquipNum ) );
+					ReturnAirNode = GetVRFTUReturnAirNode( ZoneEquipList( ZoneEquipConfig( CtrlZoneNum ).EquipListIndex ).EquipIndex( thisZoneEquipNum ) );
 					if ( ( MixedAirNode > 0 ) && ( ReturnAirNode > 0 ) ) {
 						ZFAUEnthMixedAir = PsyHFnTdbW( Node( MixedAirNode ).Temp, Node( MixedAirNode ).HumRat );
 						ZFAUEnthReturnAir = PsyHFnTdbW( Node( ReturnAirNode ).Temp, Node( ReturnAirNode ).HumRat );
@@ -4063,6 +4083,7 @@ namespace SystemReports {
 					} else {
 						ZFAUZoneVentLoad += 0.0;
 					}
+
 				} else if ( SELECT_CASE_var == PurchasedAir_Num ) {
 					ZFAUOutAirFlow += GetPurchasedAirOutAirMassFlow( ZoneEquipList( ZoneEquipConfig( CtrlZoneNum ).EquipListIndex ).EquipIndex( thisZoneEquipNum ) );
 					ZoneInletAirNode = GetPurchasedAirZoneInletAirNode( ZoneEquipList( ZoneEquipConfig( CtrlZoneNum ).EquipListIndex ).EquipIndex( thisZoneEquipNum ) );
@@ -4078,6 +4099,7 @@ namespace SystemReports {
 					} else {
 						ZFAUZoneVentLoad += 0.0;
 					}
+
 				} else if ( SELECT_CASE_var == ERVStandAlone_Num ) {
 					OutAirNode = GetStandAloneERVOutAirNode( ZoneEquipList( ZoneEquipConfig( CtrlZoneNum ).EquipListIndex ).EquipIndex( thisZoneEquipNum ) );
 					if ( OutAirNode > 0 ) ZFAUOutAirFlow += Node( OutAirNode ).MassFlowRate;
@@ -4094,6 +4116,42 @@ namespace SystemReports {
 					} else {
 						ZFAUZoneVentLoad += 0.0;
 					}
+
+				} else if ( SELECT_CASE_var == ZoneUnitarySystem_Num ) {
+					// add accounting for OA when unitary system is used as zone equipment
+
+				} else if ( SELECT_CASE_var == OutdoorAirUnit_Num ) {
+					OutAirNode = GetOutdoorAirUnitOutAirNode( ZoneEquipList( ZoneEquipConfig( CtrlZoneNum ).EquipListIndex ).EquipIndex( thisZoneEquipNum ) );
+					if ( OutAirNode > 0 ) ZFAUOutAirFlow += Node( OutAirNode ).MassFlowRate;
+
+					ZoneInletAirNode = GetOutdoorAirUnitZoneInletNode( ZoneEquipList( ZoneEquipConfig( CtrlZoneNum ).EquipListIndex ).EquipIndex( thisZoneEquipNum ) );
+					if ( ZoneInletAirNode > 0 ) ZFAUFlowRate = max( Node( ZoneInletAirNode ).MassFlowRate, 0.0 );
+					ReturnAirNode = GetOutdoorAirUnitReturnAirNode( ZoneEquipList( ZoneEquipConfig( CtrlZoneNum ).EquipListIndex ).EquipIndex( thisZoneEquipNum ) );
+					if ( ( OutAirNode > 0 ) && ( ReturnAirNode > 0 ) ) {
+						//						ZFAUEnthMixedAir = PsyHFnTdbW( Node( MixedAirNode ).Temp, Node( MixedAirNode ).HumRat );
+						ZFAUEnthReturnAir = PsyHFnTdbW( Node( ReturnAirNode ).Temp, Node( ReturnAirNode ).HumRat );
+						ZFAUEnthOutdoorAir = PsyHFnTdbW( Node( OutAirNode ).Temp, Node( OutAirNode ).HumRat );
+						//Calculate the zone ventilation load for this supply air path (i.e. zone inlet)
+						ZFAUZoneVentLoad += ( ZFAUFlowRate )* ( ZFAUEnthOutdoorAir - ZFAUEnthReturnAir ) * TimeStepSys * SecInHour; //*KJperJ
+					} else {
+						ZFAUZoneVentLoad += 0.0;
+					}
+
+				} else if ( SELECT_CASE_var == UnitHeater_Num || SELECT_CASE_var == VentilatedSlab_Num ||
+					//	ZoneHVAC:EvaporativeCoolerUnit ?????
+					SELECT_CASE_var == ZoneEvaporativeCoolerUnit_Num || SELECT_CASE_var == AirDistUnit_Num || SELECT_CASE_var == DirectAir_Num ||
+					SELECT_CASE_var == BBWaterConvective_Num || SELECT_CASE_var == BBElectricConvective_Num || SELECT_CASE_var == HiTempRadiant_Num ||
+					//	not sure how HeatExchanger:* could be used as zone equipment ?????
+					SELECT_CASE_var == LoTempRadiant_Num || SELECT_CASE_var == ZoneExhaustFan_Num || SELECT_CASE_var == HeatXchngr_Num ||
+					// HPWaterHeater can be used as zone equipment
+					SELECT_CASE_var == HPWaterHeater_Num || SELECT_CASE_var == BBWater_Num || SELECT_CASE_var == ZoneDXDehumidifier_Num ||
+					SELECT_CASE_var == BBSteam_Num || SELECT_CASE_var == BBElectric_Num || SELECT_CASE_var == RefrigerationAirChillerSet_Num ||
+					SELECT_CASE_var == UserDefinedZoneHVACForcedAir_Num ) {
+					// do nothing, OA not included
+
+				} else {
+
+					ShowFatalError( "ReportMaxVentilationLoads: Developer must either create accounting for OA or include in final else if to do nothing" );
 
 				}}
 
@@ -4271,7 +4329,6 @@ namespace SystemReports {
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
 		int const EnergyTrans( 1 );
-		int const PrimaryAirLoop( 1 );
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -4512,9 +4569,9 @@ namespace SystemReports {
 		gio::write( OutputFileBNDetails, Format_711 );
 		gio::write( OutputFileBNDetails, Format_712 );
 		gio::write( OutputFileBNDetails, Format_714 );
-		gio::write( OutputFileBNDetails, Format_713 ) << "! <AirLoopHVAC Connector>,<Connector Type>,<Connector Name>," "<Loop Name>,<Loop Type>,<Number of Inlets/Outlets>";
-		gio::write( OutputFileBNDetails, Format_713 ) << "! <AirLoopHVAC Connector Branches>,<Connector Node Count>,<Connector Type>," "<Connector Name>,<Inlet Branch>,<Outlet Branch>," "<Loop Name>,<Loop Type>";
-		gio::write( OutputFileBNDetails, Format_713 ) << "! <AirLoopHVAC Connector Nodes>,<Connector Node Count>,<Connector Type>," "<Connector Name>,<Inlet Node>,<Outlet Node>," "<Loop Name>,<Loop Type>";
+		gio::write( OutputFileBNDetails, Format_713 ) << "! <AirLoopHVAC Connector>,<Connector Type>,<Connector Name>,<Loop Name>,<Loop Type>,<Number of Inlets/Outlets>";
+		gio::write( OutputFileBNDetails, Format_713 ) << "! <AirLoopHVAC Connector Branches>,<Connector Node Count>,<Connector Type>,<Connector Name>,<Inlet Branch>,<Outlet Branch>,<Loop Name>,<Loop Type>";
+		gio::write( OutputFileBNDetails, Format_713 ) << "! <AirLoopHVAC Connector Nodes>,<Connector Node Count>,<Connector Type>,<Connector Name>,<Inlet Node>,<Outlet Node>,<Loop Name>,<Loop Type>";
 		for ( Count = 1; Count <= NumPrimaryAirSys; ++Count ) {
 			gio::write( ChrOut, fmtLD ) << AirToZoneNodeInfo( Count ).NumReturnNodes;
 			gio::write( ChrOut2, fmtLD ) << AirToZoneNodeInfo( Count ).NumSupplyNodes;

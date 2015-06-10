@@ -2,7 +2,7 @@
 #include <cmath>
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray.functions.hh>
+#include <ObjexxFCL/Array.functions.hh>
 #include <ObjexxFCL/Fmath.hh>
 
 // EnergyPlus Headers
@@ -124,7 +124,7 @@ namespace OutdoorAirUnit {
 	int const CoolingMode( 2 ); // normal cooling coil operation
 	int const NeutralMode( 3 ); // signal coil shouldn't run
 
-	FArray1D_string const CurrentModuleObjects( 2, { "ZoneHVAC:OutdoorAirUnit", "ZoneHVAC:OutdoorAirUnit:EquipmentList" } );
+	Array1D_string const CurrentModuleObjects( 2, { "ZoneHVAC:OutdoorAirUnit", "ZoneHVAC:OutdoorAirUnit:EquipmentList" } );
 
 	static std::string const fluidNameSteam( "STEAM" );
 	static std::string const fluidNameWater( "WATER" );
@@ -140,19 +140,19 @@ namespace OutdoorAirUnit {
 	// MODULE VARIABLE DECLARATIONS:
 	int NumOfOAUnits( 0 ); // Number of outdoor air unit in the input file
 	Real64 OAMassFlowRate( 0.0 ); // Outside air mass flow rate for the zone outdoor air unit
-	FArray1D_bool MyOneTimeErrorFlag;
+	Array1D_bool MyOneTimeErrorFlag;
 	bool GetOutdoorAirUnitInputFlag( true ); // Flag set to make sure you get input once
 
 	// Autosizing variables
-	FArray1D_bool MySizeFlag;
-	FArray1D_bool CheckEquipName;
+	Array1D_bool MySizeFlag;
+	Array1D_bool CheckEquipName;
 
 	// SUBROUTINE SPECIFICATIONS FOR MODULE OUTDOOR AIR UNIT
 	//PRIVATE UpdateOutdoorAirUnit
 	//PUBLIC GetOutAirCoilOutletTemp
 
 	// Object Data
-	FArray1D< OAUnitData > OutAirUnit;
+	Array1D< OAUnitData > OutAirUnit;
 
 	// Functions
 
@@ -215,6 +215,7 @@ namespace OutdoorAirUnit {
 			if ( OAUnitNum == 0 ) {
 				ShowFatalError( "ZoneHVAC:OutdoorAirUnit not found=" + CompName );
 			}
+			CompIndex = OAUnitNum;
 		} else {
 			OAUnitNum = CompIndex;
 			if ( OAUnitNum > NumOfOAUnits || OAUnitNum < 1 ) {
@@ -272,14 +273,12 @@ namespace OutdoorAirUnit {
 		using WaterCoils::CheckWaterCoilSchedule;
 		using SteamCoils::GetCoilAirInletNode;
 		using SteamCoils::GetCoilAirOutletNode;
-		auto & GetSteamCoilMaxFlowRate( SteamCoils::GetCoilMaxWaterFlowRate );
 		using SteamCoils::GetSteamCoilIndex;
 		using SteamCoils::GetCoilSteamInletNode;
 		using FluidProperties::FindRefrigerant;
 		using DataGlobals::NumOfZones;
 		using DataGlobals::ScheduleAlwaysOn;
 		using DataHeatBalance::Zone;
-		using DataHeatBalance::Construct;
 		using DataSizing::AutoSize;
 		using ScheduleManager::GetScheduleIndex;
 		using namespace DataLoopNode;
@@ -289,9 +288,6 @@ namespace OutdoorAirUnit {
 		auto & GetWCoilInletNode( WaterCoils::GetCoilInletNode );
 		auto & GetWCoilOutletNode( WaterCoils::GetCoilOutletNode );
 		using WaterCoils::GetCoilWaterOutletNode;
-		auto & GetDXCoilOutletNode( DXCoils::GetCoilOutletNode );
-		auto & GetDXCoilInletNode( DXCoils::GetCoilInletNode );
-		using DataGlobals::AnyEnergyManagementSystemInModel;
 		using HeatingCoils::GetCoilInletNode;
 		using HeatingCoils::GetCoilOutletNode;
 		auto & GetElecCoilInletNode( HeatingCoils::GetCoilInletNode );
@@ -307,8 +303,6 @@ namespace OutdoorAirUnit {
 		using Fans::GetFanType;
 		using Fans::GetFanAvailSchPtr;
 		using DataHVACGlobals::cFanTypes;
-		using DataHVACGlobals::ZoneComp;
-		using DataZoneEquipment::OutdoorAirUnit_Num;
 		using HVACDXSystem::CheckDXCoolingCoilInOASysExists;
 		using HVACUnitarySystem::CheckUnitarySysCoilInOASysExists;
 
@@ -332,9 +326,6 @@ namespace OutdoorAirUnit {
 		int IOStat;
 		int OAUnitNum;
 		int CompNum;
-		int Item;
-		int NumComponents;
-		int AlphaNum;
 		std::string ComponentListName;
 		int NumInList;
 		int InListNum;
@@ -346,14 +337,14 @@ namespace OutdoorAirUnit {
 		static int MaxAlphas( 0 ); // Maximum number of alpha input fields
 		static int TotalArgs( 0 ); // Total number of alpha and numeric arguments (max) for a
 		bool IsValid; // Set for outside air node check
-		FArray1D_string cAlphaArgs; // Alpha input items for object
+		Array1D_string cAlphaArgs; // Alpha input items for object
 		std::string CurrentModuleObject; // Object type for getting and messages
-		FArray1D_string cAlphaFields; // Alpha field names
-		FArray1D_string cNumericFields; // Numeric field names
-		FArray1D_bool lAlphaBlanks; // Logical array, alpha field input BLANK = .TRUE.
-		FArray1D_bool lNumericBlanks; // Logical array, numeric field input BLANK = .TRUE.
-		FArray1D< Real64 > NumArray;
-		FArray1D_string AlphArray;
+		Array1D_string cAlphaFields; // Alpha field names
+		Array1D_string cNumericFields; // Numeric field names
+		Array1D_bool lAlphaBlanks; // Logical array, alpha field input BLANK = .TRUE.
+		Array1D_bool lNumericBlanks; // Logical array, numeric field input BLANK = .TRUE.
+		Array1D< Real64 > NumArray;
+		Array1D_string AlphArray;
 		static bool errFlag( false );
 
 		// FLOW:
@@ -684,7 +675,7 @@ namespace OutdoorAirUnit {
 							//          OutAirUnit(OAUnitNum)%OAEquip(CompNum)%ComponentType_Num= Desiccant
 
 						} else {
-							ShowSevereError( CurrentModuleObject + " = \"" + AlphArray( 1 ) + "\" invalid " "Outside Air Component=\"" + OutAirUnit( OAUnitNum ).OAEquip( CompNum ).ComponentType + "\"." );
+							ShowSevereError( CurrentModuleObject + " = \"" + AlphArray( 1 ) + "\" invalid Outside Air Component=\"" + OutAirUnit( OAUnitNum ).OAEquip( CompNum ).ComponentType + "\"." );
 							ErrorsFound = true;
 
 						}}
@@ -794,7 +785,6 @@ namespace OutdoorAirUnit {
 		using DataEnvironment::OutBaroPress;
 		using DataEnvironment::OutDryBulbTemp;
 		using DataEnvironment::OutHumRat;
-		using DataEnvironment::StdBaroPress;
 		using DataEnvironment::StdRhoAir;
 		using DataGlobals::NumOfZones;
 		using DataGlobals::AnyPlantInModel;
@@ -834,22 +824,15 @@ namespace OutdoorAirUnit {
 		int Loop;
 		static bool MyOneTimeFlag( true );
 		static bool ZoneEquipmentListChecked( false ); // True after the Zone Equipment List has been checked for items
-		static FArray1D_bool MyEnvrnFlag;
-		static FArray1D_bool MyPlantScanFlag;
-		static FArray1D_bool MyZoneEqFlag; // used to set up zone equipment availability managers
+		static Array1D_bool MyEnvrnFlag;
+		static Array1D_bool MyPlantScanFlag;
+		static Array1D_bool MyZoneEqFlag; // used to set up zone equipment availability managers
 		int InNode; // inlet node number in outdoor air unit
 		int OutNode; // outlet node number in outdoor air unit
 		int OutsideAirNode; // outside air node number outdoor air unit
 		Real64 OAFrac; // possible outside air fraction
 		Real64 EAFrac; // possible exhaust air fraction
 		Real64 RhoAir; // air density at InNode
-		Real64 TempSteamIn;
-		Real64 SteamDensity;
-		int EQListNum;
-		int EQNum;
-		int SteamConNode; // Hot Steam control node number for steam coil
-		int HotConNode; // Hot water control node number of hot water coil
-		int ColdConNode; // Cold water control node number of cold water coil
 		int compLoop; // local do loop index
 		Real64 rho;
 		bool errFlag;
@@ -1126,7 +1109,6 @@ namespace OutdoorAirUnit {
 		std::string CoolingCoilType;
 		int SizeComp;
 		int CompNum;
-		int ComponentType_Num;
 		Real64 rho;
 		Real64 Cp;
 		static int DummyWaterIndex( 1 );
@@ -1291,8 +1273,8 @@ namespace OutdoorAirUnit {
 										MaxVolWaterFlowDes = 0.0;
 									}
 								} else {
-									ShowSevereError( "Autosizing of water flow requires a Sizing:Zone object " "or a cooling loop Sizing:Plant object" );
-									ShowContinueError( "Occurs in " "ZoneHVAC:OutdoorAirUnit" " Object=" + OutAirUnit( OAUnitNum ).Name );
+									ShowSevereError( "Autosizing of water flow requires a Sizing:Zone object or a cooling loop Sizing:Plant object" );
+									ShowContinueError( "Occurs in ZoneHVAC:OutdoorAirUnit Object=" + OutAirUnit( OAUnitNum ).Name );
 									ErrorsFound = true;
 								}
 							}
@@ -1352,8 +1334,8 @@ namespace OutdoorAirUnit {
 										MaxVolWaterFlowDes = 0.0;
 									}
 								} else {
-									ShowSevereError( "Autosizing of water flow requires a Sizing:Zone object " "or a heating loop Sizing:Plant object" );
-									ShowContinueError( "Occurs in " "ZoneHVAC:OutdoorAirUnit" " Object=" + OutAirUnit( OAUnitNum ).Name );
+									ShowSevereError( "Autosizing of water flow requires a Sizing:Zone object or a heating loop Sizing:Plant object" );
+									ShowContinueError( "Occurs in ZoneHVAC:OutdoorAirUnit Object=" + OutAirUnit( OAUnitNum ).Name );
 									ErrorsFound = true;
 								}
 							}
@@ -1415,8 +1397,8 @@ namespace OutdoorAirUnit {
 										MaxVolWaterFlowDes = 0.0;
 									}
 								} else {
-									ShowSevereError( "Autosizing of Steam flow requires a Sizing:Zone object " "or a heating loop Sizing:Plant object" );
-									ShowContinueError( "Occurs in " "ZoneHVAC:OutdoorAirUnit" " Object=" + OutAirUnit( OAUnitNum ).Name );
+									ShowSevereError( "Autosizing of Steam flow requires a Sizing:Zone object or a heating loop Sizing:Plant object" );
+									ShowContinueError( "Occurs in ZoneHVAC:OutdoorAirUnit Object=" + OutAirUnit( OAUnitNum ).Name );
 									ErrorsFound = true;
 								}
 							}
@@ -1474,8 +1456,8 @@ namespace OutdoorAirUnit {
 										MaxVolWaterFlowDes = 0.0;
 									}
 								} else {
-									ShowSevereError( "Autosizing of water flow requires a Sizing:Zone object " "or a cooling loop Sizing:Plant object" );
-									ShowContinueError( "Occurs in " "ZoneHVAC:OutdoorAirUnit" " Object=" + OutAirUnit( OAUnitNum ).Name );
+									ShowSevereError( "Autosizing of water flow requires a Sizing:Zone object or a cooling loop Sizing:Plant object" );
+									ShowContinueError( "Occurs in ZoneHVAC:OutdoorAirUnit Object=" + OutAirUnit( OAUnitNum ).Name );
 									ErrorsFound = true;
 								}
 							}
@@ -1535,8 +1517,8 @@ namespace OutdoorAirUnit {
 										MaxVolWaterFlowDes = 0.0;
 									}
 								} else {
-									ShowSevereError( "Autosizing of water flow requires a Sizing:Zone object " "or a cooling loop Sizing:Plant object" );
-									ShowContinueError( "Occurs in " "ZoneHVAC:OutdoorAirUnit" " Object=" + OutAirUnit( OAUnitNum ).Name );
+									ShowSevereError( "Autosizing of water flow requires a Sizing:Zone object or a cooling loop Sizing:Plant object" );
+									ShowContinueError( "Occurs in ZoneHVAC:OutdoorAirUnit Object=" + OutAirUnit( OAUnitNum ).Name );
 									ErrorsFound = true;
 								}
 							}
@@ -1589,7 +1571,7 @@ namespace OutdoorAirUnit {
 				} else if ( SELECT_CASE_var == "COIL:HEATING:GAS" ) {
 					OutAirUnit( OAUnitNum ).OAEquip( CompNum ).ComponentType_Num = Coil_GasHeat;
 				} else {
-					ShowSevereError( "ZoneHVAC:OutdoorAirUnit:EquipmentList" " = \"" "OutAirUnit(OAUnitNum)%OAEquip(CompNum)%ComponentListName" "\" invalid to sizing" "Outside Air Component=\"" + OutAirUnit( OAUnitNum ).OAEquip( CompNum ).ComponentType + "\"." );
+					ShowSevereError( "ZoneHVAC:OutdoorAirUnit:EquipmentList = \"OutAirUnit(OAUnitNum)%OAEquip(CompNum)%ComponentListName\" invalid to sizing Outside Air Component=\"" + OutAirUnit( OAUnitNum ).OAEquip( CompNum ).ComponentType + "\"." );
 					ErrorsFound = true;
 
 				}}
@@ -1656,7 +1638,6 @@ namespace OutdoorAirUnit {
 		using DataHVACGlobals::ZoneCompTurnFansOff;
 
 		// Locals
-		Real64 OAMassFlowRate;
 
 		// SUBROUTINE ARGUMENT DEFINITIONS:
 
@@ -1668,20 +1649,14 @@ namespace OutdoorAirUnit {
 
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 		static std::string const CurrentModuleObject( "ZoneHVAC:OutdoorAirUnit" );
-		int CompNum;
 		std::string EquipType;
 		std::string EquipName;
 		std::string CtrlName;
-		bool Sim;
-		bool ReSim;
 		Real64 DesOATemp; // Design OA Temp degree C
 		Real64 AirMassFlow; // air mass flow rate [kg/s]
 		int ControlNode; // the hot water or cold water inlet node
 		int InletNode; // Unit air inlet node
 		int SFanOutletNode; // Unit supply fan outlet node
-		int ZoneAirInNode; // zone supply air node
-		Real64 MaxWaterFlow; // maximum water flow for heating or cooling [kg/sec]
-		Real64 MinWaterFlow; // minimum water flow for heating or cooling [kg/sec]
 		int OutletNode; // air outlet node
 		int OutsideAirNode; // outside air node
 		Real64 QTotUnitOut; // total unit output [watts]
@@ -1691,21 +1666,15 @@ namespace OutdoorAirUnit {
 		Real64 SetPointTemp; // temperature that will be used to control the radiant system [Celsius]
 		Real64 HiCtrlTemp; // Current high point in setpoint temperature range
 		Real64 LoCtrlTemp; // Current low point in setpoint temperature range
-		Real64 CpFan; // Intermediate calculational variable for specific heat of air <<NOV9 Updated
 		Real64 AirInEnt; // RE-calcualte the Enthalpy of supply air
-		Real64 outsideent; // RE-calculate the Enthalpy of outdoor air
 		Real64 AirOutletTemp;
 		static int OperatingMode( 0 );
 		static int UnitControlType( 0 );
-		Real64 OutSideAirEnt; // Specific humidity ratio of outlet air (kg moisture / kg moist air)
 		Real64 ZoneSupAirEnt; // Specific humidity ratio of inlet air (kg moisture / kg moist air)
 		// Latent output
 		Real64 LatentOutput; // Latent (moisture) add/removal rate, negative is dehumidification [kg/s]
 		Real64 SpecHumOut; // Specific humidity ratio of outlet air (kg moisture / kg moist air)
 		Real64 SpecHumIn; // Specific humidity ratio of inlet air (kg moisture / kg moist air)
-		Real64 EAMassFlowRate;
-		static bool ErrorsFound( false ); // Set to true if errors in input, fatal at end of routine
-		bool FatalErrorFlag;
 		Real64 ZoneAirEnt; // zone air enthalphy J/kg
 
 		// FLOW:
@@ -1973,7 +1942,7 @@ namespace OutdoorAirUnit {
 		std::string const & EquipType, // the component type
 		std::string const & EquipName, // the component Name
 		int const EquipNum,
-		int const CompTypeNum, // Component Type -- Integerized for this module
+		int const EP_UNUSED( CompTypeNum ), // Component Type -- Integerized for this module
 		bool const FirstHVACIteration,
 		int & CompIndex,
 		bool const Sim // if TRUE, simulate component
@@ -2033,38 +2002,26 @@ namespace OutdoorAirUnit {
 		// DERIVED TYPE DEFINITIONS: None
 
 		// SUBROUTINE LOCAL VARIABLE DEFINITIONS
-		int OperatingMode;
 		Real64 OAMassFlow;
 		Real64 QCompReq;
 		int UnitNum;
 		Real64 MaxWaterFlow;
 		Real64 MinWaterFlow;
 		int ControlNode;
-		int CoilInletNode;
-		int OutletNode;
 		Real64 CpAirZn;
-		int AirOutletNode;
-		int CoilWaterInletNode;
 		int SimCompNum;
 		int OpMode;
 		int EquipTypeNum;
 		int WCCoilInletNode;
 		int WCCoilOutletNode;
-		int WCCoilContNode;
 		int WHCoilInletNode;
 		int WHCoilOutletNode;
-		int WHCoilContNode;
-		int SHCoilInletNode;
-		int SHCoilOutletNode;
-		Real64 Qcoilout;
 		Real64 QUnitOut;
 		static int DXSystemIndex( 0 );
 		Real64 CompAirOutTemp;
 		Real64 FanEffect;
 		bool DrawFan; // fan position If .True., the temperature increasing by fan operating is considered
 		Real64 Dxsystemouttemp;
-		Real64 DXsystemInlettemp;
-		static bool ErrorsFound( false ); // Set to true if errors in input, fatal at end of routine
 		static bool HeatActive( false );
 		static bool CoolActive( false );
 
@@ -2318,18 +2275,9 @@ namespace OutdoorAirUnit {
 		bool DrawFan; // Fan Flag
 		int InletNode;
 		int OutletNode;
-		int AirOutletNode;
-		static int WaterCoilIndex( 0 );
 		Real64 QCompReq; // Actual equipment load
-		Real64 CoilInTemp;
-		Real64 MinWaterFlow;
-		int SHCoilInletNode;
-		int SHCoilOutletNode;
-		int CoilWaterInletNode;
 		int CoilTypeNum;
-		static bool ErrorsFound( false ); // Set to true if errors in input, fatal at end of routine
 		Real64 CoilAirOutTemp;
-		int CoilNum;
 		int CompoNum;
 
 		// Flow

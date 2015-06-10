@@ -3,7 +3,7 @@
 #include <cmath>
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray.functions.hh>
+#include <ObjexxFCL/Array.functions.hh>
 
 // EnergyPlus Headers
 #include <HighTempRadiantSystem.hh>
@@ -99,21 +99,21 @@ namespace HighTempRadiantSystem {
 	// MODULE VARIABLE DECLARATIONS:
 	// Standard, run-of-the-mill variables...
 	int NumOfHighTempRadSys( 0 ); // Number of hydronic low tempererature radiant systems
-	FArray1D< Real64 > QHTRadSource; // Need to keep the last value in case we are still iterating
-	FArray1D< Real64 > QHTRadSrcAvg; // Need to keep the last value in case we are still iterating
-	FArray1D< Real64 > ZeroSourceSumHATsurf; // Equal to the SumHATsurf for all the walls in a zone with no source
+	Array1D< Real64 > QHTRadSource; // Need to keep the last value in case we are still iterating
+	Array1D< Real64 > QHTRadSrcAvg; // Need to keep the last value in case we are still iterating
+	Array1D< Real64 > ZeroSourceSumHATsurf; // Equal to the SumHATsurf for all the walls in a zone with no source
 	// Record keeping variables used to calculate QHTRadSrcAvg locally
-	FArray1D< Real64 > LastQHTRadSrc; // Need to keep the last value in case we are still iterating
-	FArray1D< Real64 > LastSysTimeElapsed; // Need to keep the last value in case we are still iterating
-	FArray1D< Real64 > LastTimeStepSys; // Need to keep the last value in case we are still iterating
-	FArray1D_bool MySizeFlag;
-	FArray1D_bool CheckEquipName;
+	Array1D< Real64 > LastQHTRadSrc; // Need to keep the last value in case we are still iterating
+	Array1D< Real64 > LastSysTimeElapsed; // Need to keep the last value in case we are still iterating
+	Array1D< Real64 > LastTimeStepSys; // Need to keep the last value in case we are still iterating
+	Array1D_bool MySizeFlag;
+	Array1D_bool CheckEquipName;
 
 	// SUBROUTINE SPECIFICATIONS FOR MODULE HighTempRadiantSystem
 
 	// Object Data
-	FArray1D< HighTempRadiantSystemData > HighTempRadSys;
-	FArray1D< HighTempRadSysNumericFieldData > HighTempRadSysNumericFields;
+	Array1D< HighTempRadiantSystemData > HighTempRadSys;
+	Array1D< HighTempRadSysNumericFieldData > HighTempRadSysNumericFields;
 
 	// Functions
 
@@ -239,7 +239,6 @@ namespace HighTempRadiantSystem {
 		using ScheduleManager::GetScheduleIndex;
 		using General::TrimSigDigits;
 		using DataSizing::AutoSize;
-		using DataSizing::FinalZoneSizing;
 		using DataSizing::HeatingDesignCapacity;
 		using DataSizing::CapacityPerFloorArea;
 		using DataSizing::FractionOfAutosizedHeatingCapacity;
@@ -538,7 +537,7 @@ namespace HighTempRadiantSystem {
 					ShowContinueError( "Occurs for " + cCurrentModuleObject + " = " + cAlphaArgs( 1 ) );
 					ErrorsFound = true;
 				} else if ( Surface( HighTempRadSys( Item ).SurfacePtr( SurfNum ) ).Zone != HighTempRadSys( Item ).ZonePtr ) {
-					ShowWarningError( "Surface referenced in ZoneHVAC:HighTemperatureRadiant not in same zone as Radiant System," "surface=" + HighTempRadSys( Item ).SurfaceName( SurfNum ) );
+					ShowWarningError( "Surface referenced in ZoneHVAC:HighTemperatureRadiant not in same zone as Radiant System, surface=" + HighTempRadSys( Item ).SurfaceName( SurfNum ) );
 					ShowContinueError( "Surface is in Zone=" + Zone( Surface( HighTempRadSys( Item ).SurfacePtr( SurfNum ) ).Zone ).Name + " ZoneHVAC:HighTemperatureRadiant in Zone=" + cAlphaArgs( 3 ) );
 					ShowContinueError( "Occurs for " + cCurrentModuleObject + " = " + cAlphaArgs( 1 ) );
 				}
@@ -622,7 +621,6 @@ namespace HighTempRadiantSystem {
 		// Using/Aliasing
 		using DataGlobals::NumOfZones;
 		using DataGlobals::BeginEnvrnFlag;
-		using DataLoopNode::Node;
 		using DataZoneEquipment::ZoneEquipInputsFilled;
 		using DataZoneEquipment::CheckZoneEquipmentList;
 
@@ -837,7 +835,6 @@ namespace HighTempRadiantSystem {
 		// Using/Aliasing
 		using DataHeatBalance::MRT;
 		using DataHeatBalFanSys::MAT;
-		using DataHVACGlobals::SmallLoad;
 		using namespace DataZoneEnergyDemands;
 		using ScheduleManager::GetCurrentScheduleValue;
 
@@ -902,7 +899,7 @@ namespace HighTempRadiantSystem {
 
 	void
 	CalcHighTempRadiantSystemSP(
-		bool const FirstHVACIteration, // true if this is the first HVAC iteration at this system time step !unused1208
+		bool const EP_UNUSED( FirstHVACIteration ), // true if this is the first HVAC iteration at this system time step !unused1208
 		int const RadSysNum // name of the low temperature radiant system
 	)
 	{
@@ -1369,16 +1366,13 @@ namespace HighTempRadiantSystem {
 
 		// Using/Aliasing
 		using DataGlobals::SecInHour;
-		using DataGlobals::OutputFileDebug;
 		using DataHVACGlobals::TimeStepSys;
-		using DataLoopNode::Node;
 		using DataSurfaces::Surface;
 
 		// Locals
 		// SUBROUTINE ARGUMENT DEFINITIONS:
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		Real64 const NotOperating( -9999.0 ); // Some unreasonable value that should clue the user in that this is not running
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na

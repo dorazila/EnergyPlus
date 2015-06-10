@@ -2,16 +2,18 @@
 #include <cmath>
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray.functions.hh>
-#include <ObjexxFCL/FArray1D.hh>
+#include <ObjexxFCL/Array.functions.hh>
+#include <ObjexxFCL/Array1D.hh>
 #include <ObjexxFCL/Fmath.hh>
 #include <ObjexxFCL/gio.hh>
 
 // EnergyPlus Headers
 #include <EMSManager.hh>
+#include <CommandLineInterface.hh>
 #include <DataAirLoop.hh>
 #include <DataAirSystems.hh>
 #include <DataGlobals.hh>
+#include <DataStringGlobals.hh>
 #include <DataHeatBalance.hh>
 #include <DataLoopNode.hh>
 #include <DataPrecisionGlobals.hh>
@@ -189,9 +191,9 @@ namespace EMSManager {
 			if ( OutputEDDFile ) {
 				// open up output file for EMS EDD file  EMS Data and Debug
 				OutputEMSFileUnitNum = GetNewUnitNumber();
-				{ IOFlags flags; flags.ACTION( "write" ); gio::open( OutputEMSFileUnitNum, "eplusout.edd", flags ); write_stat = flags.ios(); }
+				{ IOFlags flags; flags.ACTION( "write" ); gio::open( OutputEMSFileUnitNum, DataStringGlobals::outputEddFileName, flags ); write_stat = flags.ios(); }
 				if ( write_stat != 0 ) {
-					ShowFatalError( "CheckIFAnyEMS: Could not open file \"eplusout.edd\" for output (write)." );
+					ShowFatalError( "CheckIFAnyEMS: Could not open file "+ DataStringGlobals::outputEddFileName +" for output (write)." );
 				}
 			}
 		} else {
@@ -227,13 +229,7 @@ namespace EMSManager {
 		// Standard EnergyPlus methodology.
 
 		// Using/Aliasing
-		using DataGlobals::WarmupFlag;
-		using DataGlobals::DoingSizing;
-		using DataGlobals::ZoneTSReporting;
-		using DataGlobals::HVACTSReporting;
-		using DataGlobals::KickOffSimulation;
 		using DataGlobals::AnyEnergyManagementSystemInModel;
-		using DataGlobals::BeginEnvrnFlag;
 		using DataGlobals::emsCallFromSetupSimulation;
 		using DataGlobals::emsCallFromExternalInterface;
 		using DataGlobals::emsCallFromBeginNewEvironment;
@@ -242,11 +238,8 @@ namespace EMSManager {
 		using RuntimeLanguageProcessor::EvaluateStack;
 		using RuntimeLanguageProcessor::BeginEnvrnInitializeRuntimeLanguage;
 		using OutputProcessor::MeterType;
-		using OutputProcessor::NumEnergyMeters;
-		using OutputProcessor::EnergyMeters;
 		using OutputProcessor::RealVariables;
 		using OutputProcessor::RealVariableType;
-		using OutputProcessor::NumOfRVariable;
 		using OutputProcessor::RVar;
 		using OutputProcessor::RVariableTypes;
 
@@ -374,7 +367,6 @@ namespace EMSManager {
 		// na
 
 		// Using/Aliasing
-		using DataGlobals::WarmupFlag;
 		using DataGlobals::DoingSizing;
 		using DataGlobals::KickOffSimulation;
 		using DataGlobals::BeginEnvrnFlag;
@@ -577,12 +569,12 @@ namespace EMSManager {
 		bool IsBlank; // Flag for blank name
 		static bool ErrorsFound( false );
 		//  CHARACTER(len=MaxNameLength)   :: objNameMsg = ' '
-		FArray1D_string cAlphaFieldNames;
-		FArray1D_string cNumericFieldNames;
-		FArray1D_bool lNumericFieldBlanks;
-		FArray1D_bool lAlphaFieldBlanks;
-		FArray1D_string cAlphaArgs;
-		FArray1D< Real64 > rNumericArgs;
+		Array1D_string cAlphaFieldNames;
+		Array1D_string cNumericFieldNames;
+		Array1D_bool lNumericFieldBlanks;
+		Array1D_bool lAlphaFieldBlanks;
+		Array1D_string cAlphaArgs;
+		Array1D< Real64 > rNumericArgs;
 		std::string cCurrentModuleObject;
 		int VarType;
 		int VarIndex;
@@ -1140,7 +1132,7 @@ namespace EMSManager {
 					if ( OutputEDDFile ) {
 						ShowContinueError( "Review edd file for valid component control types." );
 					} else {
-						ShowContinueError( "Use Output:EnergyManagementSystem object to create " ".edd file for valid component control types." );
+						ShowContinueError( "Use Output:EnergyManagementSystem object to create .edd file for valid component control types." );
 					}
 					ErrorsFound = true;
 				}
@@ -1238,8 +1230,8 @@ namespace EMSManager {
 		int AvgOrSum;
 		int StepType;
 		std::string Units;
-		FArray1D_string KeyName;
-		FArray1D_int KeyIndex;
+		Array1D_string KeyName;
+		Array1D_int KeyIndex;
 		bool Found;
 
 		// FLOW:
@@ -1885,10 +1877,10 @@ namespace EMSManager {
 
 		//Setup error checking storage
 
-		if ( ! allocated( EMSConstructActuatorChecked ) ) EMSConstructActuatorChecked.allocate( TotSurfaces, TotConstructs );
+		if ( ! allocated( EMSConstructActuatorChecked ) ) EMSConstructActuatorChecked.allocate( TotConstructs, TotSurfaces );
 		EMSConstructActuatorChecked = false;
 
-		if ( ! allocated( EMSConstructActuatorIsOkay ) ) EMSConstructActuatorIsOkay.allocate( TotSurfaces, TotConstructs );
+		if ( ! allocated( EMSConstructActuatorIsOkay ) ) EMSConstructActuatorIsOkay.allocate( TotConstructs, TotSurfaces );
 		EMSConstructActuatorIsOkay = false;
 
 	}
@@ -2063,57 +2055,42 @@ SetupEMSActuator(
 	// SUBROUTINE ARGUMENT DEFINITIONS:
 
 	// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
-	int ActuatorVariableNum;
-	bool FoundActuatorType;
-	bool FoundDuplicate;
 
 	// Object Data
 
 	// FLOW:
 
-	FoundActuatorType = false;
-	FoundDuplicate = false;
-
 	std::string const UpperCaseObjectType( MakeUPPERCase( cComponentTypeName ) );
 	std::string const UpperCaseObjectName( MakeUPPERCase( cUniqueIDName ) );
 	std::string const UpperCaseActuatorName( MakeUPPERCase( cControlTypeName ) );
 
-	for ( ActuatorVariableNum = 1; ActuatorVariableNum <= numEMSActuatorsAvailable; ++ActuatorVariableNum ) {
-		if ( ( EMSActuatorAvailable( ActuatorVariableNum ).ComponentTypeName == UpperCaseObjectType ) && ( EMSActuatorAvailable( ActuatorVariableNum ).ControlTypeName == UpperCaseActuatorName ) ) {
+	EMSActuatorKey const key( UpperCaseObjectType, UpperCaseObjectName, UpperCaseActuatorName );
 
-			FoundActuatorType = true;
-
-			if ( EMSActuatorAvailable( ActuatorVariableNum ).UniqueIDName == UpperCaseObjectName ) {
-				FoundDuplicate = true;
-				break;
-			}
-		}
-	}
-
-	if ( FoundDuplicate ) {
+	if ( EMSActuator_lookup.find( key ) != EMSActuator_lookup.end() ) {
 		ShowSevereError( "Duplicate actuator was sent to SetupEMSActuator." );
-	} else {
-		// Add new actuator
+		ShowContinueError( "Actuator variable type = " + cComponentTypeName + " ; name = " + cUniqueIDName + " ; control = " + cControlTypeName );
+	} else { // Add new actuator
 		if ( numEMSActuatorsAvailable == 0 ) {
 			EMSActuatorAvailable.allocate( varsAvailableAllocInc );
 			numEMSActuatorsAvailable = 1;
 			maxEMSActuatorsAvailable = varsAvailableAllocInc;
 		} else {
 			if ( numEMSActuatorsAvailable + 1 > maxEMSActuatorsAvailable ) {
-				EMSActuatorAvailable.redimension( maxEMSActuatorsAvailable += varsAvailableAllocInc );
+				EMSActuatorAvailable.redimension( maxEMSActuatorsAvailable *= 2 );
 			}
 			++numEMSActuatorsAvailable;
 		}
 
-		ActuatorVariableNum = numEMSActuatorsAvailable;
-		EMSActuatorAvailable( ActuatorVariableNum ).ComponentTypeName = cComponentTypeName;
-		EMSActuatorAvailable( ActuatorVariableNum ).UniqueIDName = cUniqueIDName;
-		EMSActuatorAvailable( ActuatorVariableNum ).ControlTypeName = cControlTypeName;
-		EMSActuatorAvailable( ActuatorVariableNum ).Units = cUnits;
-		EMSActuatorAvailable( ActuatorVariableNum ).Actuated >>= lEMSActuated; // Pointer assigment
-		EMSActuatorAvailable( ActuatorVariableNum ).RealValue >>= rValue; // Pointer assigment
-		EMSActuatorAvailable( ActuatorVariableNum ).PntrVarTypeUsed = PntrReal;
-
+		auto & actuator( EMSActuatorAvailable( numEMSActuatorsAvailable ) );
+		actuator.ComponentTypeName = cComponentTypeName;
+		actuator.UniqueIDName = cUniqueIDName;
+		actuator.ControlTypeName = cControlTypeName;
+		actuator.Units = cUnits;
+		actuator.Actuated >>= lEMSActuated; // Pointer assigment
+		actuator.RealValue >>= rValue; // Pointer assigment
+		actuator.PntrVarTypeUsed = PntrReal;
+//		EMSActuator_lookup.insert( key );
+		EMSActuator_lookup.insert( EMSActuatorKey( cComponentTypeName, cUniqueIDName, cControlTypeName ) ); //Bug Replicate bug pending DOE fix
 	}
 
 }
@@ -2152,9 +2129,6 @@ SetupEMSActuator(
 	// SUBROUTINE ARGUMENT DEFINITIONS:
 
 	// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
-	int ActuatorVariableNum;
-	bool FoundActuatorType;
-	bool FoundDuplicate;
 
 	// Object Data
 
@@ -2165,49 +2139,37 @@ SetupEMSActuator(
 	//    ActuatorFileOpen = .TRUE.
 	//  END IF
 
-	FoundActuatorType = false;
-	FoundDuplicate = false;
-
 	std::string const UpperCaseObjectType( MakeUPPERCase( cComponentTypeName ) );
 	std::string const UpperCaseObjectName( MakeUPPERCase( cUniqueIDName ) );
 	std::string const UpperCaseActuatorName( MakeUPPERCase( cControlTypeName ) );
 
-	for ( ActuatorVariableNum = 1; ActuatorVariableNum <= numEMSActuatorsAvailable; ++ActuatorVariableNum ) {
-		if ( ( EMSActuatorAvailable( ActuatorVariableNum ).ComponentTypeName == UpperCaseObjectType ) && ( EMSActuatorAvailable( ActuatorVariableNum ).ControlTypeName == UpperCaseActuatorName ) ) {
+	EMSActuatorKey const key( UpperCaseObjectType, UpperCaseObjectName, UpperCaseActuatorName );
 
-			FoundActuatorType = true;
-
-			if ( EMSActuatorAvailable( ActuatorVariableNum ).UniqueIDName == UpperCaseObjectName ) {
-				FoundDuplicate = true;
-				break;
-			}
-		}
-	}
-
-	if ( FoundDuplicate ) {
+	if ( EMSActuator_lookup.find( key ) != EMSActuator_lookup.end() ) {
 		ShowSevereError( "Duplicate actuator was sent to SetupEMSActuator." );
-	} else {
-		// Add new actuator
+		ShowContinueError( "Actuator variable type = " + cComponentTypeName + " ; name = " + cUniqueIDName + " ; control = " + cControlTypeName );
+	} else { // Add new actuator
 		if ( numEMSActuatorsAvailable == 0 ) {
 			EMSActuatorAvailable.allocate( varsAvailableAllocInc );
 			numEMSActuatorsAvailable = 1;
 			maxEMSActuatorsAvailable = varsAvailableAllocInc;
 		} else {
 			if ( numEMSActuatorsAvailable + 1 > maxEMSActuatorsAvailable ) {
-				EMSActuatorAvailable.redimension( maxEMSActuatorsAvailable += varsAvailableAllocInc );
+				EMSActuatorAvailable.redimension( maxEMSActuatorsAvailable *= 2 );
 			}
 			++numEMSActuatorsAvailable;
 		}
 
-		ActuatorVariableNum = numEMSActuatorsAvailable;
-		EMSActuatorAvailable( ActuatorVariableNum ).ComponentTypeName = cComponentTypeName;
-		EMSActuatorAvailable( ActuatorVariableNum ).UniqueIDName = cUniqueIDName;
-		EMSActuatorAvailable( ActuatorVariableNum ).ControlTypeName = cControlTypeName;
-		EMSActuatorAvailable( ActuatorVariableNum ).Units = cUnits;
-		EMSActuatorAvailable( ActuatorVariableNum ).Actuated >>= lEMSActuated; // Pointer assigment
-		EMSActuatorAvailable( ActuatorVariableNum ).IntValue >>= iValue; // Pointer assigment
-		EMSActuatorAvailable( ActuatorVariableNum ).PntrVarTypeUsed = PntrInteger;
-
+		auto & actuator( EMSActuatorAvailable( numEMSActuatorsAvailable ) );
+		actuator.ComponentTypeName = cComponentTypeName;
+		actuator.UniqueIDName = cUniqueIDName;
+		actuator.ControlTypeName = cControlTypeName;
+		actuator.Units = cUnits;
+		actuator.Actuated >>= lEMSActuated; // Pointer assigment
+		actuator.IntValue >>= iValue; // Pointer assigment
+		actuator.PntrVarTypeUsed = PntrInteger;
+//		EMSActuator_lookup.insert( key );
+		EMSActuator_lookup.insert( EMSActuatorKey( cComponentTypeName, cUniqueIDName, cControlTypeName ) ); //Bug Replicate bug pending DOE fix
 	}
 
 }
@@ -2246,56 +2208,42 @@ SetupEMSActuator(
 	// SUBROUTINE ARGUMENT DEFINITIONS:
 
 	// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
-	int ActuatorVariableNum;
-	bool FoundActuatorType;
-	bool FoundDuplicate;
 
 	// Object Data
 
 	// FLOW:
-	FoundActuatorType = false;
-	FoundDuplicate = false;
 
 	std::string const UpperCaseObjectType( MakeUPPERCase( cComponentTypeName ) );
 	std::string const UpperCaseObjectName( MakeUPPERCase( cUniqueIDName ) );
 	std::string const UpperCaseActuatorName( MakeUPPERCase( cControlTypeName ) );
 
-	for ( ActuatorVariableNum = 1; ActuatorVariableNum <= numEMSActuatorsAvailable; ++ActuatorVariableNum ) {
-		if ( ( EMSActuatorAvailable( ActuatorVariableNum ).ComponentTypeName == UpperCaseObjectType ) && ( EMSActuatorAvailable( ActuatorVariableNum ).ControlTypeName == UpperCaseActuatorName ) ) {
+	EMSActuatorKey const key( UpperCaseObjectType, UpperCaseObjectName, UpperCaseActuatorName );
 
-			FoundActuatorType = true;
-
-			if ( EMSActuatorAvailable( ActuatorVariableNum ).UniqueIDName == UpperCaseObjectName ) {
-				FoundDuplicate = true;
-				break;
-			}
-		}
-	}
-
-	if ( FoundDuplicate ) {
+	if ( EMSActuator_lookup.find( key ) != EMSActuator_lookup.end() ) {
 		ShowSevereError( "Duplicate actuator was sent to SetupEMSActuator." );
-	} else {
-		// Add new actuator
+		ShowContinueError( "Actuator variable type = " + cComponentTypeName + " ; name = " + cUniqueIDName + " ; control = " + cControlTypeName );
+	} else { // Add new actuator
 		if ( numEMSActuatorsAvailable == 0 ) {
 			EMSActuatorAvailable.allocate( varsAvailableAllocInc );
 			numEMSActuatorsAvailable = 1;
 			maxEMSActuatorsAvailable = varsAvailableAllocInc;
 		} else {
 			if ( numEMSActuatorsAvailable + 1 > maxEMSActuatorsAvailable ) {
-				EMSActuatorAvailable.redimension( maxEMSActuatorsAvailable += varsAvailableAllocInc );
+				EMSActuatorAvailable.redimension( maxEMSActuatorsAvailable *= 2 );
 			}
 			++numEMSActuatorsAvailable;
 		}
 
-		ActuatorVariableNum = numEMSActuatorsAvailable;
-		EMSActuatorAvailable( ActuatorVariableNum ).ComponentTypeName = cComponentTypeName;
-		EMSActuatorAvailable( ActuatorVariableNum ).UniqueIDName = cUniqueIDName;
-		EMSActuatorAvailable( ActuatorVariableNum ).ControlTypeName = cControlTypeName;
-		EMSActuatorAvailable( ActuatorVariableNum ).Units = cUnits;
-		EMSActuatorAvailable( ActuatorVariableNum ).Actuated >>= lEMSActuated; // Pointer assigment
-		EMSActuatorAvailable( ActuatorVariableNum ).LogValue >>= lValue; // Pointer assigment
-		EMSActuatorAvailable( ActuatorVariableNum ).PntrVarTypeUsed = PntrLogical;
-
+		auto & actuator( EMSActuatorAvailable( numEMSActuatorsAvailable ) );
+		actuator.ComponentTypeName = cComponentTypeName;
+		actuator.UniqueIDName = cUniqueIDName;
+		actuator.ControlTypeName = cControlTypeName;
+		actuator.Units = cUnits;
+		actuator.Actuated >>= lEMSActuated; // Pointer assigment
+		actuator.LogValue >>= lValue; // Pointer assigment
+		actuator.PntrVarTypeUsed = PntrLogical;
+//		EMSActuator_lookup.insert( key );
+		EMSActuator_lookup.insert( EMSActuatorKey( cComponentTypeName, cUniqueIDName, cControlTypeName ) ); //Bug Replicate bug pending DOE fix
 	}
 
 }
@@ -2469,6 +2417,5 @@ SetupEMSInternalVariable(
 	}
 
 }
-
 
 } // EnergyPlus

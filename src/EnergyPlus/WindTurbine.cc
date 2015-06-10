@@ -3,16 +3,18 @@
 #include <cmath>
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray.functions.hh>
+#include <ObjexxFCL/Array.functions.hh>
 #include <ObjexxFCL/Fmath.hh>
 #include <ObjexxFCL/gio.hh>
 #include <ObjexxFCL/string.functions.hh>
 
 // EnergyPlus Headers
 #include <WindTurbine.hh>
+#include <CommandLineInterface.hh>
 #include <DataEnvironment.hh>
 #include <DataGenerators.hh>
 #include <DataGlobalConstants.hh>
+#include <DataStringGlobals.hh>
 #include <DataHVACGlobals.hh>
 #include <DataPrecisionGlobals.hh>
 #include <General.hh>
@@ -79,17 +81,17 @@ namespace WindTurbine {
 	// Subroutine Specifications for the Heat Balance Module
 
 	// Object Data
-	FArray1D< WindTurbineParams > WindTurbineSys;
+	Array1D< WindTurbineParams > WindTurbineSys;
 
 	// Functions
 
 	void
 	SimWindTurbine(
-		int const GeneratorType, // Type of Generator
+		int const EP_UNUSED( GeneratorType ), // Type of Generator
 		std::string const & GeneratorName, // User specified name of Generator
 		int & GeneratorIndex, // Generator index
 		bool const RunFlag, // ON or OFF
-		Real64 const WTLoad // Electrical load on WT (not used)
+		Real64 const EP_UNUSED( WTLoad ) // Electrical load on WT (not used)
 	)
 	{
 
@@ -111,7 +113,6 @@ namespace WindTurbine {
 
 		// Using/Aliasing
 		using InputProcessor::FindItemInList;
-		using DataGlobalConstants::iGeneratorWindTurbine;
 		using General::TrimSigDigits;
 		// na
 
@@ -163,7 +164,7 @@ namespace WindTurbine {
 
 	void
 	GetWTGeneratorResults(
-		int const GeneratorType, // Type of Generator
+		int const EP_UNUSED( GeneratorType ), // Type of Generator
 		int const GeneratorIndex, // Generator number
 		Real64 & GeneratorPower, // Electrical power
 		Real64 & GeneratorEnergy, // Electrical energy
@@ -267,12 +268,12 @@ namespace WindTurbine {
 		int NumNumbers; // Number of Numbers for each GetobjectItem call
 		int NumArgs;
 		int IOStat;
-		FArray1D_string cAlphaArgs; // Alpha input items for object
-		FArray1D_string cAlphaFields; // Alpha field names
-		FArray1D_string cNumericFields; // Numeric field names
-		FArray1D< Real64 > rNumericArgs; // Numeric input items for object
-		FArray1D_bool lAlphaBlanks; // Logical array, alpha field input BLANK = .TRUE.
-		FArray1D_bool lNumericBlanks; // Logical array, numeric field input BLANK = .TRUE.
+		Array1D_string cAlphaArgs; // Alpha input items for object
+		Array1D_string cAlphaFields; // Alpha field names
+		Array1D_string cNumericFields; // Numeric field names
+		Array1D< Real64 > rNumericArgs; // Numeric input items for object
+		Array1D_bool lAlphaBlanks; // Logical array, alpha field input BLANK = .TRUE.
+		Array1D_bool lNumericBlanks; // Logical array, numeric field input BLANK = .TRUE.
 
 		// Initializations and allocations
 		GetObjectDefMaxArgs( CurrentModuleObject, NumArgs, NumAlphas, NumNumbers );
@@ -290,7 +291,7 @@ namespace WindTurbine {
 		// Flow
 		for ( WindTurbineNum = 1; WindTurbineNum <= NumWindTurbines; ++WindTurbineNum ) {
 
-			GetObjectItem( CurrentModuleObject, WindTurbineNum, cAlphaArgs, NumAlphas, rNumericArgs, NumNumbers, IOStat, lNumericBlanks, lAlphaBlanks, cAlphaFields, cNumericFields )  ;
+			GetObjectItem( CurrentModuleObject, WindTurbineNum, cAlphaArgs, NumAlphas, rNumericArgs, NumNumbers, IOStat, lNumericBlanks, lAlphaBlanks, cAlphaFields, cNumericFields );
 			IsNotOK = false;
 			IsBlank = false;
 			VerifyName( cAlphaArgs( 1 ), WindTurbineSys.Name(), WindTurbineNum, IsNotOK, IsBlank, CurrentModuleObject + " Name" );
@@ -606,29 +607,28 @@ namespace WindTurbine {
 
 		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 		static bool MyOneTimeFlag( true );
-		int OpenStatus; // Open status of stat file
 		int ReadStatus; // Reading status of stat file
 		int statFile; // Weather Stat File
 		std::string::size_type lnPtr; // scan pointer for Line input
 		int mon; // loop counter
 		bool wsStatFound; // logical noting that wind stats were found
-		bool fileExists; // true if in.stat file exists
+		bool fileExists; // true if Stat file exists
 		bool warningShown; // true if the <365 warning has already been shown
 		std::string lineIn;
-		FArray1D< Real64 > MonthWS( 12 );
+		Array1D< Real64 > MonthWS( 12 );
 		static Real64 AnnualTMYWS( 0.0 ); // Annual average wind speed in stat file
 		Real64 LocalTMYWS; // Annual average wind speed at the rotor height
 
 		// Estimate average annual wind speed once
 		if ( MyOneTimeFlag ) {
 			wsStatFound = false;
-			{ IOFlags flags; gio::inquire( "in.stat", flags ); fileExists = flags.exists(); }
+			{ IOFlags flags; gio::inquire( DataStringGlobals::inStatFileName, flags ); fileExists = flags.exists(); }
 			if ( fileExists ) {
 				statFile = GetNewUnitNumber();
 				ReadStatus = 0;
-				{ IOFlags flags; flags.ACTION( "READ" ); gio::open( statFile, "in.stat", flags ); ReadStatus = flags.ios(); }
+				{ IOFlags flags; flags.ACTION( "READ" ); gio::open( statFile, DataStringGlobals::inStatFileName, flags ); ReadStatus = flags.ios(); }
 				if ( ReadStatus != 0 ) {
-					ShowFatalError( "InitWindTurbine: Could not open file \"in.stat\" for input (read)." );
+					ShowFatalError( "InitWindTurbine: Could not open file "+DataStringGlobals::inStatFileName+" for input (read)." );
 				}
 				while ( ReadStatus == 0 ) { //end of file
 					{ IOFlags flags; gio::read( statFile, fmtA, flags ) >> lineIn; ReadStatus = flags.ios(); }
@@ -655,14 +655,14 @@ namespace WindTurbine {
 									}
 								} else { // blank field
 									if ( ! warningShown ) {
-										ShowWarningError( "InitWindTurbine: read from in.stat file shows <365 days in weather file. " "Annual average wind speed used will be inaccurate." );
+										ShowWarningError( "InitWindTurbine: read from " + DataStringGlobals::inStatFileName + " file shows <365 days in weather file. Annual average wind speed used will be inaccurate." );
 										lineIn.erase( 0, lnPtr + 1 );
 										warningShown = true;
 									}
 								}
 							} else { // two tabs in succession
 								if ( ! warningShown ) {
-									ShowWarningError( "InitWindTurbine: read from in.stat file shows <365 days in weather file. " "Annual average wind speed used will be inaccurate." );
+									ShowWarningError( "InitWindTurbine: read from " + DataStringGlobals::inStatFileName + " file shows <365 days in weather file. Annual average wind speed used will be inaccurate." );
 									lineIn.erase( 0, lnPtr + 1 );
 									warningShown = true;
 								}
@@ -676,10 +676,10 @@ namespace WindTurbine {
 				if ( wsStatFound ) {
 					AnnualTMYWS = sum( MonthWS ) / 12.0;
 				} else {
-					ShowWarningError( "InitWindTurbine: stat file did not include Wind Speed statistics. " "TMY Wind Speed adjusted at the height is used." );
+					ShowWarningError( "InitWindTurbine: stat file did not include Wind Speed statistics. TMY Wind Speed adjusted at the height is used." );
 				}
 			} else { // No stat file
-				ShowWarningError( "InitWindTurbine: stat file missing. " "TMY Wind Speed adjusted at the height is used." );
+				ShowWarningError( "InitWindTurbine: stat file missing. TMY Wind Speed adjusted at the height is used." );
 			}
 
 			MyOneTimeFlag = false;
@@ -715,7 +715,7 @@ namespace WindTurbine {
 	void
 	CalcWindTurbine(
 		int const WindTurbineNum, // System is on
-		bool const RunFlag // System is on
+		bool const EP_UNUSED( RunFlag ) // System is on
 	)
 	{
 
@@ -740,7 +740,6 @@ namespace WindTurbine {
 		using ScheduleManager::GetCurrentScheduleValue;
 		using Psychrometrics::PsyWFnTdbTwbPb;
 		using Psychrometrics::PsyRhoAirFnPbTdbW;
-		using DataEnvironment::OutBaroPress;
 		using DataEnvironment::WindSpeed;
 		using DataEnvironment::WindSpeedAt;
 		using DataEnvironment::OutDryBulbTempAt;
@@ -753,9 +752,7 @@ namespace WindTurbine {
 		// SUBROUTINE PARAMETER DEFINITIONS:
 		Real64 const MaxTheta( 90.0 ); // Maximum of theta
 		Real64 const MaxDegree( 360.0 ); // Maximum limit of outdoor air wind speed in m/s
-		Real64 const PitchAngle( 0.0 ); // No pitch control, i.e. maximum rotor speed
 		Real64 const SecInMin( 60.0 );
-		Real64 const MaxTSR( 12.0 ); // Maximum of tip speed ratio
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -791,7 +788,6 @@ namespace WindTurbine {
 		Real64 TanForceCoeff; // Tnagential force coefficient
 		Real64 NorForceCoeff; // Normal force coefficient
 		Real64 Period; // Period of sine and cosine functions
-		Real64 Integrand; // Integrand of tangential force
 		Real64 C1; // Empirical power coefficient C1
 		Real64 C2; // Empirical power coefficient C2
 		Real64 C3; // Empirical power coefficient C3

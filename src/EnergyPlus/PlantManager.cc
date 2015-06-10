@@ -2,7 +2,7 @@
 #include <cassert>
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray.functions.hh>
+#include <ObjexxFCL/Array.functions.hh>
 #include <ObjexxFCL/Fmath.hh>
 #include <ObjexxFCL/string.functions.hh>
 
@@ -82,7 +82,7 @@ namespace PlantManager {
 	int const TempSetPt( 1001 );
 	int const FlowSetPt( 1007 );
 	bool InitLoopEquip( true );
-	bool GetCompSizFac( false );
+	bool GetCompSizFac( true );
 
 	static std::string const fluidNameSteam( "STEAM" );
 
@@ -92,16 +92,16 @@ namespace PlantManager {
 	int PlantSupplyLoopCase( 0 );
 	int PlantDemandLoopCase( 0 );
 
-	FArray1D_int SupplySideInletNode; // Node number for the supply side inlet
-	FArray1D_int SupplySideOutletNode; // Node number for the supply side outlet
-	FArray1D_int DemandSideInletNode; // Inlet node on the demand side
+	Array1D_int SupplySideInletNode; // Node number for the supply side inlet
+	Array1D_int SupplySideOutletNode; // Node number for the supply side outlet
+	Array1D_int DemandSideInletNode; // Inlet node on the demand side
 
 	// SUBROUTINE SPECIFICATIONS:
 	//The following public routines are called from HVAC Manager
 	//PUBLIC  CheckPlantLoopData      !called from SimHVAC
 
 	// Object Data
-	FArray1D< LoopPipeData > LoopPipe;
+	Array1D< LoopPipeData > LoopPipe;
 	TempLoopData TempLoop; // =(' ',' ',' ',0, , , ,.FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
 
 	// MODULE SUBROUTINES
@@ -113,7 +113,7 @@ namespace PlantManager {
 		bool const FirstHVACIteration,
 		bool & SimAirLoops, // True when the air loops need to be (re)simulated
 		bool & SimZoneEquipment, // True when zone equipment components need to be (re)simulated
-		bool & SimNonZoneEquipment, // True when non-zone equipment components need to be (re)simulated
+		bool & EP_UNUSED( SimNonZoneEquipment ), // True when non-zone equipment components need to be (re)simulated
 		bool & SimPlantLoops, // True when some part of Plant needs to be (re)simulated
 		bool & SimElecCircuits // True when electic circuits need to be (re)simulated
 	)
@@ -139,7 +139,6 @@ namespace PlantManager {
 		// USE STATEMENTS: NA
 
 		// Using/Aliasing
-		using DataGlobals::AnyEnergyManagementSystemInModel;
 		using PlantUtilities::LogPlantConvergencePoints;
 		using DataConvergParams::MinPlantSubIterations;
 		using DataConvergParams::MaxPlantSubIterations;
@@ -211,16 +210,13 @@ namespace PlantManager {
 
 			// decide new status for SimPlantLoops flag
 			SimPlantLoops = false;
-			LoopLevel: for ( LoopNum = 1; LoopNum <= TotNumLoops; ++LoopNum ) {
-				LoopSideLevel: for ( LoopSideNum = 1; LoopSideNum <= 2; ++LoopSideNum ) {
+			for ( LoopNum = 1; LoopNum <= TotNumLoops; ++LoopNum ) {
+				for ( LoopSideNum = 1; LoopSideNum <= 2; ++LoopSideNum ) {
 					if ( PlantLoop( LoopNum ).LoopSide( LoopSideNum ).SimLoopSideNeeded ) {
 						SimPlantLoops = true;
 						goto LoopLevel_exit;
 					}
-					LoopSideLevel_loop: ;
 				}
-				LoopSideLevel_exit: ;
-				LoopLevel_loop: ;
 			}
 			LoopLevel_exit: ;
 
@@ -308,8 +304,8 @@ namespace PlantManager {
 		int NumFluids; // number of fluids in sim
 		int PlantLoopNum;
 		int CondLoopNum;
-		FArray1D_string Alpha( 18 ); // dimension to num of alpha fields in input
-		FArray1D< Real64 > Num( 30 ); // dimension to num of numeric data fields in input
+		Array1D_string Alpha( 18 ); // dimension to num of alpha fields in input
+		Array1D< Real64 > Num( 30 ); // dimension to num of numeric data fields in input
 		static bool ErrorsFound( false );
 		bool IsNotOK; // Flag to verify name
 		bool IsBlank; // Flag for blank name
@@ -406,6 +402,9 @@ namespace PlantManager {
 			this_loop.MaxTemp = Num( 1 );
 			this_loop.MinTemp = Num( 2 );
 			this_loop.MaxVolFlowRate = Num( 3 );
+			if ( this_loop.MaxVolFlowRate == AutoSize ) {
+				this_loop.MaxVolFlowRateWasAutoSized = true;
+			}
 			this_loop.MinVolFlowRate = Num( 4 );
 
 			//The Plant loop volume for both halves of the loop is read in and used in this module for the
@@ -413,6 +412,10 @@ namespace PlantManager {
 			// a calculation there.
 			this_loop.Volume = Num( 5 );
 			if ( lNumericFieldBlanks( 5 ) ) this_loop.Volume = AutoCalculate;
+			if ( this_loop.Volume == AutoCalculate ) {
+				this_loop.VolumeWasAutoSized = true;
+			}
+
 
 			// Load the Loop Inlet and Outlet Nodes and Connection Info (Alpha(7-10) are related to the supply side)
 			this_supply_side.NodeNameIn = Alpha( 6 );
@@ -501,14 +504,14 @@ namespace PlantManager {
 			if ( this_loop.CommonPipeType == CommonPipe_TwoWay ) {
 				if ( this_demand_side.InletNodeSetPt && this_supply_side.InletNodeSetPt ) {
 					ShowSevereError( RoutineName + CurrentModuleObject + "=\"" + Alpha( 1 ) + "\", Invalid condition." );
-					ShowContinueError( "While using a two way common pipe there can be setpoint on only one node other " "than Plant Supply Outlet node." );
+					ShowContinueError( "While using a two way common pipe there can be setpoint on only one node other than Plant Supply Outlet node." );
 					ShowContinueError( "Currently both Plant Demand inlet and plant supply inlet have setpoints." );
 					ShowContinueError( "Select one of the two nodes and rerun the simulation." );
 					ErrorsFound = true;
 				}
 				if ( ! this_demand_side.InletNodeSetPt && ! this_supply_side.InletNodeSetPt ) {
 					ShowSevereError( RoutineName + CurrentModuleObject + "=\"" + Alpha( 1 ) + "\", Invalid condition." );
-					ShowContinueError( "While using a two way common pipe there must be a setpoint in addition to " "the Plant Supply Outlet node." );
+					ShowContinueError( "While using a two way common pipe there must be a setpoint in addition to the Plant Supply Outlet node." );
 					ShowContinueError( "Currently neither plant demand inlet nor plant supply inlet have setpoints." );
 					ShowContinueError( "Select one of the two nodes and rerun the simulation." );
 					ErrorsFound = true;
@@ -587,7 +590,7 @@ namespace PlantManager {
 				ShowContinueError( "The inlet node of the first branch in the " + cAlphaFieldNames( 12 ) + '=' + Alpha( 12 ) ); //"Plant Demand Side Branch List"
 				ShowContinueError( "is not the same as the " + cAlphaFieldNames( 10 ) + '=' + Alpha( 10 ) ); // "Plant Demand Side Inlet Node Name"
 				ShowContinueError( "Branch List Inlet Node Name=" + GetFirstBranchInletNodeName( this_demand_side.BranchList ) ); // TODO rename point
-				ShowContinueError( "Branches in a BRANCH LIST must be listed in flow order: " "inlet branch, then parallel branches, then outlet branch." ); // TODO rename point
+				ShowContinueError( "Branches in a BRANCH LIST must be listed in flow order: inlet branch, then parallel branches, then outlet branch." ); // TODO rename point
 				ErrorsFound = true;
 			}
 
@@ -599,7 +602,7 @@ namespace PlantManager {
 				ShowContinueError( "is not the same as the " + cAlphaFieldNames( 11 ) + '=' + Alpha( 11 ) );
 				ShowContinueError( "Branch List Outlet Node Name=" + GetLastBranchOutletNodeName( this_demand_side.BranchList ) ); // TODO rename point
 				// TODO rename point
-				ShowContinueError( "Branches in a BRANCH LIST must be listed in flow order: inlet branch, then parallel branches, " "then outlet branch." );
+				ShowContinueError( "Branches in a BRANCH LIST must be listed in flow order: inlet branch, then parallel branches, then outlet branch." );
 				ErrorsFound = true;
 			}
 
@@ -611,7 +614,7 @@ namespace PlantManager {
 				ShowContinueError( "is not the same as the " + cAlphaFieldNames( 6 ) + '=' + Alpha( 6 ) );
 				ShowContinueError( "Branch List Inlet Node Name=" + GetFirstBranchInletNodeName( this_supply_side.BranchList ) ); // TODO rename point
 				// TODO rename point
-				ShowContinueError( "Branches in a BRANCH LIST must be listed in flow order: inlet branch, then parallel branches, " "then outlet branch." );
+				ShowContinueError( "Branches in a BRANCH LIST must be listed in flow order: inlet branch, then parallel branches, then outlet branch." );
 				ErrorsFound = true;
 			}
 
@@ -623,7 +626,7 @@ namespace PlantManager {
 				ShowContinueError( "is not the same as the " + cAlphaFieldNames( 7 ) + '=' + Alpha( 7 ) );
 				ShowContinueError( "Branch List Outlet Node Name=" + GetLastBranchOutletNodeName( this_supply_side.BranchList ) ); // TODO rename point
 				// TODO rename point
-				ShowContinueError( "Branches in a BRANCH LIST must be listed in flow order: inlet branch, then parallel branches, " "then outlet branch." );
+				ShowContinueError( "Branches in a BRANCH LIST must be listed in flow order: inlet branch, then parallel branches, then outlet branch." );
 				ErrorsFound = true;
 			}
 
@@ -672,7 +675,6 @@ namespace PlantManager {
 		using namespace BranchInputManager;
 		using Pipes::InitializePipes;
 		using PipeHeatTransfer::InitializeHeatTransferPipes;
-		using DataGlobals::OutputFileDebug;
 
 		// Locals
 		// SUBROUTINE PARAMETER DEFINITIONS:
@@ -718,16 +720,16 @@ namespace PlantManager {
 
 		std::string LoopIdentifier;
 
-		static FArray1D_string BranchNames; // Branch names from GetBranchList call
-		static FArray1D_string CompTypes; // Branch names from GetBranchList call
-		static FArray1D_string CompNames; // Branch names from GetBranchList call
-		static FArray1D_int CompCtrls; // Branch names from GetBranchList call
-		static FArray1D_string InletNodeNames; // Node names from GetBranchData call
-		static FArray1D_string OutletNodeNames; // Node names from GetBranchData call
-		static FArray1D_int InletNodeNumbers; // Node numbers from GetBranchData call
-		static FArray1D_int OutletNodeNumbers; // Node numbers from GetBranchData call
-		static FArray1D_bool SplitOutBranch;
-		static FArray1D_bool MixerInBranch;
+		static Array1D_string BranchNames; // Branch names from GetBranchList call
+		static Array1D_string CompTypes; // Branch names from GetBranchList call
+		static Array1D_string CompNames; // Branch names from GetBranchList call
+		static Array1D_int CompCtrls; // Branch names from GetBranchList call
+		static Array1D_string InletNodeNames; // Node names from GetBranchData call
+		static Array1D_string OutletNodeNames; // Node names from GetBranchData call
+		static Array1D_int InletNodeNumbers; // Node numbers from GetBranchData call
+		static Array1D_int OutletNodeNumbers; // Node numbers from GetBranchData call
+		static Array1D_bool SplitOutBranch;
+		static Array1D_bool MixerInBranch;
 		bool errFlag;
 		int GeneralEquipType;
 		int TypeOfNum;
@@ -947,6 +949,10 @@ namespace PlantManager {
 							this_comp.CurOpSchemeType = UncontrolledOpSchemeType;
 						} else if ( SameString( this_comp_type, "GroundHeatExchanger:Pond" ) ) {
 							this_comp.TypeOf_Num = TypeOf_GrndHtExchgPond;
+							this_comp.GeneralEquipType = GenEquipTypes_GroundHeatExchanger;
+							this_comp.CurOpSchemeType = UncontrolledOpSchemeType;
+						} else if ( SameString( this_comp_type, "GroundHeatExchanger:Slinky" ) ) {
+							this_comp.TypeOf_Num = TypeOf_GrndHtExchgSlinky;
 							this_comp.GeneralEquipType = GenEquipTypes_GroundHeatExchanger;
 							this_comp.CurOpSchemeType = UncontrolledOpSchemeType;
 						} else if ( SameString( this_comp_type, "Chiller:Electric:EIR" ) ) {
@@ -1606,6 +1612,8 @@ namespace PlantManager {
 							GeneralEquipType = GenEquipTypes_GroundHeatExchanger;
 						} else if ( SameString( this_comp.TypeOf, "GroundHeatExchanger:Pond" ) ) {
 							GeneralEquipType = GenEquipTypes_GroundHeatExchanger;
+						} else if ( SameString( this_comp.TypeOf, "GroundHeatExchanger:Slinky" ) ) {
+							GeneralEquipType = GenEquipTypes_GroundHeatExchanger;
 						} else if ( SameString( this_comp.TypeOf, "PlantComponent:TemperatureSource" ) ) {
 							GeneralEquipType = GenEquipTypes_HeatExchanger;
 						} else if ( SameString( this_comp.TypeOf, "CENTRALHEATPUMPSYSTEM" ) ) {
@@ -1651,12 +1659,12 @@ namespace PlantManager {
 
 		for ( LoopNum = 1; LoopNum <= NumPlantLoops; ++LoopNum ) {
 
-            // set up references for this loop
-            auto & this_plant_loop( PlantLoop( LoopNum ) );
-            auto & this_plant_supply ( this_plant_loop.LoopSide( SupplySide ) );
-            auto & this_vent_plant_supply( VentRepPlantSupplySide( LoopNum ) );
-            auto & this_plant_demand ( this_plant_loop.LoopSide( DemandSide ) );
-            auto & this_vent_plant_demand( VentRepPlantDemandSide( LoopNum ) );
+			// set up references for this loop
+			auto & this_plant_loop( PlantLoop( LoopNum ) );
+			auto & this_plant_supply ( this_plant_loop.LoopSide( SupplySide ) );
+			auto & this_vent_plant_supply( VentRepPlantSupplySide( LoopNum ) );
+			auto & this_plant_demand ( this_plant_loop.LoopSide( DemandSide ) );
+			auto & this_vent_plant_demand( VentRepPlantDemandSide( LoopNum ) );
 
 			this_vent_plant_supply.Name = this_plant_loop.Name;
 			this_vent_plant_supply.NodeNumIn = this_plant_supply.NodeNumIn;
@@ -1669,8 +1677,8 @@ namespace PlantManager {
 
 			for ( BranchNum = 1; BranchNum <= this_vent_plant_supply.TotalBranches; ++BranchNum ) {
 
-                auto & this_plant_supply_branch( PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ) );
-                auto & this_vent_plant_supply_branch( VentRepPlantSupplySide( LoopNum ).Branch( BranchNum ) );
+				auto & this_plant_supply_branch( PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ) );
+				auto & this_vent_plant_supply_branch( VentRepPlantSupplySide( LoopNum ).Branch( BranchNum ) );
 
 				this_vent_plant_supply_branch.Name = this_plant_supply_branch.Name;
 				this_vent_plant_supply_branch.NodeNumIn = this_plant_supply_branch.NodeNumIn;
@@ -1683,8 +1691,8 @@ namespace PlantManager {
 
 				for ( CompNum = 1; CompNum <= VentRepPlantSupplySide( LoopNum ).Branch( BranchNum ).TotalComponents; ++CompNum ) {
 
-                    auto & this_plant_supply_comp( PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).Comp( CompNum ) );
-                    auto & this_vent_plant_supply_comp( VentRepPlantSupplySide( LoopNum ).Branch( BranchNum ).Comp( CompNum ) );
+					auto & this_plant_supply_comp( PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).Comp( CompNum ) );
+					auto & this_vent_plant_supply_comp( VentRepPlantSupplySide( LoopNum ).Branch( BranchNum ).Comp( CompNum ) );
 
 					this_vent_plant_supply_comp.Name = this_plant_supply_comp.Name;
 					this_vent_plant_supply_comp.TypeOf = this_plant_supply_comp.TypeOf;
@@ -1994,7 +2002,6 @@ namespace PlantManager {
 
 		// Using/Aliasing
 		using ScheduleManager::GetCurrentScheduleValue;
-		using DataEnvironment::StdBaroPress;
 		using namespace DataSizing;
 		using PlantLoopEquip::SimPlantEquip;
 		using General::RoundSigDigits;
@@ -2005,13 +2012,13 @@ namespace PlantManager {
 		using PlantUtilities::SetAllFlowLocks;
 		using DataHVACGlobals::NumPlantLoops;
 		using DataHVACGlobals::NumCondLoops;
+		using PlantLoopSolver::SimulateAllLoopSidePumps;
+		using DataPlant::PlantFirstSizesOkayToReport;
 
 		// Locals
 		// SUBROUTINE ARGUMENT DEFINITIONS:
 
 		// SUBROUTINE PARAMETER DEFINITIONS:
-		Real64 const StartQuality( 1.0 );
-		Real64 const StartHumRat( 0.0 );
 
 		// INTERFACE BLOCK SPECIFICATIONS
 		// na
@@ -2035,7 +2042,7 @@ namespace PlantManager {
 		//  LOGICAL,SAVE  :: MySizeFlag = .TRUE.
 		static bool MySetPointCheckFlag( true );
 
-		static FArray1D_bool PlantLoopSetPointInitFlag;
+		static Array1D_bool PlantLoopSetPointInitFlag;
 
 		int HalfLoopNum;
 		int passNum;
@@ -2097,19 +2104,16 @@ namespace PlantManager {
 		// END ONE TIME LOOP NODE SETPOINT CHECK
 
 		//*****************************************************************
-		//ONE TIME PUMP AND SIZING INIT
+		//First Pass PUMP AND SIZING INIT
 		//*****************************************************************
-		if ( PlantSizeNotComplete ) {
-
-			//    ! Step 1:  init plant sizing numbers in main plant data structure
-			// moved up to HVACManager (so ready for demand side equipment)
-			//    DO LoopNum = 1, TotNumLoops
-			//      CALL InitOneTimePlantSizingInfo(LoopNum)
-			//    ENDDO
+		if ( ! PlantFirstSizeCompleted ) {
 
 			SetAllFlowLocks( FlowUnlocked );
 			FinishSizingFlag = false;
-			PlantSizesOkayToFinalize = false; // set global flag for when it ready to store final sizes
+			PlantFirstSizesOkayToFinalize = false; // set global flag for when it ready to store final sizes
+			PlantFirstSizesOkayToReport = false;
+			PlantFinalSizesOkayToReport = false;
+			GetCompSizFac = true;
 			for ( passNum = 1; passNum <= 4; ++passNum ) { //begin while loop to iterate over the next calls sequentially
 				InitLoopEquip = true;
 
@@ -2138,31 +2142,101 @@ namespace PlantManager {
 					LoopNum = PlantCallingOrderInfo( HalfLoopNum ).LoopIndex;
 					LoopSideNum = PlantCallingOrderInfo( HalfLoopNum ).LoopSide;
 					CurLoopNum = LoopNum;
-					SizePlantLoop( LoopNum, FinishSizingFlag );
-
+					if ( LoopSideNum == SupplySide ) {
+						SizePlantLoop( LoopNum, FinishSizingFlag );
+					}
 				}
+			GetCompSizFac = false;
 			} // iterative passes thru sizing related routines.  end while?
 
 			//Step 5 now one more time for the final
 			for ( HalfLoopNum = 1; HalfLoopNum <= TotNumHalfLoops; ++HalfLoopNum ) {
-				PlantSizesOkayToFinalize = true;
-				FinishSizingFlag = true;
+				if (DoHVACSizingSimulation ) {
+					PlantFirstSizesOkayToFinalize = true;
+					FinishSizingFlag = true;
+					PlantFirstSizesOkayToReport = true;
+					PlantFinalSizesOkayToReport = false;
+				} else {
+					PlantFirstSizesOkayToFinalize = true;
+					FinishSizingFlag = true;
+					PlantFirstSizesOkayToReport = false;
+					PlantFinalSizesOkayToReport = true;
+				}
 				LoopNum = PlantCallingOrderInfo( HalfLoopNum ).LoopIndex;
 				LoopSideNum = PlantCallingOrderInfo( HalfLoopNum ).LoopSide;
 				CurLoopNum = LoopNum;
+				if ( LoopSideNum == SupplySide ) {
+					SizePlantLoop( LoopNum, FinishSizingFlag );
+				}
+				//pumps are special so call them directly
+				SimulateAllLoopSidePumps(LoopNum , LoopSideNum);
 				for ( BranchNum = 1; BranchNum <= PlantLoop( LoopNum ).LoopSide( LoopSideNum ).TotalBranches; ++BranchNum ) {
 					for ( CompNum = 1; CompNum <= PlantLoop( LoopNum ).LoopSide( LoopSideNum ).Branch( BranchNum ).TotalComponents; ++CompNum ) {
 						SimPlantEquip( LoopNum, LoopSideNum, BranchNum, CompNum, FirstHVACIteration, InitLoopEquip, GetCompSizFac );
 					} //-CompNum
 				} //-BranchNum
-				if ( PlantLoop( LoopNum ).PlantSizNum > 0 ) PlantSizData( PlantLoop( LoopNum ).PlantSizNum ).VolFlowSizingDone = true;
-				SizePlantLoop( LoopNum, FinishSizingFlag );
+//				if ( PlantLoop( LoopNum ).PlantSizNum > 0 ) PlantSizData( PlantLoop( LoopNum ).PlantSizNum ).VolFlowSizingDone = true;
+
+
 			}
 
-			PlantSizeNotComplete = false;
+			PlantFirstSizeCompleted = true;
+			PlantFirstSizesOkayToReport = false;
 		}
 		//*****************************************************************
-		//END ONE TIME SIZING INIT
+		//END First Pass SIZING INIT
+		//*****************************************************************
+		//*****************************************************************
+		//BEGIN Resizing Pass for HVAC Sizing Simultion Adjustments
+		//*****************************************************************
+		if ( RedoSizesHVACSimulation && ! PlantReSizingCompleted ) {
+
+
+			// cycle through plant equipment calling with InitLoopEquip true
+			InitLoopEquip = true;
+			GetCompSizFac = false;
+			for ( HalfLoopNum = 1; HalfLoopNum <= TotNumHalfLoops; ++HalfLoopNum ) {
+					LoopNum = PlantCallingOrderInfo( HalfLoopNum ).LoopIndex;
+					LoopSideNum = PlantCallingOrderInfo( HalfLoopNum ).LoopSide;
+					CurLoopNum = LoopNum;
+
+					for ( BranchNum = 1; BranchNum <= PlantLoop( LoopNum ).LoopSide( LoopSideNum ).TotalBranches; ++BranchNum ) {
+						for ( CompNum = 1; CompNum <= PlantLoop( LoopNum ).LoopSide( LoopSideNum ).Branch( BranchNum ).TotalComponents; ++CompNum ) {
+							SimPlantEquip( LoopNum, LoopSideNum, BranchNum, CompNum, FirstHVACIteration, InitLoopEquip, GetCompSizFac );
+						} //-CompNum
+					} //-BranchNum
+			}
+
+			//reset loop level
+			PlantFinalSizesOkayToReport = true;
+			for ( LoopNum = 1; LoopNum <= TotNumLoops; ++LoopNum ) {
+				ResizePlantLoopLevelSizes(LoopNum);
+			}
+
+			InitLoopEquip = true;
+
+
+			//now call everything again to reporting turned on
+			for ( HalfLoopNum = 1; HalfLoopNum <= TotNumHalfLoops; ++HalfLoopNum ) {
+					LoopNum = PlantCallingOrderInfo( HalfLoopNum ).LoopIndex;
+					LoopSideNum = PlantCallingOrderInfo( HalfLoopNum ).LoopSide;
+					CurLoopNum = LoopNum;
+
+					for ( BranchNum = 1; BranchNum <= PlantLoop( LoopNum ).LoopSide( LoopSideNum ).TotalBranches; ++BranchNum ) {
+						for ( CompNum = 1; CompNum <= PlantLoop( LoopNum ).LoopSide( LoopSideNum ).Branch( BranchNum ).TotalComponents; ++CompNum ) {
+							SimPlantEquip( LoopNum, LoopSideNum, BranchNum, CompNum, FirstHVACIteration, InitLoopEquip, GetCompSizFac );
+						} //-CompNum
+					} //-BranchNum
+					//pumps are special so call them directly
+					SimulateAllLoopSidePumps(LoopNum , LoopSideNum);
+			}
+
+
+			PlantReSizingCompleted = true;
+			PlantFinalSizesOkayToReport = false;
+		}
+		//*****************************************************************
+		//END Resizing Pass for HVAC Sizing Simultion Adjustments
 		//*****************************************************************
 		//*****************************************************************
 		//BEGIN ONE TIME ENVIRONMENT INITS
@@ -2230,7 +2304,7 @@ namespace PlantManager {
 			//!*****************************************************************
 			// !END OF ONE TIME ENVIRONMENT INITS
 			//!*****************************************************************
-		} //END OF FIRSTHVACITERATION INITS
+		} //
 		if ( ! BeginEnvrnFlag ) SupplyEnvrnFlag = true;
 
 		if ( ErrorsFound ) ShowFatalError( "Preceding errors caused termination" );
@@ -2260,7 +2334,6 @@ namespace PlantManager {
 		// Using/Aliasing
 		using DataEnvironment::OutWetBulbTemp;
 		using DataEnvironment::OutDryBulbTemp;
-		using DataEnvironment::GroundTemp_Deep;
 		using DataEnvironment::StdBaroPress;
 		using HVACInterfaceManager::PlantCommonPipe;
 		using ScheduleManager::GetCurrentScheduleValue;
@@ -2677,7 +2750,7 @@ namespace PlantManager {
 								}
 							}
 							if ( ! ( ActiveCntrlfound ) ) {
-								ShowWarningError( "Check control types on branches between splitter and mixer in " "PlantLoop=" + PlantLoop( LoopNum ).Name );
+								ShowWarningError( "Check control types on branches between splitter and mixer in PlantLoop=" + PlantLoop( LoopNum ).Name );
 								ShowContinueError( "Found a BYPASS branch with no ACTIVE branch in parallel with it" );
 								ShowContinueError( "In certain (but not all) situations, this can cause problems; please verify your inputs" );
 								ShowContinueError( "Bypass branch named: " + PlantLoop( LoopNum ).LoopSide( SideNum ).Branch( BranchNum ).Name );
@@ -2985,7 +3058,6 @@ namespace PlantManager {
 		SimNestedLoop = false;
 
 		AllSizFac = true;
-		GetCompSizFac = true;
 		MaxSizFac = 0.0;
 		PlantSizFac = 1.0;
 		NumBrSizFac = 0.0;
@@ -3004,27 +3076,57 @@ namespace PlantManager {
 		// calculate a loop sizing factor and a branch sizing factor. Note that components without a sizing factor
 		// are assigned sizing factors of zero in this calculation
 		if ( PlantSizNum > 0 ) {
-			for ( BranchNum = 1; BranchNum <= PlantLoop( LoopNum ).LoopSide( SupplySide ).TotalBranches; ++BranchNum ) {
-				BranchSizFac = 0.0;
-				PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).PumpSizFac = 1.0;
-				if ( PlantLoop( LoopNum ).LoopSide( SupplySide ).NodeNumIn == PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).NodeNumIn ) continue;
-				if ( PlantLoop( LoopNum ).LoopSide( SupplySide ).NodeNumOut == PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).NodeNumOut ) continue;
-				for ( CompNum = 1; CompNum <= PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).TotalComponents; ++CompNum ) {
-					SimPlantEquip( LoopNum, SupplySide, BranchNum, CompNum, true, InitLoopEquip, GetCompSizFac );
-					BranchSizFac = max( BranchSizFac, PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).Comp( CompNum ).SizFac );
+			if ( GetCompSizFac ) {
+				for ( BranchNum = 1; BranchNum <= PlantLoop( LoopNum ).LoopSide( SupplySide ).TotalBranches; ++BranchNum ) {
+					BranchSizFac = 0.0;
+					PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).PumpSizFac = 1.0;
+					if ( PlantLoop( LoopNum ).LoopSide( SupplySide ).NodeNumIn == PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).NodeNumIn ) continue;
+					if ( PlantLoop( LoopNum ).LoopSide( SupplySide ).NodeNumOut == PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).NodeNumOut ) continue;
+					for ( CompNum = 1; CompNum <= PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).TotalComponents; ++CompNum ) {
+						SimPlantEquip( LoopNum, SupplySide, BranchNum, CompNum, true, InitLoopEquip, GetCompSizFac );
+						BranchSizFac = max( BranchSizFac, PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).Comp( CompNum ).SizFac );
+					}
+					LoopSizFac += BranchSizFac;
+					MaxSizFac = max( MaxSizFac, BranchSizFac );
+					if ( BranchSizFac > 0.0 ) {
+						PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).PumpSizFac = BranchSizFac;
+						++NumBrSizFac;
+					} else {
+						AllSizFac = false;
+					}
 				}
-				LoopSizFac += BranchSizFac;
-				MaxSizFac = max( MaxSizFac, BranchSizFac );
-				if ( BranchSizFac > 0.0 ) {
-					PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).PumpSizFac = BranchSizFac;
-					++NumBrSizFac;
+				AvLoopSizFac = LoopSizFac / max( 1.0, NumBrSizFac );
+
+				if ( AvLoopSizFac > 0.0 && AvLoopSizFac < 1.0 ) {
+					PlantSizFac = LoopSizFac;
+				} else if ( AvLoopSizFac > 1.0 ) {
+					PlantSizFac = MaxSizFac;
 				} else {
-					AllSizFac = false;
+					PlantSizFac = 1.0;
+				}
+				// store the sizing factor now, for later reuse,
+				PlantSizData( PlantSizNum ).PlantSizFac = PlantSizFac;
+				// might deprecate this next bit in favor of simpler storage in PlantSizData structure
+				for ( BranchNum = 1; BranchNum <= PlantLoop( LoopNum ).LoopSide( SupplySide ).TotalBranches; ++BranchNum ) {
+					if ( PlantLoop( LoopNum ).LoopSide( SupplySide ).NodeNumIn == PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).NodeNumIn ) {
+						PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).PumpSizFac = PlantSizFac;
+					}
+					if ( PlantLoop( LoopNum ).LoopSide( SupplySide ).NodeNumOut == PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).NodeNumOut ) {
+						PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).PumpSizFac = PlantSizFac;
+					}
+				}
+
+			} else {
+				// fill PlantSizFac from data structure
+				for ( BranchNum = 1; BranchNum <= PlantLoop( LoopNum ).LoopSide( SupplySide ).TotalBranches; ++BranchNum ) {
+					if ( PlantLoop( LoopNum ).LoopSide( SupplySide ).NodeNumIn == PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).NodeNumIn ) {
+						PlantSizFac = PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).PumpSizFac;
+						break;
+					}
 				}
 			}
-			AvLoopSizFac = LoopSizFac / max( 1.0, NumBrSizFac );
 
-			// sum up contributions from CompDesWaterFlow
+			// sum up contributions from CompDesWaterFlow, demand side size request (non-coincident)
 			PlantSizData( PlantSizNum ).DesVolFlowRate = 0.0; // init for summation
 			for ( BranchNum = 1; BranchNum <= PlantLoop( LoopNum ).LoopSide( DemandSide ).TotalBranches; ++BranchNum ) {
 				for ( CompNum = 1; CompNum <= PlantLoop( LoopNum ).LoopSide( DemandSide ).Branch( BranchNum ).TotalComponents; ++CompNum ) {
@@ -3036,63 +3138,234 @@ namespace PlantManager {
 					}
 				}
 			}
-			if ( PlantLoop( LoopNum ).MaxVolFlowRate != AutoSize && ! ReSize ) {
-				PlantSizData( PlantSizNum ).DesVolFlowRate = PlantLoop( LoopNum ).MaxVolFlowRate;
-			} else if ( AvLoopSizFac > 0.0 && AvLoopSizFac < 1.0 ) {
-				PlantSizFac = LoopSizFac;
-			} else if ( AvLoopSizFac > 1.0 ) {
-				PlantSizFac = MaxSizFac;
-			} else {
-				PlantSizFac = 1.0;
+
+			if ( ! PlantLoop( LoopNum ).MaxVolFlowRateWasAutoSized && ( PlantLoop( LoopNum ).MaxVolFlowRate > 0.0 ) ) {
+					// if the user puts in a large throwaway value for hard max plant loop size, they may not want this affecting anything else.
+					//  but if they put in a smaller value, then it should cap the design size, so use hard value if it is smaller than non-coincident result
+					PlantSizData( PlantSizNum ).DesVolFlowRate = std::min( PlantSizData( PlantSizNum ).DesVolFlowRate, PlantLoop( LoopNum ).MaxVolFlowRate );
 			}
-			for ( BranchNum = 1; BranchNum <= PlantLoop( LoopNum ).LoopSide( SupplySide ).TotalBranches; ++BranchNum ) {
-				if ( PlantLoop( LoopNum ).LoopSide( SupplySide ).NodeNumIn == PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).NodeNumIn ) {
-					PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).PumpSizFac = PlantSizFac;
+
+		}
+
+		if ( PlantLoop( LoopNum ).MaxVolFlowRateWasAutoSized ) {
+
+			if ( ( PlantSizNum > 0 ) ) {
+
+					if ( PlantSizData( PlantSizNum ).DesVolFlowRate >= SmallWaterVolFlow ) {
+						PlantLoop( LoopNum ).MaxVolFlowRate = PlantSizData( PlantSizNum ).DesVolFlowRate * PlantSizData( PlantSizNum ).PlantSizFac;
+					} else {
+						PlantLoop( LoopNum ).MaxVolFlowRate = 0.0;
+						if ( PlantFinalSizesOkayToReport ) {
+							ShowWarningError( "SizePlantLoop: Calculated Plant Sizing Design Volume Flow Rate=["
+								+ RoundSigDigits( PlantSizData( PlantSizNum ).DesVolFlowRate, 2 ) + "] is too small. Set to 0.0" );
+							ShowContinueError( "..occurs for PlantLoop=" + PlantLoop( LoopNum ).Name );
+						}
+					}
+					if ( Finalize ) {
+						if ( PlantFinalSizesOkayToReport ) {
+							if ( PlantLoop( LoopNum ).TypeOfLoop == LoopType_Plant ) {
+								ReportSizingOutput( "PlantLoop", PlantLoop( LoopNum ).Name,
+									"Maximum Loop Flow Rate [m3/s]", PlantLoop( LoopNum ).MaxVolFlowRate );
+							} else if ( PlantLoop( LoopNum ).TypeOfLoop == LoopType_Condenser ) {
+								ReportSizingOutput( "CondenserLoop", PlantLoop( LoopNum ).Name,
+									"Maximum Loop Flow Rate [m3/s]", PlantLoop( LoopNum ).MaxVolFlowRate );
+							}
+						}
+						if ( PlantFirstSizesOkayToReport ) {
+							if ( PlantLoop( LoopNum ).TypeOfLoop == LoopType_Plant ) {
+								ReportSizingOutput( "PlantLoop", PlantLoop( LoopNum ).Name,
+									"Initial Maximum Loop Flow Rate [m3/s]", PlantLoop( LoopNum ).MaxVolFlowRate );
+							} else if ( PlantLoop( LoopNum ).TypeOfLoop == LoopType_Condenser ) {
+								ReportSizingOutput( "CondenserLoop", PlantLoop( LoopNum ).Name,
+									"Initial Maximum Loop Flow Rate [m3/s]", PlantLoop( LoopNum ).MaxVolFlowRate );
+							}
+						}
+					}
+
+			} else {
+				if (PlantFirstSizesOkayToFinalize) {
+					ShowFatalError( "Autosizing of plant loop requires a loop Sizing:Plant object" );
+					ShowContinueError( "Occurs in PlantLoop object=" + PlantLoop( LoopNum ).Name );
+					ErrorsFound = true;
 				}
-				if ( PlantLoop( LoopNum ).LoopSide( SupplySide ).NodeNumOut == PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).NodeNumOut ) {
-					PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).PumpSizFac = PlantSizFac;
+			}
+
+		}
+
+		// Small loop mass no longer introduces instability. Checks and warnings removed by SJR 20 July 2007.
+		if ( PlantLoop( LoopNum ).VolumeWasAutoSized ) {
+			// Although there is no longer a stability requirement (mass can be zero), autosizing is formulated the same way.
+			PlantLoop( LoopNum ).Volume = PlantLoop( LoopNum ).MaxVolFlowRate * TimeStepZone * SecInHour / 0.8;
+			if (PlantFinalSizesOkayToReport) {
+				if ( PlantLoop( LoopNum ).TypeOfLoop == LoopType_Plant ) {
+					// condenser loop vs plant loop breakout needed.
+					ReportSizingOutput( "PlantLoop", PlantLoop( LoopNum ).Name,
+					"Plant Loop Volume [m3]", PlantLoop( LoopNum ).Volume );
+				} else if ( PlantLoop( LoopNum ).TypeOfLoop == LoopType_Condenser ) {
+					ReportSizingOutput( "CondenserLoop", PlantLoop( LoopNum ).Name,
+					"Condenser Loop Volume [m3]", PlantLoop( LoopNum ).Volume );
+				}
+			}
+			if (PlantFirstSizesOkayToReport) {
+				if ( PlantLoop( LoopNum ).TypeOfLoop == LoopType_Plant ) {
+					// condenser loop vs plant loop breakout needed.
+					ReportSizingOutput( "PlantLoop", PlantLoop( LoopNum ).Name,
+					"Initial Plant Loop Volume [m3]", PlantLoop( LoopNum ).Volume );
+				} else if ( PlantLoop( LoopNum ).TypeOfLoop == LoopType_Condenser ) {
+					ReportSizingOutput( "CondenserLoop", PlantLoop( LoopNum ).Name,
+					"Initial Condenser Loop Volume [m3]", PlantLoop( LoopNum ).Volume );
 				}
 			}
 		}
 
-		if ( PlantLoop( LoopNum ).MaxVolFlowRate == AutoSize ) {
+		//should now have plant volume, calculate plant volume's mass for fluid type
+		if ( PlantLoop( LoopNum ).FluidType == NodeType_Water ) {
+			FluidDensity = GetDensityGlycol( PlantLoop( LoopNum ).FluidName, InitConvTemp, PlantLoop( LoopNum ).FluidIndex, RoutineName );
+		} else if ( PlantLoop( LoopNum ).FluidType == NodeType_Steam ) {
+			FluidDensity = GetSatDensityRefrig( fluidNameSteam, 100.0, 1.0, PlantLoop( LoopNum ).FluidIndex, RoutineName );
+		} else {
+			assert( false );
+		}
+
+		PlantLoop( LoopNum ).Mass = PlantLoop( LoopNum ).Volume * FluidDensity;
+
+		PlantLoop( LoopNum ).MaxMassFlowRate = PlantLoop( LoopNum ).MaxVolFlowRate * FluidDensity;
+		PlantLoop( LoopNum ).MinMassFlowRate = PlantLoop( LoopNum ).MinVolFlowRate * FluidDensity;
+
+		if ( ErrorsFound ) {
+			ShowFatalError( "Preceding sizing errors cause program termination" );
+		}
+
+
+	}
+
+
+	void
+	ResizePlantLoopLevelSizes(
+		int const LoopNum // Supply side loop being simulated
+	)
+	{
+
+		// SUBROUTINE INFORMATION:
+		//       AUTHOR         Brent Griffith
+		//       DATE WRITTEN   Jan 2015
+		//       MODIFIED       na
+		//       RE-ENGINEERED  na
+
+		// PURPOSE OF THIS SUBROUTINE:
+		// This subroutine is for redon the sizing of plant loops to support HVAC Sizing Simulation
+
+		// METHODOLOGY EMPLOYED:
+		// Obtains volumetric flow rate data from the PlantSizData array..
+
+		// REFERENCES:
+		// na
+
+		// Using/Aliasing
+		using namespace DataSizing;
+		using InputProcessor::FindItemInList;
+		using General::RoundSigDigits;
+		using PlantLoopEquip::SimPlantEquip;
+		using FluidProperties::GetDensityGlycol;
+		using ReportSizingManager::ReportSizingOutput;
+		using DataPlant::PlantLoop;
+
+		// Locals
+		bool InitLoopEquip;
+
+		// SUBROUTINE ARGUMENT DEFINITIONS:
+
+		// SUBROUTINE PARAMETER DEFINITIONS:
+		static std::string const RoutineName( "ResizePlantLoop" );
+
+		// INTERFACE BLOCK SPECIFICATIONS
+		// na
+
+		// DERIVED TYPE DEFINITIONS
+		// na
+
+		// SUBROUTINE LOCAL VARIABLE DECLARATIONS:
+		int PlantSizNum; // index of Plant Sizing data for this loop
+		int BranchNum; // DO loop counter for cycling through branches on a demand side loop
+		int CompNum; // DO loop counter for cycling through components on a demand side loop
+		int SupNodeNum; // component inlet water node number
+		int WaterCompNum; // DO loop counter for cycling through all the components that demand water
+		bool ErrorsFound; // If errors detected in input
+		bool SimNestedLoop;
+		bool ReSize;
+
+		Real64 FluidDensity( 0.0 ); // local value from glycol routine
+
+		PlantSizNum = 0;
+		ErrorsFound = false;
+
+		// InitLoopEquip = .FALSE.
+		InitLoopEquip = true;
+		SimNestedLoop = false;
+		Real64 PlantSizeFac;
+
+
+		ReSize = false;
+
+		PlantSizNum = PlantLoop( LoopNum ).PlantSizNum;
+
+		// fill PlantSizFac from data structure
+		for ( BranchNum = 1; BranchNum <= PlantLoop( LoopNum ).LoopSide( SupplySide ).TotalBranches; ++BranchNum ) {
+			if ( PlantLoop( LoopNum ).LoopSide( SupplySide ).NodeNumIn == PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).NodeNumIn ) {
+				PlantSizeFac = PlantLoop( LoopNum ).LoopSide( SupplySide ).Branch( BranchNum ).PumpSizFac;
+				break;
+			}
+		}
+		if (PlantSizData( PlantSizNum ).ConcurrenceOption == NonCoincident) {
+		// we can have plant loops that are non-coincident along with some that are coincident
+		// so refresh sum of registered flows (they may have changed)
+
+			PlantSizData( PlantSizNum ).DesVolFlowRate = 0.0; // init for summation
+			for ( BranchNum = 1; BranchNum <= PlantLoop( LoopNum ).LoopSide( DemandSide ).TotalBranches; ++BranchNum ) {
+				for ( CompNum = 1; CompNum <= PlantLoop( LoopNum ).LoopSide( DemandSide ).Branch( BranchNum ).TotalComponents; ++CompNum ) {
+					SupNodeNum = PlantLoop( LoopNum ).LoopSide( DemandSide ).Branch( BranchNum ).Comp( CompNum ).NodeNumIn;
+					for ( WaterCompNum = 1; WaterCompNum <= SaveNumPlantComps; ++WaterCompNum ) {
+						if ( SupNodeNum == CompDesWaterFlow( WaterCompNum ).SupNode ) {
+							PlantSizData( PlantSizNum ).DesVolFlowRate += CompDesWaterFlow( WaterCompNum ).DesVolFlowRate;
+						}
+					}
+				}
+			}
+
+		}
+
+		if ( PlantLoop( LoopNum ).MaxVolFlowRateWasAutoSized ) {
 
 			if ( ( PlantSizNum > 0 ) ) {
 
-				if ( PlantSizData( PlantSizNum ).VolFlowSizingDone ) {
 					if ( PlantSizData( PlantSizNum ).DesVolFlowRate >= SmallWaterVolFlow ) {
-						PlantLoop( LoopNum ).MaxVolFlowRate = PlantSizData( PlantSizNum ).DesVolFlowRate * PlantSizFac;
+						PlantLoop( LoopNum ).MaxVolFlowRate = PlantSizData( PlantSizNum ).DesVolFlowRate * PlantSizeFac;
 					} else {
 						PlantLoop( LoopNum ).MaxVolFlowRate = 0.0;
-						ShowWarningError( "SizePlantLoop: Calculated Plant Sizing Design Volume Flow Rate=[" + RoundSigDigits( PlantSizData( PlantSizNum ).DesVolFlowRate, 2 ) + "] is too small. Set to 0.0" );
-						ShowContinueError( "..occurs for PlantLoop=" + PlantLoop( LoopNum ).Name );
+						if ( PlantFinalSizesOkayToReport ) {
+							ShowWarningError( "SizePlantLoop: Calculated Plant Sizing Design Volume Flow Rate=["
+								+ RoundSigDigits( PlantSizData( PlantSizNum ).DesVolFlowRate, 2 ) + "] is too small. Set to 0.0" );
+							ShowContinueError( "..occurs for PlantLoop=" + PlantLoop( LoopNum ).Name );
+						}
 					}
-					if ( Finalize ) {
+					if ( PlantFinalSizesOkayToReport ) {
 						if ( PlantLoop( LoopNum ).TypeOfLoop == LoopType_Plant ) {
-							ReportSizingOutput( "PlantLoop", PlantLoop( LoopNum ).Name, "Maximum Loop Flow Rate [m3/s]", PlantLoop( LoopNum ).MaxVolFlowRate );
+							ReportSizingOutput( "PlantLoop", PlantLoop( LoopNum ).Name,
+								"Maximum Loop Flow Rate [m3/s]", PlantLoop( LoopNum ).MaxVolFlowRate );
 						} else if ( PlantLoop( LoopNum ).TypeOfLoop == LoopType_Condenser ) {
-							ReportSizingOutput( "CondenserLoop", PlantLoop( LoopNum ).Name, "Maximum Loop Flow Rate [m3/s]", PlantLoop( LoopNum ).MaxVolFlowRate );
+							ReportSizingOutput( "CondenserLoop", PlantLoop( LoopNum ).Name,
+								"Maximum Loop Flow Rate [m3/s]", PlantLoop( LoopNum ).MaxVolFlowRate );
 
 						}
 					}
 				}
-			} else {
-				ShowFatalError( "Autosizing of plant loop requires a loop Sizing:Plant object" );
-				ShowContinueError( "Occurs in PlantLoop object=" + PlantLoop( LoopNum ).Name );
-				ErrorsFound = true;
-			}
-
 		}
 
-		if ( ! Finalize ) {
-			GetCompSizFac = false;
-			return;
-		}
 
 		// Small loop mass no longer introduces instability. Checks and warnings removed by SJR 20 July 2007.
-		if ( PlantLoop( LoopNum ).Volume == AutoCalculate ) {
+		if ( PlantLoop( LoopNum ).VolumeWasAutoSized ) {
 			// Although there is no longer a stability requirement (mass can be zero), autosizing is formulated the same way.
-			PlantLoop( LoopNum ).Volume = PlantLoop( LoopNum ).MaxVolFlowRate * TimeStepZone * SecInHour / 0.8;
+			PlantLoop( LoopNum ).Volume = PlantLoop( LoopNum ).MaxVolFlowRate * TimeStepZoneSec / 0.8;
 			if ( PlantLoop( LoopNum ).TypeOfLoop == LoopType_Plant ) {
 				// condenser loop vs plant loop breakout needed.
 				ReportSizingOutput( "PlantLoop", PlantLoop( LoopNum ).Name, "Plant Loop Volume [m3]", PlantLoop( LoopNum ).Volume );
@@ -3119,7 +3392,6 @@ namespace PlantManager {
 			ShowFatalError( "Preceding sizing errors cause program termination" );
 		}
 
-		GetCompSizFac = false;
 
 	}
 
@@ -3840,7 +4112,6 @@ namespace PlantManager {
 							this_component.FlowCtrl = ControlType_Active;
 							this_component.FlowPriority = LoopFlowStatus_TakesWhatGets;
 							this_component.HowLoadServed = HowMet_PassiveCap;
-
 						} else if ( SELECT_CASE_var == TypeOf_Generator_MicroTurbine ) { //          = 48  !newer FSEC turbine
 							this_component.FlowCtrl = ControlType_Active;
 							this_component.FlowPriority = LoopFlowStatus_NeedyAndTurnsLoopOn;
@@ -4034,6 +4305,10 @@ namespace PlantManager {
 							this_component.FlowCtrl = ControlType_Active;
 							this_component.FlowPriority = LoopFlowStatus_NeedyAndTurnsLoopOn;
 							this_component.HowLoadServed = HowMet_NoneDemand;
+						} else if ( SELECT_CASE_var == TypeOf_GrndHtExchgVertical ) { // = 91
+							this_component.FlowCtrl = ControlType_Active;
+							this_component.FlowPriority = LoopFlowStatus_TakesWhatGets;
+							this_component.HowLoadServed = HowMet_PassiveCap;
 						} else {
 							ShowSevereError( "SetBranchControlTypes: Caught unexpected equipment type of number" );
 
@@ -4178,7 +4453,7 @@ namespace PlantManager {
 
 	//     NOTICE
 
-	//     Copyright Â© 1996-2014 The Board of Trustees of the University of Illinois
+	//     Copyright © 1996-2014 The Board of Trustees of the University of Illinois
 	//     and The Regents of the University of California through Ernest Orlando Lawrence
 	//     Berkeley National Laboratory.  All rights reserved.
 

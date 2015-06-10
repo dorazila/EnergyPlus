@@ -108,7 +108,7 @@ derivative works thereof, in binary and source code form.
 ///////////////////////////////////////////////////////
 #ifndef _UTILSOCKET_H_
 #define _UTILSOCKET_H_
-#ifdef _MSC_VER // Microsoft compiler
+#ifdef _WIN32 // Windows compiler
 #include <windows.h>
 #include <winsock.h>
 
@@ -463,4 +463,3 @@ int exchangedoubleswithsocketFMU(const int *sockfd,
 int closeipc(int* sockfd);
 
 #endif /* _UTILSOCKET_H_ */
-

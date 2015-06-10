@@ -44,7 +44,7 @@ namespace DataSizing {
 	int const OAFlowSum( 5 );
 	int const OAFlowMax( 6 );
 
-	FArray1D_string const cOAFlowMethodTypes( NumOAFlowMethods, { "Flow/Person", "Flow/Zone", "Flow/Area", "AirChanges/Hour", "Sum", "Maximum" } );
+	Array1D_string const cOAFlowMethodTypes( NumOAFlowMethods, { "Flow/Person", "Flow/Zone", "Flow/Area", "AirChanges/Hour", "Sum", "Maximum" } );
 
 	// parameters for outside air
 	int const AllOA( 1 );
@@ -59,6 +59,16 @@ namespace DataSizing {
 	// paramters for sizing
 	int const NonCoincident( 1 );
 	int const Coincident( 2 );
+
+	// parameters for Cooling Peak Load TYpe
+	int const SensibleCoolingLoad( 1 );
+	int const TotalCoolingLoad( 2 );
+
+	// parameters for Central Cooling Capacity Control Method
+	int const VAV( 1 );
+	int const Bypass( 2 );
+	int const VT( 3 );
+	int const OnOff( 4 );
 
 	// paramters for supply air flow rate method
 	int const SupplyAirTemperature( 1 );
@@ -116,6 +126,12 @@ namespace DataSizing {
 	int const CapacityPerFloorArea( 10 );
 	int const FractionOfAutosizedCoolingCapacity( 11 );
 	int const FractionOfAutosizedHeatingCapacity( 12 );
+
+	int const NoSizingFactorMode( 101 );
+	int const GlobalHeatingSizingFactorMode( 102 );
+	int const GlobalCoolingSizingFactorMode( 103 );
+	int const LoopComponentSizingFactorMode( 104 );
+
 
 	// DERIVED TYPE DEFINITIONS:
 
@@ -180,6 +196,7 @@ namespace DataSizing {
 	Real64 DataDesInletAirHumRat( 0.0 ); // coil inlet air humidity ratio used for warning messages
 	Real64 DataDesInletAirTemp( 0.0 ); // coil inlet air temperature used for warning messages
 	Real64 DataDesOutletAirTemp( 0.0 ); // coil outlet air temperature used for sizing
+	Real64 DataDesOutletAirHumRat( 0.0 ); // coil air outlet humidity ratio used in sizing calculations [kg water / kg dry air]
 	Real64 DataCoolCoilCap( 0.0 ); // cooling coil capacity used for sizing with scalable inputs [W]
 	Real64 DataFlowUsedForSizing( 0.0 ); // air flow rate used for sizing with scalable inputs [m3/s]
 	Real64 DataAirFlowUsedForSizing( 0.0 ); // air flow rate used for sizing with scalable inputs [m3/s]
@@ -199,6 +216,7 @@ namespace DataSizing {
 	Real64 DataAutosizedHeatingCapacity( 0.0 ); // Autosized heating capacit used for multiplying flow per capacity to get flow rate
 	Real64 DataConstantUsedForSizing( 0.0 ); // base value used for sizing inputs that are ratios of other inputs
 	Real64 DataFractionUsedForSizing( 0.0 ); // fractional value of base value used for sizing inputs that are ratios of other inputs
+	Real64 DataNonZoneNonAirloopValue( 0.0 ); // used when equipment is not located in a zone or airloop
 	int DataZoneNumber( 0 ); // a pointer to a served by zoneHVAC equipment
 	int NumZoneHVACSizing( 0 ); // Number of zone HVAC sizing objects
 	Real64 DXCoolCap( 0.0 ); // The ARI cooling capacity of a DX unit.
@@ -206,33 +224,34 @@ namespace DataSizing {
 	Real64 GlobalCoolSizingFactor( 0.0 ); // the global cooling sizing ratio
 	Real64 SuppHeatCap( 0.0 ); // the heating capacity of the supplemental heater in a unitary system
 	Real64 UnitaryHeatCap( 0.0 ); // the heating capacity of a unitary system
-	FArray1D< Real64 > ZoneSizThermSetPtHi; // highest zone thermostat setpoint during zone sizing calcs
-	FArray1D< Real64 > ZoneSizThermSetPtLo; // lowest zone thermostat setpoint during zone sizing calcs
-	FArray1D_string CoolPeakDateHrMin; // date:hr:min of cooling peak
-	FArray1D_string HeatPeakDateHrMin; // date:hr:min of heating peak
+	Array1D< Real64 > ZoneSizThermSetPtHi; // highest zone thermostat setpoint during zone sizing calcs
+	Array1D< Real64 > ZoneSizThermSetPtLo; // lowest zone thermostat setpoint during zone sizing calcs
+	Array1D_string CoolPeakDateHrMin; // date:hr:min of cooling peak
+	Array1D_string HeatPeakDateHrMin; // date:hr:min of heating peak
 	char SizingFileColSep; // Character to separate columns in sizing outputs
 
 	// Object Data
-	FArray1D< OARequirementsData > OARequirements;
-	FArray1D< ZoneAirDistributionData > ZoneAirDistribution;
-	FArray1D< ZoneSizingInputData > ZoneSizingInput; // Input data for zone sizing
-	FArray2D< ZoneSizingData > ZoneSizing; // Data for zone sizing (all data, all design
-	FArray1D< ZoneSizingData > FinalZoneSizing; // Final data for zone sizing including effects
-	FArray2D< ZoneSizingData > CalcZoneSizing; // Data for zone sizing (all data,
-	FArray1D< ZoneSizingData > CalcFinalZoneSizing; // Final data for zone sizing (calculated only)
-	FArray1D< ZoneSizingData > TermUnitFinalZoneSizing; // Final data for sizing terminal units
-	FArray1D< SystemSizingInputData > SysSizInput; // Input data array for system sizing object
-	FArray2D< SystemSizingData > SysSizing; // Data array for system sizing (all data)
-	FArray1D< SystemSizingData > FinalSysSizing; // Data array for system sizing (max heat/cool)
-	FArray1D< SystemSizingData > CalcSysSizing; // Data array for system sizing (max heat/cool)
-	FArray1D< TermUnitSizingData > TermUnitSizing; // Data added in sizing routines
-	FArray1D< ZoneEqSizingData > ZoneEqSizing; // Data added in zone eq component sizing routines
-	FArray1D< ZoneEqSizingData > UnitarySysEqSizing; // Data added in unitary system sizing routines
-	FArray1D< ZoneEqSizingData > OASysEqSizing; // Data added in unitary system sizing routines
-	FArray1D< PlantSizingData > PlantSizData; // Input data array for plant sizing
-	FArray1D< DesDayWeathData > DesDayWeath; // design day weather saved at major time step
-	FArray1D< CompDesWaterFlowData > CompDesWaterFlow; // array to store components' design water flow
-	FArray1D< ZoneHVACSizingData > ZoneHVACSizing; // Input data for zone HVAC sizing
+	Array1D< OARequirementsData > OARequirements;
+	Array1D< ZoneAirDistributionData > ZoneAirDistribution;
+	Array1D< ZoneSizingInputData > ZoneSizingInput; // Input data for zone sizing
+	Array2D< ZoneSizingData > ZoneSizing; // Data for zone sizing (all data, all design
+	Array1D< ZoneSizingData > FinalZoneSizing; // Final data for zone sizing including effects
+	Array2D< ZoneSizingData > CalcZoneSizing; // Data for zone sizing (all data,
+	Array1D< ZoneSizingData > CalcFinalZoneSizing; // Final data for zone sizing (calculated only)
+	Array1D< ZoneSizingData > TermUnitFinalZoneSizing; // Final data for sizing terminal units
+	Array1D< SystemSizingInputData > SysSizInput; // Input data array for system sizing object
+	Array2D< SystemSizingData > SysSizing; // Data array for system sizing (all data)
+	Array1D< SystemSizingData > FinalSysSizing; // Data array for system sizing (max heat/cool)
+	Array1D< SystemSizingData > CalcSysSizing; // Data array for system sizing (max heat/cool)
+	Array1D< SysSizPeakDDNumData > SysSizPeakDDNum; // data array for peak des day indices
+	Array1D< TermUnitSizingData > TermUnitSizing; // Data added in sizing routines
+	Array1D< ZoneEqSizingData > ZoneEqSizing; // Data added in zone eq component sizing routines
+	Array1D< ZoneEqSizingData > UnitarySysEqSizing; // Data added in unitary system sizing routines
+	Array1D< ZoneEqSizingData > OASysEqSizing; // Data added in unitary system sizing routines
+	Array1D< PlantSizingData > PlantSizData; // Input data array for plant sizing
+	Array1D< DesDayWeathData > DesDayWeath; // design day weather saved at major time step
+	Array1D< CompDesWaterFlowData > CompDesWaterFlow; // array to store components' design water flow
+	Array1D< ZoneHVACSizingData > ZoneHVACSizing; // Input data for zone HVAC sizing
 
 	//     NOTICE
 	//     Copyright © 1996-2014 The Board of Trustees of the University of Illinois

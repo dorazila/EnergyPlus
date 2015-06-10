@@ -2,7 +2,7 @@
 #include <cmath>
 
 // ObjexxFCL Headers
-#include <ObjexxFCL/FArray.functions.hh>
+#include <ObjexxFCL/Array.functions.hh>
 #include <ObjexxFCL/Fmath.hh>
 
 // EnergyPlus Headers
@@ -101,11 +101,11 @@ namespace HeatingCoils {
 
 	//MODULE VARIABLE DECLARATIONS:
 	int NumHeatingCoils( 0 ); // The Number of HeatingCoils found in the Input
-	FArray1D_bool MySizeFlag;
-	FArray1D_bool ValidSourceType; // Used to determine if a source for a desuperheater heating coil is valid
+	Array1D_bool MySizeFlag;
+	Array1D_bool ValidSourceType; // Used to determine if a source for a desuperheater heating coil is valid
 	bool GetCoilsInputFlag( true ); // Flag set to make sure you get input once
 	bool CoilIsSuppHeater( false ); // Flag set to indicate the heating coil is a supplemental heater
-	FArray1D_bool CheckEquipName;
+	Array1D_bool CheckEquipName;
 
 	// Subroutine Specifications for the Module
 	// Driver/Manager Routines
@@ -123,8 +123,8 @@ namespace HeatingCoils {
 	// Utility routines for module
 
 	// Object Data
-	FArray1D< HeatingCoilEquipConditions > HeatingCoil;
-	FArray1D< HeatingCoilNumericFieldData > HeatingCoilNumericFields;
+	Array1D< HeatingCoilEquipConditions > HeatingCoil;
+	Array1D< HeatingCoilNumericFieldData > HeatingCoilNumericFields;
 
 	// MODULE SUBROUTINES:
 	//*************************************************************************
@@ -329,12 +329,12 @@ namespace HeatingCoils {
 		std::string SourceTypeString; // character string used in error message for desuperheating coil
 		std::string SourceNameString; // character string used in error message for desuperheating coil
 		std::string CurrentModuleObject; // for ease in getting objects
-		FArray1D_string Alphas; // Alpha input items for object
-		FArray1D_string cAlphaFields; // Alpha field names
-		FArray1D_string cNumericFields; // Numeric field names
-		FArray1D< Real64 > Numbers; // Numeric input items for object
-		FArray1D_bool lAlphaBlanks; // Logical array, alpha field input BLANK = .TRUE.
-		FArray1D_bool lNumericBlanks; // Logical array, numeric field input BLANK = .TRUE.
+		Array1D_string Alphas; // Alpha input items for object
+		Array1D_string cAlphaFields; // Alpha field names
+		Array1D_string cNumericFields; // Numeric field names
+		Array1D< Real64 > Numbers; // Numeric input items for object
+		Array1D_bool lAlphaBlanks; // Logical array, alpha field input BLANK = .TRUE.
+		Array1D_bool lNumericBlanks; // Logical array, numeric field input BLANK = .TRUE.
 		static int MaxNums( 0 ); // Maximum number of numeric input fields
 		static int MaxAlphas( 0 ); // Maximum number of alpha input fields
 		static int TotalArgs( 0 ); // Total number of alpha and numeric arguments (max) for a
@@ -748,7 +748,7 @@ namespace HeatingCoils {
 			} else {
 				ShowSevereError( CurrentModuleObject + ", \"" + HeatingCoil( CoilNum ).Name + "\" valid desuperheater heat source object type not found: " + Alphas( 5 ) );
 				ShowContinueError( "Valid desuperheater heat source objects are:" );
-				ShowContinueError( "Refrigeration:CompressorRack, Coil:Cooling:DX:SingleSpeed, " "Refrigeration:Condenser:AirCooled, Refrigeration:Condenser:EvaporativeCooled, " " Refrigeration:Condenser:WaterCooled,Coil:Cooling:DX:TwoSpeed, " "and Coil:Cooling:DX:TwoStageWithHumidityControlMode" );
+				ShowContinueError( "Refrigeration:CompressorRack, Coil:Cooling:DX:SingleSpeed, Refrigeration:Condenser:AirCooled, Refrigeration:Condenser:EvaporativeCooled, Refrigeration:Condenser:WaterCooled,Coil:Cooling:DX:TwoSpeed, and Coil:Cooling:DX:TwoStageWithHumidityControlMode" );
 				ErrorsFound = true;
 			}
 
@@ -900,9 +900,9 @@ namespace HeatingCoils {
 		static int ValidSourceTypeCounter( 0 ); // Counter used to determine if desuperheater source name is valid
 		static bool HeatingCoilFatalError( false ); // used for error checking
 		static bool MyOneTimeFlag( true ); // one time flag
-		static FArray1D_bool MySPTestFlag; // used for error checking
-		static FArray1D_bool ShowSingleWarning; // Used for single warning message for desuperheater coil
-		static FArray1D_bool MyEnvrnFlag; // one time environment flag
+		static Array1D_bool MySPTestFlag; // used for error checking
+		static Array1D_bool ShowSingleWarning; // Used for single warning message for desuperheater coil
+		static Array1D_bool MyEnvrnFlag; // one time environment flag
 
 		if ( MyOneTimeFlag ) {
 			// initialize the environment and sizing flags
@@ -963,7 +963,7 @@ namespace HeatingCoils {
 				if ( ControlNode == 0 ) {
 					ShowSevereError( cAllCoilTypes( HeatingCoil( CoilNum ).HCoilType_Num ) + " \"" + HeatingCoil( CoilNum ).Name + "\"" );
 					ShowContinueError( "... Missing control node for heating coil." );
-					ShowContinueError( "... enter a control node name in the coil temperature setpoint node field for this" " heating coil." );
+					ShowContinueError( "... enter a control node name in the coil temperature setpoint node field for this heating coil." );
 					ShowContinueError( "... use a Setpoint Manager to establish a setpoint at the coil temperature setpoint node." );
 					HeatingCoilFatalError = true;
 					//     test 3) here (fatal message)
@@ -1001,8 +1001,8 @@ namespace HeatingCoils {
 				ShowContinueError( " The Temperature Setpoint Node Name input is not required for this heating coil because" );
 				ShowContinueError( " this heating coil is controlled based on the load calculated by the thermostat." );
 				ShowContinueError( "... this heating coil is not controlled by using a temperature setpoint manager." );
-				ShowContinueError( "... if a temperature setpoint is placed at the outlet node of this heating coil, that" " temperature setpoint will not be used." );
-				ShowContinueError( "... leaving the input field \"Temperature Setpoint Node Name\" blank will" " eliminate this warning." );
+				ShowContinueError( "... if a temperature setpoint is placed at the outlet node of this heating coil, that temperature setpoint will not be used." );
+				ShowContinueError( "... leaving the input field \"Temperature Setpoint Node Name\" blank will eliminate this warning." );
 			}
 			MySPTestFlag( CoilNum ) = false;
 		}
@@ -1074,8 +1074,6 @@ namespace HeatingCoils {
 
 		// Using/Aliasing
 		using namespace DataSizing;
-		using DataAirSystems::PrimaryAirSystem;
-		using DataAirLoop::AirLoopControlInfo;
 		using General::RoundSigDigits;
 		using General::TrimSigDigits;
 		using namespace OutputReportPredefined;
@@ -1178,7 +1176,7 @@ namespace HeatingCoils {
 			// Ensure capacity at lower Stage must be lower or equal to the capacity at higher Stage.
 			for ( StageNum = 1; StageNum <= HeatingCoil( CoilNum ).NumOfStages - 1; ++StageNum ) {
 				if ( HeatingCoil( CoilNum ).MSNominalCapacity( StageNum ) > HeatingCoil( CoilNum ).MSNominalCapacity( StageNum + 1 ) ) {
-					ShowSevereError( "SizeHeatingCoil: " + HeatingCoil( CoilNum ).HeatingCoilType + ' ' + HeatingCoil( CoilNum ).Name + ", " "Stage " + TrimSigDigits( StageNum ) + " Nominal Capacity (" + RoundSigDigits( HeatingCoil( CoilNum ).MSNominalCapacity( StageNum ), 2 ) + " W) must be less than or equal to " "Stage " + TrimSigDigits( StageNum + 1 ) + " Nominal Capacity (" + RoundSigDigits( HeatingCoil( CoilNum ).MSNominalCapacity( StageNum + 1 ), 2 ) + " W)." );
+					ShowSevereError( "SizeHeatingCoil: " + HeatingCoil( CoilNum ).HeatingCoilType + ' ' + HeatingCoil( CoilNum ).Name + ", Stage " + TrimSigDigits( StageNum ) + " Nominal Capacity (" + RoundSigDigits( HeatingCoil( CoilNum ).MSNominalCapacity( StageNum ), 2 ) + " W) must be less than or equal to Stage " + TrimSigDigits( StageNum + 1 ) + " Nominal Capacity (" + RoundSigDigits( HeatingCoil( CoilNum ).MSNominalCapacity( StageNum + 1 ), 2 ) + " W)." );
 					ShowFatalError( "Preceding conditions cause termination." );
 				}
 			}
@@ -1589,7 +1587,7 @@ namespace HeatingCoils {
 		Real64 const QCoilReq,
 		Real64 & QCoilActual, // coil load actually delivered (W)
 		int const FanOpMode, // fan operating mode
-		Real64 const PartLoadRatio // part-load ratio of heating coil
+		Real64 const EP_UNUSED( PartLoadRatio ) // part-load ratio of heating coil
 	)
 	{
 		// SUBROUTINE INFORMATION:

@@ -49,8 +49,8 @@ namespace SortAndStringUtilities {
 
 	void
 	SetupAndSort(
-		FArray1S_string Alphas, // Alphas to be sorted
-		FArray1S_int iAlphas // Indexes of sorted array
+		Array1S_string Alphas, // Alphas to be sorted
+		Array1S_int iAlphas // Indexes of sorted array
 	)
 	{
 
@@ -98,8 +98,8 @@ namespace SortAndStringUtilities {
 
 	void
 	QsortC(
-		FArray1S_string Alphas, // Alphas to be sorted
-		FArray1S_int iAlphas // Indexes of sorted array
+		Array1S_string Alphas, // Alphas to be sorted
+		Array1S_int iAlphas // Indexes of sorted array
 	)
 	{
 
@@ -150,8 +150,8 @@ namespace SortAndStringUtilities {
 
 	void
 	QsortPartition(
-		FArray1S_string Alphas, // Alphas to be sorted
-		FArray1S_int iAlphas, // Indexes of sorted array
+		Array1S_string Alphas, // Alphas to be sorted
+		Array1S_int iAlphas, // Indexes of sorted array
 		int & marker
 	)
 	{
@@ -191,7 +191,7 @@ namespace SortAndStringUtilities {
 
 		std::string const & cpivot( Alphas( 1 ) );
 		int i = 0;
-		int j = Alphas.size() + 1;
+		int j = Alphas.isize() + 1;
 
 		while ( true ) {
 			--j;
