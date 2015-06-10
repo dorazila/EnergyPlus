@@ -1,5 +1,6 @@
 // C++ Headers
 #include <string>
+#include <iostream>
 
 // ObjexxFCL Headers
 #include <ObjexxFCL/gio.hh>
@@ -61,8 +62,8 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 	int ConstructNumAlpha; // Number of construction alpha names being passed
 	int ConstructNumNumeric; // dummy variable for properties being passed
 	int IOStat; // IO Status when calling get input subroutine
-	FArray1D_string ConstructAlphas( 7 ); // Construction Alpha names defined
-	FArray1D< Real64 > ConstructNumerics( 6 ); // Temporary array to transfer construction properties
+	Array1D_string ConstructAlphas( 7 ); // Construction Alpha names defined
+	Array1D< Real64 > ConstructNumerics( 6 ); // Temporary array to transfer construction properties
 	bool ErrorInName;
 	bool IsBlank;
 	int Loop;
@@ -89,8 +90,8 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 
 		// Save Materials
 
-		FArray1D< MaterialProperties > MaterialSave;
-		FArray1D< Real64 > NominalRSave;
+		Array1D< MaterialProperties > MaterialSave;
+		Array1D< Real64 > NominalRSave;
 		MaterialSave.allocate( TotMaterials );
 		NominalRSave.allocate( TotMaterials );
 		MaterialSave = Material;
@@ -101,12 +102,12 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 		int number_of_gaps;
 		int number_of_new_materials;
 
-		FArray1D< MaterialProperties > new_materials;
-		FArray1D< Real64 > new_nominal_R;
+		Array1D< MaterialProperties > new_materials;
+		Array1D< Real64 > new_nominal_R;
 
-		FArray1D< ConstructionData > ConstructSave;
-		FArray1D< Real64 > NominalRforNominalUCalculationSave;
-		FArray1D< Real64 > NominalUSave;
+		Array1D< ConstructionData > ConstructSave;
+		Array1D< Real64 > NominalRforNominalUCalculationSave;
+		Array1D< Real64 > NominalUSave;
 		int TotConstructsSave = TotConstructs;
 
 		// Save Constructions -- The list will be deleted so that the only
@@ -138,7 +139,7 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 
 		// Save Frame and Divider objects
 		int TotFrameDividerSave = TotFrameDivider;
-		FArray1D< FrameDividerProperties > FrameDividerSave;
+		Array1D< FrameDividerProperties > FrameDividerSave;
 
 		FrameDividerSave.allocate( TotFrameDivider );
 		FrameDividerSave = FrameDivider;
@@ -668,9 +669,9 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 			number_of_new_materials = number_of_panes + number_of_gaps;
 
 			// Construction specific allocations
-			AWinSurf.allocate(1, number_of_panes);
-			QRadSWwinAbs.allocate(1, number_of_panes);
-			QRadSWwinAbsLayer.allocate(1, number_of_panes);
+			AWinSurf.allocate(number_of_panes, 1);
+			QRadSWwinAbs.allocate(number_of_panes, 1);
+			QRadSWwinAbsLayer.allocate(number_of_panes, 1);
 
 			// Create New Material objects
 			if ( new_materials.size_ != (unsigned)number_of_new_materials ) {
