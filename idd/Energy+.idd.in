@@ -6702,11 +6702,11 @@ WindowMaterial:Gap:EquivalentLayer,
        \minimum> 1.0
 
 Construction:WindowASHRAE1588RP,
-       \min-fields 3
+       \min-fields 1
        \memo Based on ASHRAE 1588-RP, this will define a layer-by-layer window
-       \memo representation based on bulk properties (U-factor, SHGC, VT) and 
-       \memo other known quantities. This creates the glazing/gas construction 
-       \memo layers and the frame/divider object
+       \memo representation based on rated properties (U-factor and SHGC) and
+       \memo other known characteristics. This creates the glazing/gas
+       \memo construction layers and the frame/divider object
   A1 , \field Name
        \required-field
        \type alpha
@@ -6714,18 +6714,26 @@ Construction:WindowASHRAE1588RP,
   N1 , \field NFRC U-Factor
        \note U-factor defined by NFRC 100-2014
        \units W/m2-K
+       \type real
        \minimum> 0
+       \autocalculatable
+       \default autocalculate
   N2 , \field NFRC Solar Heat Gain Coefficient
        \note SHGC at normal incidence as defined by NFRC 200-2014
+       \units dimensionless
+       \type real
        \minimum> 0
        \maximum< 1
-  N3 , \field NFRC Visible Transmittance
-       \note VT at normal incidence as defined by NFRC 200-2014
-       \note optional
-       \minimum> 0
-       \maximum< 1
+       \autocalculatable
+       \default autocalculate
   A2 , \field Fenestration Type
-       \note Type of fenestration product as defined by NFRC 100-2014 Table 4-3
+       \note Type of fenestration product as defined by NFRC 100-2014 Table
+       \note 4-3.
+       \note This field is used to determine the dimensions and tilt of the
+       \note window
+       \note surface for the purposes of NFRC ratings.
+       \note
+       \note Tubular Daylighting Devices are not supported.
        \type choice
        \key CasementDouble
        \key CasementSingle
@@ -6735,7 +6743,6 @@ Construction:WindowASHRAE1588RP,
        \key GreenhouseOrGarden
        \key HingedEscape
        \key HorizontalSlider
-       \key HybridTubularDaylightingDevice
        \key JalOrJalAwning
        \key Pivoted
        \key ProjectingAwningDual
@@ -6745,53 +6752,108 @@ Construction:WindowASHRAE1588RP,
        \key SlidingPatioDoorWithFrame
        \key CurtainWallOrWindowWall
        \key SlopedGlazing
-       \key SpandrelPanel
-       \key SwingingDoorWithFrame
+       \key SwingingDoorWithFrameSingle
+       \key SwingingDoorWithFrameDouble
        \key DoorTransom
        \key TropicalAwning
-       \key TubularDaylightingDevice
        \key VerticalSlider
-  N4 , \field Number of Glazing Panes
-       \minimum 0
+       \default Fixed
+  N3 , \field Number of Glazing Panes
+       \type integer
+       \minimum 1
        \maximum 4
-  A3 , \field Glazing Type
+       \autocalculatable
+       \default autocalculate
+  N4,  \field Glazing Thickness
+       \type real
+       \units m
+       \minimum> 0
+       \autocalculatable
+       \default autocalculate
+  A3 , \field Glazing Tint
+       \note This field is used to determine the thermal and optical
+       \note properties of the glazing layers.
        \type choice
        \key Clear
-       \key LowIron
-       \key Bronze
-       \key Grey
-       \key Green
-       \key Blue
-       \key PolyesterFilm
-  A4 , \field Glazing Surface Treatment
+       \key Medium
+       \key Dark
+       \autocalculatable
+       \default autocalculate
+  A4 , \field Exterior Glazing Coating Type
+       \note Coatings are applied to the back surface of all but the inner
+       \note most pane.
        \type choice
        \key None
-       \key ReflectiveStainlessSteel
-       \key ReflectiveTitanium
-       \key ReflectivePewter
-       \key ReflectiveTinOxide
-       \key LowE
+       \key ReflectiveMetal
        \key SpectrallySelective
-       \key Pyrolytic
+       \key SputteredLowEmissivity
+       \key PyrolyticLowEmissivity
+       \autocalculatable
+       \default autocalculate
   A5 , \field Gas Type
+       \note Non-air gases all have 5% Air due to sealing process.
        \type choice
        \key Air
        \key Argon
        \key Krypton
        \key Xenon
-  A6 , \field Frame Material
+       \key Vacuum
+       \autocalculatable
+       \default autocalculate
+  N5,  \field Gap Thickness
+       \type real
+       \units m
+       \minimum> 0
+       \autocalculatable
+       \default autocalculate
+  A6 , \field Spacer Material Type
        \type choice
-       \key Softwood
-       \key Hardwood
        \key Aluminum
        \key Steel
-       \key Vinyl
+       \key Butyl
        \key Fiberglass
-  N5 , \field Frame Width
+       \key Wood
+       \key Insulated
+       \autocalculatable
+       \default autocalculate
+  A7 , \field Frame Material Type
+       \note This is used to set the frame and divider conductance.
+       \type choice
+       \key Wood
+       \key Insulated
+       \key AluminumUnbroken
+       \key AluminumBroken
+       \key Vinyl
+       \autocalculatable
+       \default autocalculate
+  N6 , \field Frame Width
+       \note This is the overall, area-weighted, projected frame
+       \note dimension (PFD).
+       \units m
+       \type real
        \minimum 0
-  N6 , \field Divider Width
+       \autocalculatable
+       \default autocalculate
+  N7 , \field Divider Width
+       \units m
+       \type real
        \minimum 0
-  A7 ; \field Output File Name
+       \autocalculatable
+       \default autocalculate
+  N8 , \field Dirt Correction Factor for Solar and Visible Transmittance
+       \note This is applied to the construction during the simulation, but
+       \note not during the matching process (i.e., calculating the NFRC
+       \note properties).
+       \type real
+       \units dimensionless
+       \minimum> 0.0
+       \maximum 1.0
+       \default 1.0
+  A8;  \field Output File Name
+       \note Creates a JSON formatted file with a complete description of the
+       \note matching fenestration system. This file can then be used to
+       \note generate windows for other simulation tools. If left blank,
+       \note no output file will be created.
        \retaincase
 
 MaterialProperty:MoisturePenetrationDepth:Settings,

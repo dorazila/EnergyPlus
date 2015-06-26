@@ -2,6 +2,8 @@
 // EnergyPlus Headers
 #include <EnergyPlus.hh>
 
+// JSON Header
+#include <json/json.h>
 
 namespace EnergyPlus {
 
@@ -9,6 +11,8 @@ namespace WindowASHRAE1588RP {
 
 void
 CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound );
+
+Json::Value read_1588_database(std::string file_path);
 
 void create_dummy_variables();
 
