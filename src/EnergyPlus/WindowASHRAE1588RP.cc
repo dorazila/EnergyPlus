@@ -76,7 +76,7 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
 
   int TotWinASHRAE1588Constructs = GetNumObjectsFound( "Construction:WindowASHRAE1588RP" ); // Number of window constructions based on ASHRAE 1588RP
 
-  std::string db_1588_file_path = "../1588.json";
+  std::string db_1588_file_path = "../../../../datasets/1588.json";
   Json::Value root = read_1588_database(db_1588_file_path);
 
   // Get the thickness keys from the database
@@ -463,14 +463,14 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
     FrameDividerProperties new_frame_divider;
 
     // Set spectral properties TODO: Read full spectral data
-    Real64 glass_solar_transmissivity;
-    Real64 glass_visible_transmissivity;
-    Real64 glass_solar_reflectivity_back;
-    Real64 glass_solar_reflectivity_front;
-    Real64 glass_visible_reflectivity_back;
-    Real64 glass_visible_reflectivity_front;
-    Real64 glass_IR_absorptivity_back;
-    Real64 glass_IR_absorptivity_front;
+    Real64 glass_solar_transmittance;
+    Real64 glass_visible_transmittance;
+    Real64 glass_solar_reflectance_back;
+    Real64 glass_solar_reflectance_front;
+    Real64 glass_visible_reflectance_back;
+    Real64 glass_visible_reflectance_front;
+    Real64 glass_IR_absorptance_back;
+    Real64 glass_IR_absorptance_front;
 
     Real64 frame_solar_absorptivity;
     Real64 frame_visible_absorptivity;
@@ -487,6 +487,7 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
     Real64 tilt;
     Real64 fenestration_area;
     Real64 glazing_area;
+    Real64 frame_area;
 
     Real64 glass_conductivity;
 
@@ -502,7 +503,7 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
     Real64 vt;
 
     // internal defaults to be left alone
-    Real64 glass_IR_transmissivity = 0.0;
+    Real64 glass_IR_transmittance = 0.0;
     Real64 frame_IR_emissivity = 0.8;
     Real64 glass_youngs_modulus = 7.2e10;
     Real64 glass_poissons_ratio = 0.22;
@@ -550,18 +551,30 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
       }
 
       // Set spectral properties TODO: Read full spectral data
-      glass_solar_transmissivity = root["Glazings"][thickness_key][glazing_coating][glazing_tint]["Tsol"].asDouble();
-      glass_visible_transmissivity = root["Glazings"][thickness_key][glazing_coating][glazing_tint]["Tvis"].asDouble();
-      glass_solar_reflectivity_back = root["Glazings"][thickness_key][glazing_coating][glazing_tint]["Rbsol"].asDouble();
-      glass_solar_reflectivity_front = root["Glazings"][thickness_key][glazing_coating][glazing_tint]["Rfsol"].asDouble();
-      glass_visible_reflectivity_back = root["Glazings"][thickness_key][glazing_coating][glazing_tint]["Rbvis"].asDouble();
-      glass_visible_reflectivity_front = root["Glazings"][thickness_key][glazing_coating][glazing_tint]["Rfvis"].asDouble();
-      glass_IR_absorptivity_back = root["Glazings"][thickness_key][glazing_coating][glazing_tint]["eb"].asDouble();
-      glass_IR_absorptivity_front = root["Glazings"][thickness_key][glazing_coating][glazing_tint]["ef"].asDouble();
+      glass_solar_transmittance = root["Glazings"][thickness_key][glazing_coating][glazing_tint]["Tsol"].asDouble();
+      glass_visible_transmittance = root["Glazings"][thickness_key][glazing_coating][glazing_tint]["Tvis"].asDouble();
+      glass_solar_reflectance_back = root["Glazings"][thickness_key][glazing_coating][glazing_tint]["Rbsol"].asDouble();
+      glass_solar_reflectance_front = root["Glazings"][thickness_key][glazing_coating][glazing_tint]["Rfsol"].asDouble();
+      glass_visible_reflectance_back = root["Glazings"][thickness_key][glazing_coating][glazing_tint]["Rbvis"].asDouble();
+      glass_visible_reflectance_front = root["Glazings"][thickness_key][glazing_coating][glazing_tint]["Rfvis"].asDouble();
+      glass_IR_absorptance_back = root["Glazings"][thickness_key][glazing_coating][glazing_tint]["eb"].asDouble();
+      glass_IR_absorptance_front = root["Glazings"][thickness_key][glazing_coating][glazing_tint]["ef"].asDouble();
 
-      frame_solar_absorptivity = root["Types"][fenestration_type]["Frame Absorptance"].asDouble();
-      frame_visible_absorptivity = root["Types"][fenestration_type]["Frame Absorptance"].asDouble();
-      frame_conductance = root["Frames"][frame_material][std::max(number_of_panes,3)-1].asDouble();
+      frame_solar_absorptivity = root["Types"][fenestration_type]["Frame Absorptivity"].asDouble();
+      frame_visible_absorptivity = root["Types"][fenestration_type]["Frame Absorptivity"].asDouble();
+
+      Real64 frame_u_factor;
+      std::string fenestration_category = root["Types"][fenestration_type]["Category"].asString();
+      if ( root["Spacers"][spacer_type]["Metal"].asBool() ) {
+        frame_u_factor = root["Frames"][frame_material]["Metal Spacer"][fenestration_category][std::max(number_of_panes,3)-1].asDouble();
+      }
+      else {
+        frame_u_factor = root["Frames"][frame_material]["Non-Metal Spacer"][fenestration_category][std::max(number_of_panes,3)-1].asDouble();
+      }
+
+      Real64 assumed_h_o = 30;  // W/m2-K
+      Real64 assumed_h_i = 8;  // W/m2-K
+      frame_conductance = 1/(1/frame_u_factor - (1/assumed_h_o + 1/assumed_h_i));
 
       // set product sizes and tilts based on NFRC 100-2014 Table 4-3 (read from database)
 
@@ -569,7 +582,7 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
       fenestration_height = root["Types"][fenestration_type]["Height"].asDouble();
       tilt = root["Types"][fenestration_type]["Tilt"].asDouble()*Pi/180.0;
 
-      glass_conductivity = 1.0;  // Currently limited to glass layers
+      glass_conductivity = 0.91;  // Currently limited to glass layers
 
       if ( frame_width > 0.0 )
       {
@@ -585,7 +598,7 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
       glazing_height = fenestration_height - 2.0*frame_width;
       glazing_area = glazing_width*glazing_height;
 
-      if ( has_frame )
+      if ( has_frame && divider_width > 0.0)
       {
         num_horizontal_dividers = ceil(glazing_height/max_divider_spacing);
         num_vertical_dividers = ceil(glazing_width/max_divider_spacing);
@@ -635,15 +648,15 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
         Material( MaterNum ).Roughness = VerySmooth;
         Material( MaterNum ).ROnly = true;
         Material( MaterNum ).Thickness = glass_thickness;
-        Material( MaterNum ).Trans = glass_solar_transmissivity;
-          Material( MaterNum ).ReflectSolBeamFront = glass_solar_reflectivity_front;
-        Material( MaterNum ).ReflectSolBeamBack = glass_solar_reflectivity_back;
-        Material( MaterNum ).TransVis = glass_visible_transmissivity;
-        Material( MaterNum ).ReflectVisBeamFront = glass_visible_reflectivity_front;
-        Material( MaterNum ).ReflectVisBeamBack = glass_visible_reflectivity_back;
-        Material( MaterNum ).TransThermal = glass_IR_transmissivity;
-        Material( MaterNum ).AbsorpThermalFront = glass_IR_absorptivity_front;
-        Material( MaterNum ).AbsorpThermalBack = glass_IR_absorptivity_back;
+        Material( MaterNum ).Trans = glass_solar_transmittance;
+        Material( MaterNum ).ReflectSolBeamFront = glass_solar_reflectance_front;
+        Material( MaterNum ).ReflectSolBeamBack = glass_solar_reflectance_back;
+        Material( MaterNum ).TransVis = glass_visible_transmittance;
+        Material( MaterNum ).ReflectVisBeamFront = glass_visible_reflectance_front;
+        Material( MaterNum ).ReflectVisBeamBack = glass_visible_reflectance_back;
+        Material( MaterNum ).TransThermal = glass_IR_transmittance;
+        Material( MaterNum ).AbsorpThermalFront = glass_IR_absorptance_front;
+        Material( MaterNum ).AbsorpThermalBack = glass_IR_absorptance_back;
         Material( MaterNum ).Conductivity = glass_conductivity;
         Material( MaterNum ).GlassTransDirtFactor = 1.0;  // Hold at unity to find match and then apply to outside layer
         Material( MaterNum ).YoungModulus = glass_youngs_modulus;
@@ -674,6 +687,10 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
         if ( gas_type == "ARGON" ) Material( MaterNum ).GasType( 1 ) = 2;
         if ( gas_type == "KRYPTON" ) Material( MaterNum ).GasType( 1 ) = 3;
         if ( gas_type == "XENON" ) Material( MaterNum ).GasType( 1 ) = 4;
+        if ( gas_type == "VACUUM") {
+          Material( MaterNum ).GasType( 1 ) = 1;
+          Material( MaterNum ).Thickness = 0.00001;
+        }
 
         Material( MaterNum ).GasWght( 1 ) = GasWght( Material( MaterNum ).GasType( 1 ) );
         Material( MaterNum ).GasSpecHeatRatio( 1 ) = GasSpecificHeatRatio( Material( MaterNum ).GasType( 1 ) );
@@ -682,7 +699,7 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
           Material( MaterNum ).GasVis( 1, ICoeff ) = GasCoeffsVis( Material( MaterNum ).GasType( 1 ), ICoeff );
           Material( MaterNum ).GasCp( 1, ICoeff ) = GasCoeffsCp( Material( MaterNum ).GasType( 1 ), ICoeff );
         }
-
+        // TODO write gas properties to output file
         Real64 DenomRGas = ( Material( MaterNum ).GasCon( 1, 1 ) + Material( MaterNum ).GasCon( 1, 2 ) * 300.0 + Material( MaterNum ).GasCon( 1, 3 ) * 90000.0 );
         NominalR( MaterNum ) = Material( MaterNum ).Thickness / DenomRGas;
 
@@ -706,30 +723,23 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
       Surface( 1 ).Construction = 1; // This is the only construction available to the dummy surface. The actual surface will reference the real construction.
       Surface( 1 ).FrameDivider = 0; // Set temporarily until after Center-of-Glass U-factor is calculated
 
-
-      // Setup functions
-
-      InitGlassOpticalCalculations();
-
-      // Set up U-factor conditions
+      // Set up U-factor conditions TODO read these from database
       Real64 in_air_temp = 21.0;
       Real64 out_air_temp = -18.0;
       Real64 wind_speed = 5.5;
-      Real64 solar_inccident = 0.0;
+      Real64 solar_incident = 0.0;
 
       // Calculate Center-of-Glass U-factor (without Frame)
+      calc_window_performance(in_air_temp, out_air_temp, wind_speed, solar_incident);
 
-
-      calc_window_performance(in_air_temp, out_air_temp, wind_speed, solar_inccident);
-
-      u_cog = -WinHeatGain(1)/(fenestration_area*(in_air_temp - out_air_temp));
+      u_cog = -WinHeatGain(1)/(Surface( 1 ).Area*(in_air_temp - out_air_temp));
 
       if ( number_of_panes == 1)
         u_eog = u_cog;
       else {
-        Real64 eog_a = root["Spacers"][spacer_type][std::max(number_of_panes,3)-2][0].asDouble();
-        Real64 eog_b = root["Spacers"][spacer_type][std::max(number_of_panes,3)-2][1].asDouble();
-        Real64 eog_c = root["Spacers"][spacer_type][std::max(number_of_panes,3)-2][2].asDouble();
+        Real64 eog_a = root["Spacers"][spacer_type]["Coefficients"][std::max(number_of_panes,3)-2][0].asDouble();
+        Real64 eog_b = root["Spacers"][spacer_type]["Coefficients"][std::max(number_of_panes,3)-2][1].asDouble();
+        Real64 eog_c = root["Spacers"][spacer_type]["Coefficients"][std::max(number_of_panes,3)-2][2].asDouble();
         u_eog = eog_a + eog_b*u_cog + eog_c*pow_2(u_cog);
       }
 
@@ -761,7 +771,8 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
         new_frame_divider.DividerEmis = frame_IR_emissivity;
         new_frame_divider.DividerEdgeWidth = edge_width; // 2.5 in
 
-        SurfaceWindow( 1 ).FrameArea = fenestration_area - glazing_area;
+        frame_area = fenestration_area - glazing_area;
+        SurfaceWindow( 1 ).FrameArea = frame_area;
         SurfaceWindow( 1 ).DividerArea = divider_width*(num_horizontal_dividers*glazing_width + num_vertical_dividers*glazing_height - num_horizontal_dividers*num_vertical_dividers*divider_width);
         Surface( 1 ).Area -= SurfaceWindow( 1 ).DividerArea;
         SurfaceWindow( 1 ).GlazedFrac = Surface( 1 ).Area / ( Surface( 1 ).Area + SurfaceWindow( 1 ).DividerArea );
@@ -771,28 +782,27 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
         Surface( 1 ).FrameDivider = 1;
       }
 
-      InitGlassOpticalCalculations();
-
       // Calculate total U-factor
-      calc_window_performance(in_air_temp, out_air_temp, wind_speed, solar_inccident);
+      calc_window_performance(in_air_temp, out_air_temp, wind_speed, solar_incident);
 
-      u_factor = -WinHeatGain(1)/(fenestration_area*(in_air_temp - out_air_temp));
+      u_factor = -WinHeatGain(1)/(Surface( 1 ).Area*(in_air_temp - out_air_temp));
 
       // Set up SHGC conditions
       in_air_temp = 24.0;
       out_air_temp = 32.0;
       wind_speed = 2.75;
-      solar_inccident = 783.0;
+      solar_incident = 783.0;
 
-      calc_window_performance(in_air_temp, out_air_temp, wind_speed, solar_inccident);
+      // Calculate SHGC
+      calc_window_performance(in_air_temp, out_air_temp, wind_speed, solar_incident);
 
       Real64 q_total = WinHeatGain(1);
 
       // NFRC 201-2014 Equation 8-7
-      Real64 q_U = u_factor*fenestration_area*(out_air_temp - in_air_temp);
+      Real64 q_U = u_factor*Surface( 1 ).Area*(out_air_temp - in_air_temp);
 
       // NFRC 201-2014 Equation 8-2
-      shgc = (q_total - q_U)/(fenestration_area*solar_inccident);
+      shgc = (q_total - q_U)/(Surface( 1 ).Area*solar_incident);
 
       Real64 non_opaque_area_fraction = Surface( 1 ).Area/fenestration_area;
       vt = POLYF(1.0,Construct( 1 ).TransVisBeamCoef( 1 ))*non_opaque_area_fraction;
@@ -831,34 +841,59 @@ CreateASHRAE1588RPConstructions( int & ConstrNum, bool & ErrorsFound )
       Json::Value output_1588;
       Json::StyledStreamWriter writer;
       output_1588["Metadata"]["Name"] = construction_name;
-      output_1588["Metadata"]["Target U-factor"] = target_u_factor;
-      output_1588["Metadata"]["Target SHGC"] = target_shgc;
-      output_1588["Metadata"]["Match U-factor"] = u_factor;
-      output_1588["Metadata"]["Match SHGC"] = shgc;
-      output_1588["Metadata"]["U-factor Difference"] = u_factor_diff;
-      output_1588["Metadata"]["SHGC Difference"] = shgc_diff;
+      output_1588["Metadata"]["U-factor"] = u_factor;
+      output_1588["Metadata"]["Solar Heat Gain Coefficient"] = shgc;
+      output_1588["Metadata"]["Fenestration Type"] = fenestration_type;
+      output_1588["Metadata"]["Fenstration Area"] = fenestration_area;
+      output_1588["Metadata"]["Fenestration Width"] = fenestration_width;
+      output_1588["Metadata"]["Fenestration Height"] = fenestration_height;
+      output_1588["Metadata"]["1588-RP Matching"]["U-factor Target"] = target_u_factor;
+      output_1588["Metadata"]["1588-RP Matching"]["Solar Heat Gain Coefficient Target"] = target_shgc;
+      output_1588["Metadata"]["1588-RP Matching"]["U-factor Difference"] = u_factor_diff;
+      output_1588["Metadata"]["1588-RP Matching"]["Solar Heat Gain Coefficient Difference"] = shgc_diff;
       output_1588["Metadata"]["Visible Transmittance"] = vt;
       output_1588["Glazing"]["Number of Panes"] = number_of_panes;
+      output_1588["Glazing"]["Area"] = glazing_area;
 
       for ( int MaterNum = 1; MaterNum <= number_of_new_materials; MaterNum += 2 ) {
         int i = (MaterNum-1)/2;
         output_1588["Glazing"]["Panes"][i]["Tint"] = glazing_tint;
         output_1588["Glazing"]["Panes"][i]["Thickness"] = glass_thickness;
         output_1588["Glazing"]["Panes"][i]["Conductivity"] = glass_conductivity;
+        if (i == 0) {
+          output_1588["Glazing"]["Panes"][i]["Coating"] = glazing_coating;
+        }
+        else {
+          output_1588["Glazing"]["Panes"][i]["Coating"] = "NONE";
+        }
+        output_1588["Glazing"]["Panes"][i]["Average Solar Transmittance"] = Material( MaterNum ).Trans;
+        output_1588["Glazing"]["Panes"][i]["Average Solar Back Side Reflectance"] = Material( MaterNum ).ReflectSolBeamBack;
+        output_1588["Glazing"]["Panes"][i]["Average Solar Front Side Reflectance"] = Material( MaterNum ).ReflectSolBeamFront;
+        output_1588["Glazing"]["Panes"][i]["Average Visible Transmittance"] = Material( MaterNum ).TransVis;
+        output_1588["Glazing"]["Panes"][i]["Average Visible Back Side Reflectance"] = Material( MaterNum ).ReflectVisBeamBack;
+        output_1588["Glazing"]["Panes"][i]["Average Visible Front Side Reflectance"] = Material( MaterNum ).ReflectVisBeamFront;
+        output_1588["Glazing"]["Panes"][i]["Average Infrared Transmittance"] = Material( MaterNum ).TransThermal;
+        output_1588["Glazing"]["Panes"][i]["Average Infrared Back Side Absorptance"] = Material( MaterNum ).AbsorpThermalBack;
+        output_1588["Glazing"]["Panes"][i]["Average Infrared Front Side Absorptance"] = Material( MaterNum ).AbsorpThermalFront;
       }
 
       for ( int MaterNum = 2; MaterNum <= number_of_new_materials; MaterNum += 2 ) {
         int i = (MaterNum-2)/2;
         output_1588["Glazing"]["Gaps"][i]["Gas"] = gas_type;
+        output_1588["Glazing"]["Gaps"][i]["Thickness"] = gap_thickness;
       }
 
       output_1588["Glazing"]["Center-of-Glass U-factor"] = u_cog;
-      output_1588["Frame"]["Frame Width"] = frame_width;
-      output_1588["Frame"]["Frame Conductance"] = frame_conductance;
-      output_1588["Frame"]["Frame Material"] = frame_material;
-      output_1588["Frame"]["Spacer Type"] = spacer_type;
-      output_1588["Frame"]["Edge-of-Glass U-factor"] = u_eog;
-      output_1588["Frame"]["Edge-of-Glass Conductance Ratio"] = frame_edge_ratio;
+      output_1588["Frame and Divider"]["Frame Width"] = frame_width;
+      output_1588["Frame and Divider"]["Frame Conductance"] = frame_conductance;
+      output_1588["Frame and Divider"]["Frame Material"] = frame_material;
+      output_1588["Frame and Divider"]["Spacer Type"] = spacer_type;
+      output_1588["Frame and Divider"]["Edge-of-Glass U-factor"] = u_eog;
+      output_1588["Frame and Divider"]["Edge-of-Glass Conductance Ratio"] = frame_edge_ratio;
+      output_1588["Frame and Divider"]["Frame Area"] = frame_area;
+      output_1588["Frame and Divider"]["Divider Width"] = divider_width;
+      output_1588["Frame and Divider"]["Number of Vertical Dividers"] = num_vertical_dividers;
+      output_1588["Frame and Divider"]["Number of Horizontal Dividers"] = num_horizontal_dividers;
 
       std::ofstream output_file(ashrae1588_file_name);
 
@@ -1010,6 +1045,8 @@ Json::Value read_1588_database(std::string file_path)
 
 void calc_window_performance(Real64 T_in, Real64 T_out, Real64 v_ws, Real64 I_s)
 {
+  InitGlassOpticalCalculations();
+
   // Calculate window performance
   Surface( 1 ).OutDryBulbTemp = T_out;
   TempEffBulkAir( 1 ) = T_in;
@@ -1074,9 +1111,6 @@ void calc_window_performance(Real64 T_in, Real64 T_out, Real64 v_ws, Real64 I_s)
     in_surf_temp_prev = in_surf_temp;
 
   }
-
-
-
 
 }
 

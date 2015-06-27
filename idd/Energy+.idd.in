@@ -6823,6 +6823,7 @@ Construction:WindowASHRAE1588RP,
        \key Insulated
        \key AluminumUnbroken
        \key AluminumBroken
+       \key Structural
        \key Vinyl
        \autocalculatable
        \default autocalculate
